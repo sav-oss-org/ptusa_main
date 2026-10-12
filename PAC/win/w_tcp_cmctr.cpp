@@ -371,26 +371,9 @@ int tcp_communicator_win::evaluate()
                         }
                     if ( G_DEBUG )
                         {
-#ifndef MODBUS
-                        // Определение имени клиента.
-                        hostent *client = gethostbyaddr( ( char* ) &ssin.sin_addr, 4, AF_INET );
-
-                        if ( client )
-                            {
-                            printf( "Accepted connection on %d socket from %s [ %s ].\n",
-                                slave_socket, inet_ntoa( ssin.sin_addr ), client->h_name  );
-                            }
-
-                        else
-                            {
-                            printf( "Error getting client name. " );
-                            printf( "Accepted connection on %d socket from %s.\n",
-                                slave_socket, inet_ntoa( ssin.sin_addr ) );
-                            }
-#else
+                        // Числовой IP не требует блокирующего DNS-запроса.
                         printf( "Accepted connection on %d socket from %s.\n",
                             slave_socket, inet_ntoa( ssin.sin_addr ) );
-#endif //  MODBUS
                         }
 
 #ifdef MODBUS
