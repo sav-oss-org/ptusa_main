@@ -631,6 +631,22 @@ void threshold_regulator::direct_set_value( float val )
         }
     };
 //-----------------------------------------------------------------------------
+int threshold_regulator::save_device_ex( char* buff ) const
+    {
+    int res = 0;
+    if ( in_value_name[ 0 ] )
+        {
+        res += static_cast<int>( fmt::format_to_n( buff + res, MAX_COPY_SIZE,
+            "IN_VALUE='{}', ", in_value_name ).size );
+        }
+    if ( out_value_name[ 0 ] )
+        {
+        res += static_cast<int>( fmt::format_to_n( buff + res, MAX_COPY_SIZE,
+            "OUT_VALUE='{}', ", out_value_name ).size );
+        }
+    return res;
+    }
+//-----------------------------------------------------------------------------
 void threshold_regulator::set_string_property( const char* field, const char* value )
     {
     device::set_string_property( field, value );
@@ -640,11 +656,27 @@ void threshold_regulator::set_string_property( const char* field, const char* va
         {
         //IN_VALUE
         case 'I':
+            if ( value )
+                {
+                snprintf( in_value_name, sizeof( in_value_name ), "%s", value );
+                }
+            else
+                {
+                in_value_name[ 0 ] = 0;
+                }
             sensor = G_DEVICE_MANAGER()->get_device( value );
             break;
 
         //OUT_VALUE
         case 'O':
+            if ( value )
+                {
+                snprintf( out_value_name, sizeof( out_value_name ), "%s", value );
+                }
+            else
+                {
+                out_value_name[ 0 ] = 0;
+                }
             actuator = G_DEVICE_MANAGER()->get_device( value );
             break;
 

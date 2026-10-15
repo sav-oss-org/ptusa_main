@@ -6241,12 +6241,19 @@ TEST( threshold_regulator, set_string_property )
     {
     auto name = "C1";
     threshold_regulator p1( name );
+    const int BUFF_SIZE = 256;
+    char buff[ BUFF_SIZE ] = { 0 };
 
     //TODO - refactor set_string_property() to return result.
     p1.set_string_property( nullptr, nullptr );
     p1.set_string_property( "IN_VALUE", "FQT1" );
     p1.set_string_property( "OUT_VALUE", "M1" );
     p1.set_string_property( "NO_SUCH_PROPERTY", "AA1" );
+    p1.save_device( buff );
+    EXPECT_STREQ(
+        "C1={M=0, ST=0, V=0, IN_VALUE='FQT1', OUT_VALUE='M1', "
+        "P_is_reverse=0, P_delta=0},\n",
+        buff );
     }
 
 TEST( threshold_regulator, get_type_name )
