@@ -405,6 +405,27 @@ int errors_manager::add_error( base_error* s_error )
     return 0;
     }
 //-----------------------------------------------------------------------------
+int errors_manager::update_tech_object( tech_object* old_object,
+    tech_object* new_tech_object )
+    {
+    if ( 0 == old_object || 0 == new_tech_object )
+        {
+        return -1;
+        }
+
+    for ( auto* cur_error : s_errors_vector )
+        {
+        auto* obj_error = dynamic_cast< tech_obj_error* >( cur_error );
+        if ( 0 != obj_error && obj_error->tech_dev == old_object )
+            {
+            obj_error->tech_dev = new_tech_object;
+            return 0;
+            }
+        }
+
+    return -1;
+    }
+//-----------------------------------------------------------------------------
 void errors_manager::print()
     {
     if ( G_DEBUG )

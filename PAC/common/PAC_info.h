@@ -117,6 +117,11 @@ class PAC_info: public i_Lua_save_device
             RELOAD_RESTRICTIONS = 100,
             RESET_PARAMS = 101,
             FORCE_SAVE_PARAMS = 102,
+
+            //База команд перезагрузки объекта: CMD = BASE + номер объекта [N].
+            //Нужна, когда интерфейс шлёт только число (без индекса).
+            //Например, перезагрузка объекта [4] - команда 1030004.
+            RELOAD_TECH_OBJECT_BASE = 1030000,
             };
 
 #ifdef PTUSA_TEST

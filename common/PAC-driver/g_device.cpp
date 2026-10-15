@@ -327,6 +327,24 @@ int device_communicator::add_device( i_Lua_save_device *device )
     return 0;
     }
 //-----------------------------------------------------------------------------
+void device_communicator::update_device( i_Lua_save_device* old_device,
+    i_Lua_save_device* new_device )
+    {
+    if ( 0 == old_device || 0 == new_device )
+        {
+        return;
+        }
+
+    for ( auto& cur_device : dev )
+        {
+        if ( cur_device == old_device )
+            {
+            cur_device = new_device;
+            return;
+            }
+        }
+    }
+//-----------------------------------------------------------------------------
 void device_communicator::clear_devices()
     {
     dev.clear();
