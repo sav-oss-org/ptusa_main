@@ -61,7 +61,7 @@ TEST( PID, direct_set_value )
     ASSERT_EQ( nullptr, res );
     res = G_DEVICE_MANAGER()->add_io_device(
         device::DT_TE, device::DST_TE_VIRT, "TE1", "Test sensor", "T" );
-    ASSERT_EQ( nullptr, res );
+    ASSERT_NE( nullptr, res );
     res = G_DEVICE_MANAGER()->add_io_device(
         device::DT_M, device::DST_M_VIRT, "M1", "Test motor", "M" );
     ASSERT_EQ( nullptr, res );

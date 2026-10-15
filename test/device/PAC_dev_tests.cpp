@@ -1277,7 +1277,7 @@ TEST( device_manager, clear_io_devices )
     {
     auto res = G_DEVICE_MANAGER()->add_io_device(
         device::DT_TE, device::DST_TE_VIRT, "T1", "Test sensor", "T" );
-    ASSERT_EQ( nullptr, res );
+    ASSERT_NE( nullptr, res );
     EXPECT_NE( G_DEVICE_MANAGER()->get_stub_device(),
         G_DEVICE_MANAGER()->get_TE( "T1" ) );   // Search should find device.
 
@@ -1313,8 +1313,8 @@ TEST( device_manager, get_device )
     {
     auto res = G_DEVICE_MANAGER()->add_io_device(
         device::DT_TE, device::DST_TE_VIRT, "T1", "Test sensor", "T" );
-    ASSERT_EQ( nullptr, res );
-
+    ASSERT_NE( nullptr, res );
+    
     // Search should find device.
     EXPECT_NE( G_DEVICE_MANAGER()->get_stub_device(),
         G_DEVICE_MANAGER()->get_device( static_cast<size_t>( 0 ) ) );
@@ -1335,7 +1335,7 @@ TEST( device_manager, evaluate_io )
     {
     auto res = G_DEVICE_MANAGER()->add_io_device(
         device::DT_TE, device::DST_TE_VIRT, "T1", "Test sensor", "T" );
-    ASSERT_EQ( nullptr, res );
+    ASSERT_NE( nullptr, res );
 
     G_DEVICE_MANAGER()->evaluate_io();
 
@@ -1346,7 +1346,7 @@ TEST( device_manager, save_device )
     {
     auto res = G_DEVICE_MANAGER()->add_io_device(
         device::DT_TE, device::DST_TE_VIRT, "T1", "Test sensor", "T" );
-    ASSERT_EQ( nullptr, res );
+    ASSERT_NE( nullptr, res );
 
     const int BUFF_SIZE = 200;
     char buff[ BUFF_SIZE ] = { 0 };
@@ -1354,7 +1354,7 @@ TEST( device_manager, save_device )
     EXPECT_STREQ(
         "t=\n"
         "\t{\n"
-        "\tT1={M=0, ST=0, V=0},\n"
+        "\tT1={M=0, ST=1, V=0, E=0, M_EXP=20.0, S_DEV=2.0, P_CZ=0, P_ERR=0},\n"
         "\t}\n",
         buff );
 
@@ -6065,6 +6065,49 @@ TEST( temperature_e, get_type_name )
     EXPECT_STREQ( "Температура", test_dev.get_type_name() );
     }
 
+TEST( temperature_e_virtual, save_device )
+    {
+    temperature_e_virtual T1( "T1" );
+    const int BUFF_SIZE = 200;
+    char buff[ BUFF_SIZE ] = { 0 };
+
+    T1.save_device( buff );
+    EXPECT_STREQ(
+        "T1={M=0, ST=1, V=0, E=0, M_EXP=20.0, S_DEV=2.0, P_CZ=0, P_ERR=0},\n",
+        buff );
+    }
+
+TEST( temperature_e_virtual, get_value_from_flowmeter_temperature )
+    {
+    auto res = G_DEVICE_MANAGER()->add_io_device( device::DT_FQT,
+        device::DST_FQT_IOLINK, "FQT1", "Test source", "IFM.SM6100" );
+    ASSERT_NE( nullptr, res );
+    auto source = dynamic_cast<counter_iolink*>( G_DEVICE_MANAGER()->get_device(
+        "FQT1" ) );
+    ASSERT_NE( nullptr, source );
+
+    res = G_DEVICE_MANAGER()->add_io_device( device::DT_TE,
+        device::DST_TE_VIRT, "TE1", "Test sensor", "T" );
+    ASSERT_NE( nullptr, res );
+    auto temp = dynamic_cast<temperature_e_virtual*>(
+        G_DEVICE_MANAGER()->get_device( "TE1" ) );
+    ASSERT_NE( nullptr, temp );
+
+    temp->set_string_property( "P4", "FQT1" );
+    source->set_cmd( "T", 0, 42.3 );
+    EXPECT_FLOAT_EQ( 42.3f, temp->get_value() );
+
+    temp->set_cmd( "P_CZ", 0, 1.2 );
+    EXPECT_FLOAT_EQ( 43.5f, temp->get_value() );
+
+    temp->set_cmd( "P_ERR", 0, 999 );
+    source->set_cmd( "ST", 0, -7 );
+    EXPECT_EQ( -7, temp->get_state() );
+    EXPECT_FLOAT_EQ( 999.f, temp->get_value() );
+
+    G_DEVICE_MANAGER()->clear_io_devices();
+    }
+
 TEST( temperature_e, get_state )
     {
     temperature_e TE1( "test_TE1" );
@@ -6093,7 +6136,7 @@ TEST( threshold_regulator, set_value )
     auto TE_name = std::string( "TE1" );
     auto res = G_DEVICE_MANAGER()->add_io_device(
         device::DT_TE, device::DST_TE_VIRT, TE_name.c_str(), "Test sensor", "T" );
-    ASSERT_EQ( nullptr, res );
+    ASSERT_NE( nullptr, res );
     const auto TE1 = TE( TE_name.c_str() );
     ASSERT_NE( STUB(), dynamic_cast<dev_stub*>( TE1 ) );
     auto M_name = std::string( "M1" );
