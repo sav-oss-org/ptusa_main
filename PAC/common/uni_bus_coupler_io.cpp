@@ -621,13 +621,9 @@ int uni_io_manager::e_communicate( io_node* node, int bytes_to_send,
     node->delay_time = io_node::C_INITIAL_RECONNECT_DELAY;
 
     // Посылка данных.
-#ifdef WIN_OS
-    int res = send( node->sock, reinterpret_cast<char*>( buff ), bytes_to_send, 0 );
-#else
-    int res = tcp_communicator_linux::sendall( node->sock, buff,
+    int res = tcp_communicator::sendall( node->sock, buff,
         bytes_to_send, 0, io_node::C_RCV_TIMEOUT_US, node->ip_address,
         node->name, &node->send_stat );
-#endif // WIN_OS
 
     if ( res < 0 )
         {

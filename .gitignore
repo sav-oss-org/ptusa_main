@@ -14,3 +14,10 @@ nvram.txt
 Debug
 _codeql_build_dir
 _codeql_detected_source_root
+*.serialized
+test.lua
+test.txt
+test1.txt
+tmp1.txt
+tmp2.txt
+tmp4.txt

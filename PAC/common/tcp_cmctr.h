@@ -106,6 +106,11 @@ class tcp_communicator
             const char* IP = nullptr, const char* name = nullptr,
             stat_time* stat = nullptr );
 
+        static int sendall( int sockfd, u_char* buf, int len,
+            int sec, int usec,
+            const char* IP = nullptr, const char* name = nullptr,
+            stat_time* stat = nullptr );
+
     protected:
         static int master_socket;   ///< Мастер-сокет для прослушивания.
 

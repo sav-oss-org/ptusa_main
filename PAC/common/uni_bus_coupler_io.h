@@ -15,13 +15,13 @@
 
 #ifdef WIN_OS
 #include <winsock2.h>
-#include "w_tcp_cmctr.h"
 #else
 #include <sys/socket.h>
 #include <unistd.h>
 #include <errno.h>
-#include "l_tcp_cmctr.h"
 #endif // WIN_OS
+
+#include "cmn_tcp_cmctr.h"
 
 #include "bus_coupler_io.h"
 #include "dtime.h"
