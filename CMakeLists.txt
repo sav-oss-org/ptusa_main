@@ -112,7 +112,13 @@ add_subdirectory(deps/lunarmodules/luasystem EXCLUDE_FROM_ALL)
 add_subdirectory(deps/lunarmodules/term EXCLUDE_FROM_ALL)
 add_subdirectory(deps/lunarmodules/luassert EXCLUDE_FROM_ALL)
 
-add_subdirectory(deps/lunarmodules/luasql EXCLUDE_FROM_ALL)
+option(ENABLE_ODBC "Build unixODBC and ODBC LuaSQL driver" ON)
+if(ENABLE_ODBC)
+    add_subdirectory(deps/unixODBC EXCLUDE_FROM_ALL)
+    add_subdirectory(deps/lunarmodules/luasql EXCLUDE_FROM_ALL)
+else()
+    message(STATUS "ODBC support disabled by explicit option")
+endif()
 include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/ToluaCopyIfDifferent.cmake")
 
 file(GLOB common_src CONFIGURE_DEPENDS
@@ -217,7 +223,11 @@ if(NOT ARP_DEVICE)
     add_dependencies(libptusa_main lua)
 endif()
 
-add_dependencies(lua lfs luasystem term_core luassert_copy luasql_odbc)
+if(TARGET luasql_odbc)
+    add_dependencies(lua lfs luasystem term_core luassert_copy luasql_odbc)
+else()
+    add_dependencies(lua lfs luasystem term_core luassert_copy)
+endif()
 
 if(MSVC)
     set_property(TARGET libptusa_main PROPERTY VS_DEBUGGER_COMMAND "lua.exe")

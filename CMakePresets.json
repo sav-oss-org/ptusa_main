@@ -195,12 +195,9 @@
       "name": "windows-AXCF-default",
       "hidden": true,
       "inherits": "AXCF-default",
-      "generator": "MinGW Makefiles",
+      "generator": "Ninja",
       "environment": {
         "PLCNEXT_SDK_ROOT": "c:/CLI/sdks/$env{ARP_DEVICE}/$env{ARP_DEVICE_SHORT_VERSION}"
-      },
-      "cacheVariables": {
-        "CMAKE_MAKE_PROGRAM": "c:/CLI/sdks/$env{ARP_DEVICE}/$env{ARP_DEVICE_SHORT_VERSION}/sysroots/$env{ARP_SDK_PACKAGE_NAME}/usr/bin/make.exe"
       },
       "condition": {
         "type": "equals",
