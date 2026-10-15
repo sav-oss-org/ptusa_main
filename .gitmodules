@@ -61,3 +61,6 @@
 [submodule "deps/lunarmodules/luasql/luasql"]
 	path = deps/lunarmodules/luasql/luasql
 	url = https://github.com/lunarmodules/luasql.git
+[submodule "deps/lmdb/lmdb"]
+	path = deps/lmdb/lmdb
+	url = https://github.com/LMDB/lmdb.git

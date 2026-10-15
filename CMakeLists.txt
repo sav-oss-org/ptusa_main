@@ -69,6 +69,8 @@ add_subdirectory(deps/toluapp EXCLUDE_FROM_ALL)
 
 add_subdirectory(deps/zlib EXCLUDE_FROM_ALL)
 
+add_subdirectory(deps/lmdb EXCLUDE_FROM_ALL)
+
 # Google Test configuration.
 set(INSTALL_GTEST OFF)
 set(INSTALL_GMOCK OFF)
@@ -368,7 +370,8 @@ endif()
 
 ################# add link targets ############################################
 
-target_link_libraries(${PROJECT_NAME} PRIVATE liblua_static toluapp_lib_static zlibstatic fmt::fmt)
+target_link_libraries(${PROJECT_NAME}
+	PRIVATE liblua_static toluapp_lib_static zlibstatic fmt::fmt lmdb)
 target_link_libraries(libptusa_main toluapp_lib_static zlibstatic fmt::fmt)
 
 target_link_libraries(${PROJECT_NAME} PRIVATE open62541::open62541)
