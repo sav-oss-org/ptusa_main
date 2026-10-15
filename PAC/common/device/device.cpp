@@ -2241,6 +2241,37 @@ wages_eth::wages_eth( const char* dev_name ) :
     set_par_name( static_cast<int>( CONSTANTS::P_CZ ), 0, "P_CZ" );
     }
 
+bool wages_eth::parse_ip_address( const char* address, std::string& ip,
+    unsigned int& port )
+    {
+    if ( !address ) return false;
+
+    const std::string endpoint( address );
+    const auto separator = endpoint.find( ':' );
+    const auto host = endpoint.substr( 0, separator );
+    if ( host.empty() || host.size() > 15 ) return false;
+
+    unsigned int parsed_port = 1001;
+    if ( separator != std::string::npos )
+        {
+        if ( separator + 1 == endpoint.size() ) return false;
+        parsed_port = 0;
+        for ( auto i = separator + 1; i < endpoint.size(); ++i )
+            {
+            const char digit = endpoint[ i ];
+            if ( digit < '0' || digit > '9' ) return false;
+            const auto value = static_cast<unsigned int>( digit - '0' );
+            if ( parsed_port > ( 65535 - value ) / 10 ) return false;
+            parsed_port = parsed_port * 10 + value;
+            }
+        if ( parsed_port == 0 ) return false;
+        }
+
+    ip = host;
+    port = parsed_port;
+    return true;
+    }
+
 float wages_eth::get_value() const
     {
     if ( G_PAC_INFO()->is_emulator() )
@@ -2270,7 +2301,7 @@ void wages_eth::evaluate_io()
     {
     if ( G_PAC_INFO()->is_emulator() ) return;
 
-    weth->evaluate();
+    if ( weth ) weth->evaluate();
     }
 
 void wages_eth::tare()
@@ -2285,9 +2316,15 @@ void wages_eth::set_string_property( const char* field, const char* value )
 
     if ( !weth && strcmp( field, "IP" ) == 0 )
         {
-        int port = 1001;
+        std::string ip;
+        unsigned int port;
+        if ( !parse_ip_address( value, ip, port ) )
+            {
+            G_LOG->error( "%s: invalid scales IP address '%s'", get_name(), value );
+            return;
+            }
         int id = 0;
-        weth = new iot_wages_eth( id, value, port, get_name() );
+        weth = new iot_wages_eth( id, ip.c_str(), port, get_name() );
         }
     }
 
@@ -2338,7 +2375,7 @@ void wages_eth::direct_on()
 void wages_eth::direct_set_tcp_buff( const char* new_value, size_t size,
     int new_status )
     {
-    weth->direct_set_tcp_buff( new_value, size, new_status );
+    if ( weth ) weth->direct_set_tcp_buff( new_value, size, new_status );
     }
 //-----------------------------------------------------------------------------
 wages_pxc_axl::wages_pxc_axl( const char* dev_name ) :

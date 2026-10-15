@@ -9,8 +9,10 @@ obj
 build
 cmake-build-*
 CMakeSettings.json
+CMakeUserPresets.json
 nvram.txt
 
 Debug
 _codeql_build_dir
 _codeql_detected_source_root
+local*.*

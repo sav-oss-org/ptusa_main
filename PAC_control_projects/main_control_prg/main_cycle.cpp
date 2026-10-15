@@ -2,6 +2,7 @@
 
 #include "dtime.h"
 #include "lua_manager.h"
+#include "lua_debugger.h"
 #include "prj_mngr.h"
 #include "tech_def.h"
 #include "device/manager.h"
@@ -28,6 +29,8 @@ int main_cycle()
     cycles_cnt++;
 #endif // TEST_SPEED
 
+    static uint32_t min_cycle_time = G_PROJECT_MANAGER->min_cycle_time;
+
     if ( G_DEBUG )
         {
         fflush( stdout );
@@ -37,18 +40,16 @@ int main_cycle()
     sleep_ms( G_PROJECT_MANAGER->sleep_time_ms );
 
     if ( !G_NO_IO_NODES ) G_IO_MANAGER()->read_inputs();
-    sleep_ms( G_PROJECT_MANAGER->sleep_time_ms );
 
     G_DEVICE_MANAGER()->evaluate_io();
 
     valve::evaluate();
 
     G_TECH_OBJECT_MNGR()->evaluate();
-    sleep_ms( G_PROJECT_MANAGER->sleep_time_ms );
+    G_LUA_DEBUGGER->evaluate();
 
     if ( !G_NO_IO_NODES &&
         !G_READ_ONLY_IO_NODES ) G_IO_MANAGER()->write_outputs();
-    sleep_ms( G_PROJECT_MANAGER->sleep_time_ms );
 
     G_CMMCTR->evaluate();
 
@@ -65,13 +66,10 @@ int main_cycle()
         IOT_EVALUATE();
         }
 
-    sleep_ms( G_PROJECT_MANAGER->sleep_time_ms );
-
     PAC_info::get_instance()->eval();
     PAC_critical_errors_manager::get_instance()->show_errors();
     G_ERRORS_MANAGER->evaluate();
     G_SIREN_LIGHTS_MANAGER()->eval();
-    sleep_ms( G_PROJECT_MANAGER->sleep_time_ms );
 
 #ifdef TEST_SPEED
     u_int TRESH_AVG =
@@ -91,6 +89,12 @@ int main_cycle()
     static uint32_t cycle_time = 0;
     cycle_time = get_delta_millisec( st_time );
     G_PAC_INFO()->set_cycle_time( cycle_time );
+    
+    //Fast cycle time is not a problem, but if the cycle time is less than min_cycle_time ms, we will sleep for the remaining time to avoid overloading the CPU.
+    if ( cycle_time < min_cycle_time && cycle_time >= 0 )
+        {
+        sleep_ms( min_cycle_time - cycle_time);
+        }
 
     if ( max_iteration_cycle_time < cycle_time )
         {

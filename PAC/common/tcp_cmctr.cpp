@@ -7,6 +7,7 @@
 #include "tcp_client.h"
 #include "log.h"
 #include "PAC_info.h"
+#include "lua_debugger.h"
 
 #ifdef WIN_OS
 #include "w_tcp_cmctr.h"
@@ -20,6 +21,24 @@ auto_smart_ptr < tcp_communicator > tcp_communicator::instance = 0;
 int tcp_communicator::master_socket = 0;
 int tcp_communicator::port = 10000;
 int tcp_communicator::port_modbus = 10502;
+
+bool tcp_communicator::frame_ready( int socket )
+    {
+    const int available = recv( socket, reinterpret_cast<char*>( buf ),
+        BUFSIZE, MSG_PEEK );
+    return buffered_frame_ready( available );
+    }
+
+bool tcp_communicator::buffered_frame_ready( int available )
+    {
+    if ( available <= 0 ) return true; // Let do_echo close the connection.
+    if ( available < 6 ) return false;
+    const bool debugger = buf[ 0 ] == 's' &&
+        buf[ 1 ] == lua_debugger::C_SERVICE_N && buf[ 2 ] == FRAME_SINGLE;
+    if ( debugger != debugger_cycle ) return false;
+    incoming_frame_size = 6 + buf[ 4 ] * 256 + buf[ 5 ];
+    return available >= incoming_frame_size;
+    }
 #ifdef PTUSA_TEST
 bool tcp_communicator::is_init = false;
 #endif //PTUSA_TEST

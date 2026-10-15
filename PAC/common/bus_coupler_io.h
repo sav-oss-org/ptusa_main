@@ -385,6 +385,7 @@ class io_manager
 				{
 				ST_NO_CONNECT = 0,
 				ST_OK = 1,
+                ST_CONNECTING = 2,
 				};
 
             enum class DISPLAY_STATES  ///< Отображение работы с узлом.
@@ -423,7 +424,9 @@ class io_manager
 
             uint32_t last_poll_time{ get_millisec() }; ///< Время последнего опроса.
             bool is_set_err{};       ///< Установлена ли ошибка связи.
+            uint32_t connect_start_time{}; ///< Start of nonblocking connect.
             int sock{};              ///< Сокет соединения.
+            uint16_t modbus_transaction_id{}; ///< Per-node request sequence, kept across reconnects.
 
 			// Digital outputs ( DO ).
 			u_int  DO_cnt;      ///< Amount of DO.

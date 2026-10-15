@@ -7,6 +7,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_POLICY_DEFAULT_CMP0048 NEW)
 
 project(ptusa_main VERSION 2026.08.21.0)
+find_package(Threads REQUIRED)
 
 message(STATUS "CMake version: ${CMAKE_VERSION}")
 message(STATUS "CMake executable: ${CMAKE_COMMAND}")
@@ -370,6 +371,15 @@ endif()
 
 target_link_libraries(${PROJECT_NAME} PRIVATE liblua_static toluapp_lib_static zlibstatic fmt::fmt)
 target_link_libraries(libptusa_main toluapp_lib_static zlibstatic fmt::fmt)
+target_link_libraries(${PROJECT_NAME} PRIVATE Threads::Threads)
+target_link_libraries(libptusa_main Threads::Threads)
+target_link_libraries(main_test Threads::Threads)
+if(NOT MINGW)
+    target_link_libraries(main_performance_test Threads::Threads)
+endif()
+if(ARP_DEVICE)
+    target_link_libraries(PtusaPLCnextEngineer PRIVATE Threads::Threads)
+endif()
 
 target_link_libraries(${PROJECT_NAME} PRIVATE open62541::open62541)
 target_link_libraries(libptusa_main open62541::open62541)
@@ -569,6 +579,7 @@ set(TCP_SOCKET_LOCKED_FILTER
 	"tcp_communicator.recvtimeout:"
     "device_communicator.write_devices_states_service:"
     "pp_mode_alarm.pp_mode_activation_deactivation:"
+    "pp_mode_alarm.disable_node_no_alarm:"
 	"pp_mode_alarm.cfg_bus_error_activation_deactivation:"
     "pp_mode_alarm.e_communicate:"
     "main_cycle.main_cycle:"

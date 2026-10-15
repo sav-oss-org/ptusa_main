@@ -1,8 +1,6 @@
 #pragma once
 
 #include <memory>
-#include <array>
-
 #include "iot_base.h"
 #include "tcp_client.h"
 
@@ -27,6 +25,13 @@ class iot_wages_eth : public i_iot_node
         void direct_set_tcp_buff( const char* new_value, size_t size,
             int new_status );
 
+        enum WAGESSTATES
+        {
+            DISCONNECTED = -1,
+            INCORRECTDATA = 0,
+            CORRECTDATA = 1,
+        };
+
     private:
         enum class CONSTANTS
             {
@@ -34,10 +39,9 @@ class iot_wages_eth : public i_iot_node
             SEND_RECEIVE_TIMEOUT = 150,
             };
 
-        int status = 0;
-        int state = 0;
+        int state = DISCONNECTED;
         float value = .0f;
         std::unique_ptr < tcp_client > tc;
-
-        std::array<char, 50 > name{};
+        u_long timeout = 5000;
+        u_long last_correct_recive = 0;
     };

@@ -66,6 +66,9 @@ class i_log
 
     protected:
 
+    /// Mirrors an already formatted log message to active debugger sessions.
+    void forward_to_debugger( PRIORITIES priority ) const;
+
     i_log()
         {
         memset( msg, 0, C_BUFF_SIZE );

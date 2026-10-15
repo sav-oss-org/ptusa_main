@@ -115,6 +115,10 @@ flowchart TD
 
 ## How to build the project ##
 
+To select and build multiple CMake configurations with the `install` target, run
+`python tools/build.py`. See the [build script guide](tools/build.md) for saved
+selections, parallel jobs, and command previews.
+
 You could clone repository by next command:
 `git clone --recurse-submodules
 https://github.com/sav-oss-org/ptusa_main.git`
@@ -157,6 +161,24 @@ If an error occurs after startup, then you should clear the CMake cache
 Eclipse IDE with CMake based project on Linux.
 
 ## Using PLCnext Technology C++ Toolchain in Windows ##
+
+To configure CMake for SDKs installed on the current machine, run from the
+repository root (Python 3.9+ and `plcncli` must be on `PATH`):
+
+```shell
+python tools/configure_plcnext_presets.py
+cmake --list-presets
+```
+
+The script runs `plcncli get sdks` and generates `CMakeUserPresets.json` using
+the reported SDK paths and target versions. Select a **Local AXCF...** preset
+in Visual Studio, or use the configure/build commands printed by the script.
+On Windows it also discovers `make.exe` inside each SDK; on Linux it uses Ninja.
+Each SDK target gets a separate build directory. Run the script again after
+installing, moving or removing SDKs. It replaces its own generated presets and
+preserves other user presets. The local file is ignored by Git; shared
+`CMakePresets.json` is not modified. If an SDK is inaccessible or the CLI fails,
+the existing local file is preserved.
 
 Download the latest versions from the Phoenix Contact
 [website](https://www.phoenixcontact.com/products) (for example, from the **AXC

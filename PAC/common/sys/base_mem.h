@@ -29,6 +29,10 @@ class i_memory
         /// @return - результат.
         virtual int safe_save() = 0;
 
+        /// @brief Сохранение неизменяемого снимка вместо рабочего массива.
+        /// Не пишет в общий журнал: вызывается из фонового потока.
+        virtual int safe_save( const std::byte* data ) = 0;
+
         /// @brief Получение размера памяти в байтах.
         ///
         /// @return - размер памяти в байтах.
@@ -54,6 +58,8 @@ class SRAM : public i_memory
 
         int safe_save() override;
 
+        int safe_save( const std::byte* data ) override;
+
         std::byte* get_data() override;
 
         void zero_fill() override;
@@ -73,4 +79,6 @@ class SRAM : public i_memory
 
     /// Рабочий массив параметров.
     std::byte* params_data{};
+
+    int safe_save_buffer( const std::byte* data, bool log_messages );
     };

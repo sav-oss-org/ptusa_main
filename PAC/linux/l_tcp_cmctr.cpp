@@ -10,6 +10,7 @@
 #include "l_tcp_cmctr.h"
 #include "PAC_err.h"
 #include "tcp_client.h"
+#include <netinet/tcp.h>
 
 #include "log.h"
 
@@ -292,13 +293,13 @@ int tcp_communicator_linux::evaluate()
         }
     // Инициализация сети, при необходимости.-!>
 
+    debugger_cycle = !debugger_cycle;
     int count_cycles = 0;
     int max_sock_number = 0;
     while ( count_cycles < max_cycles )
         {
         /* service loop */
         count_cycles++;
-        sleep_ms(1);
         max_sock_number = 0;
 
         FD_ZERO( &rfds );
@@ -318,19 +319,27 @@ int tcp_communicator_linux::evaluate()
             }
 
         //Добавляем асинхронные сокеты в список прослушки
-        for (std::map<int, tcp_client*>::iterator it = clients->begin(); it != clients->end(); ++ it)
+        for ( auto it = clients->begin(); it != clients->end(); )
             {
+            // A client can disconnect while its asynchronous request is queued.
+            // Remove stale requests before passing their sockets to select().
+            if ( it->second->get_connected_state() != tcp_client::ACS_CONNECTED ||
+                it->first != it->second->get_socket() )
+                {
+                it = clients->erase( it );
+                continue;
+                }
             FD_SET( it->second->get_socket(), &rfds);
             if (it->second->get_socket() > max_sock_number)
                 {
                 max_sock_number = it->second->get_socket();
                 }
+            ++it;
             }
 
         // Ждём события в одном из сокетов.
-        rc = select( max_sock_number + 1, &rfds, NULL, NULL, &tv );
-
-        if ( 0 == rc ) break; // Ничего не произошло.
+        timeval ready_timeout{};
+        rc = select( max_sock_number + 1, &rfds, NULL, NULL, &ready_timeout );
 
         if ( rc < 0 )
             {
@@ -369,6 +378,9 @@ int tcp_communicator_linux::evaluate()
                         char Message1[] = "PAC accept";
                         send( slave_socket, Message1, strlen ( Message1 ), MSG_NOSIGNAL );
                         }
+                    const int no_delay = 1;
+                    setsockopt( slave_socket, IPPROTO_TCP, TCP_NODELAY,
+                        &no_delay, sizeof( no_delay ) );
                     // Установка сокета в неблокирующий режим.
                     if ( fcntl( slave_socket, F_SETFL, O_NONBLOCK ) < 0 )
                         {
@@ -408,7 +420,6 @@ int tcp_communicator_linux::evaluate()
                         }
 
 
-                    FD_SET( slave_socket, &rfds );
                     socket_state slave_socket_state;
                     slave_socket_state.socket = slave_socket;
                     slave_socket_state.active = 1;
@@ -429,8 +440,13 @@ int tcp_communicator_linux::evaluate()
                     }
                 else         /* slave socket */
                     {
+                    if ( !frame_ready( sst[ i ].socket ) )
+                        {
+                        sst[ i ].evaluated = 1;
+                        continue;
+                        }
                     do_echo( i );
-                    glob_last_transfer_time = get_millisec();
+                    if ( !debugger_cycle ) glob_last_transfer_time = get_millisec();
                     }
                 }
             }
@@ -476,6 +492,8 @@ int tcp_communicator_linux::evaluate()
                  }
              }
 
+        // Even without socket events, pending requests must expire.
+        if ( 0 == rc ) break;
         }  /* service loop */
 
 
@@ -593,7 +611,6 @@ int tcp_communicator_linux::sendall (int sockfd, unsigned char *buf, int len,
             break;
             }
 
-        usleep( 1 );
         i -= n;
         p += n;
 
@@ -645,8 +662,8 @@ int tcp_communicator_linux::do_echo ( int idx )
         sock_state.init = 0;
         if (sock_state.ismodbus)
             {
-            // Ожидаем данные с таймаутом 50 мсек.
-            err = in_buffer_count = recvtimeout( sock_state.socket, buf, BUFSIZE, 0, 50000L,
+            // Полный пакет уже проверен frame_ready.
+            err = in_buffer_count = recvtimeout( sock_state.socket, buf, incoming_frame_size, 0, 0,
                 inet_ntoa( sock_state.sin.sin_addr ), dev_name, &sock_state.recv_stat );
             if (err == -2)
                 {
@@ -656,15 +673,15 @@ int tcp_communicator_linux::do_echo ( int idx )
             }
         else
             {
-            // Ожидаем данные с таймаутом 300 мсек.
-            err = in_buffer_count = recvtimeout( sock_state.socket, buf, BUFSIZE, 0, 300000L,
+            // Чтение без ожидания.
+            err = in_buffer_count = recvtimeout( sock_state.socket, buf, incoming_frame_size, 0, 0,
                 inet_ntoa( sock_state.sin.sin_addr ), dev_name, &sock_state.recv_stat );
             }
         }
     else
         {
-        // Ожидаем данные с таймаутом 300 мсек.
-        err = in_buffer_count = recvtimeout( sock_state.socket, buf, BUFSIZE, 0, 300000L,
+        // Чтение без ожидания.
+        err = in_buffer_count = recvtimeout( sock_state.socket, buf, incoming_frame_size, 0, 0,
             inet_ntoa( sock_state.sin.sin_addr ), dev_name, &sock_state.recv_stat );
         }
 

@@ -726,6 +726,10 @@ class wages_eth : public analog_io_device, public i_wages
     public:
         explicit wages_eth( const char* dev_name );
 
+        /// IP address may include a TCP port (default: 1001).
+        static bool parse_ip_address( const char* address, std::string& ip,
+            unsigned int& port );
+
         float get_value() const override;
 
         int get_state() const override;

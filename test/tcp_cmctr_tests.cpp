@@ -1,7 +1,42 @@
 #include "tcp_cmctr_tests.h"
 #include "PAC_info.h"
+#include <memory>
 
 using namespace ::testing;
+
+namespace
+    {
+    class frame_scheduler_test : public tcp_communicator
+        {
+        public:
+            int evaluate() override { return 0; }
+            bool ready( bool debug, int service, int available )
+                {
+                debugger_cycle = debug;
+                buf[ 0 ] = 's';
+                buf[ 1 ] = static_cast<u_char>( service );
+                buf[ 2 ] = 1;
+                buf[ 3 ] = 1;
+                buf[ 4 ] = 0;
+                buf[ 5 ] = 4;
+                return buffered_frame_ready( available );
+                }
+            int frame_size() const { return incoming_frame_size; }
+        };
+    }
+
+TEST( tcp_communicator, separates_debugger_cycles_and_waits_for_complete_frames )
+    {
+    auto scheduler = std::make_unique<frame_scheduler_test>();
+    EXPECT_FALSE( scheduler->ready( false, 2, 10 ) );
+    EXPECT_TRUE( scheduler->ready( true, 2, 10 ) );
+    EXPECT_FALSE( scheduler->ready( true, 1, 10 ) );
+    EXPECT_TRUE( scheduler->ready( false, 1, 10 ) );
+    EXPECT_FALSE( scheduler->ready( true, 2, 5 ) );
+    EXPECT_FALSE( scheduler->ready( true, 2, 9 ) );
+    EXPECT_TRUE( scheduler->ready( true, 2, 20 ) );
+    EXPECT_EQ( 10, scheduler->frame_size() );
+    }
 
 #ifndef WIN_OS // For linux to deal with __stdcall.
 #define __stdcall
@@ -40,6 +75,7 @@ TEST( tcp_communicator, evaluate )
     cnt = 0;
     while ( size <= 0 && cnt < 1000 )
         {
+        EXPECT_EQ( 0, G_CMMCTR->evaluate() );
         sleep_ms( 1 );
         size = cl.AsyncReceive();
         cnt++;
@@ -48,9 +84,11 @@ TEST( tcp_communicator, evaluate )
     cl.buff[ size ] = '\0';
     EXPECT_STREQ( cl.buff, "PAC accept" );
 
-    cl.AsyncSend( 10 );
-    G_CMMCTR->evaluate();
-
+    // Queue a complete frame, then disconnect before evaluate can handle the
+    // request. A stale asynchronous client must not tear down the server.
+    const char request[] = { 's', 1, 1, 1, 0, 0 };
+    memcpy( cl.buff, request, sizeof( request ) );
+    cl.AsyncSend( sizeof( request ) );
     cl.Disconnect();
     EXPECT_EQ( 0, G_CMMCTR->evaluate() );
 
@@ -79,8 +117,24 @@ TEST( tcp_communicator, evaluate )
     EXPECT_EQ( 0, G_CMMCTR->evaluate() );
     sleep_ms( 1 );
     //Для модбас клиента ответа на подключение не будет.
-    size = modbus_cl.AsyncReceive();
-    ASSERT_EQ( size, 0 );
+    EXPECT_FALSE( tcp_communicator::checkBuff( modbus_cl.get_socket() ) );
+
+    // Queue a receive without sending data: no socket event should be needed
+    // to expire the request. Keep the peer open and silent.
+    modbus_cl.tcp_client::AsyncReceive();
+    ASSERT_EQ( tcp_client::ACS_CONNECTED, modbus_cl.get_connected_state() );
+    EXPECT_EQ( 0, G_CMMCTR->evaluate() );
+    ASSERT_EQ( tcp_client::ACS_CONNECTED, modbus_cl.get_connected_state() );
+    EXPECT_EQ( tcp_client::AR_BUSY, modbus_cl.get_async_result() );
+    modbus_cl.async_queued = get_millisec() - modbus_cl.async_timeout - 1;
+    EXPECT_EQ( 0, G_CMMCTR->evaluate() );
+    EXPECT_EQ( tcp_client::AR_TIMEOUT, modbus_cl.get_async_result() );
+    EXPECT_EQ( tcp_client::ACS_DISCONNECTED, modbus_cl.get_connected_state() );
+
+    // The completed request must no longer be processed by the communicator.
+    modbus_cl.set_async_result( tcp_client::AR_FREE );
+    EXPECT_EQ( 0, G_CMMCTR->evaluate() );
+    EXPECT_EQ( tcp_client::AR_FREE, modbus_cl.get_async_result() );
 
     modbus_cl.Disconnect();
     EXPECT_EQ( 0, G_CMMCTR->evaluate() );

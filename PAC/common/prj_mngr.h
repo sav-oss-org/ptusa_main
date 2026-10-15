@@ -68,6 +68,7 @@ class project_manager
         std::string extra_paths = "";//Дополнительный путь к user-скриптам Lua.
 
         unsigned int sleep_time_ms = 0;
+        unsigned int min_cycle_time = 0;
 
     protected:
         void log_opc_mode() const;

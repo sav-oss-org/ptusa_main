@@ -1,5 +1,6 @@
 #include "PAC_dev_lua_tests.h"
 #include "g_errors.h"
+#include "PAC_info.h"
 
 using namespace ::testing;
 
@@ -79,6 +80,33 @@ TEST( toLuapp, tolua_PAC_dev_open )
 
 
     lua_close( L );
+    }
+
+TEST( toLuapp, phoenix_modbus_udp_flag )
+    {
+    lua_State* state = lua_open();
+    ASSERT_EQ( 1, tolua_PAC_dev_open( state ) );
+    ASSERT_EQ( 0, luaL_dostring( state,
+        "G_PAC_INFO():set_phoenix_modbus_udp(true)" ) );
+    EXPECT_TRUE( G_PAC_INFO()->is_phoenix_modbus_udp() );
+    ASSERT_EQ( 0, luaL_dostring( state,
+        "udp_enabled = G_PAC_INFO():is_phoenix_modbus_udp()" ) );
+    lua_getfield( state, LUA_GLOBALSINDEX, "udp_enabled" );
+    EXPECT_TRUE( lua_toboolean( state, -1 ) );
+    lua_pop( state, 1 );
+    ASSERT_EQ( 0, luaL_dostring( state,
+        "timeout_result = G_PAC_INFO():set_phoenix_modbus_udp_timeout_ms(15)" ) );
+    EXPECT_EQ( 15u, G_PAC_INFO()->get_phoenix_modbus_udp_timeout_ms() );
+    ASSERT_EQ( 0, luaL_dostring( state,
+        "udp_timeout = G_PAC_INFO():get_phoenix_modbus_udp_timeout_ms()" ) );
+    lua_getfield( state, LUA_GLOBALSINDEX, "udp_timeout" );
+    EXPECT_EQ( 15, lua_tonumber( state, -1 ) );
+    lua_pop( state, 1 );
+    G_PAC_INFO()->set_phoenix_modbus_udp_timeout_ms( 25 );
+    ASSERT_EQ( 0, luaL_dostring( state,
+        "G_PAC_INFO():set_phoenix_modbus_udp(false)" ) );
+    EXPECT_FALSE( G_PAC_INFO()->is_phoenix_modbus_udp() );
+    lua_close( state );
     }
 
 TEST( toLuapp, tolua_PAC_dev_PDS00 )
@@ -508,6 +536,18 @@ TEST( toLuapp, tolua_PAC_dev_DI00 )
     EXPECT_NE( nullptr, DI1 );
     lua_remove( L, -1 );
 
+    ASSERT_EQ( 0, luaL_dostring( L, "DI1:set_cmd( 'M', 0, 1 )" ) );
+    ASSERT_EQ( 0, luaL_dostring( L, "manual_mode = DI1:get_cmd( 'M', 0 )" ) );
+    lua_getfield( L, LUA_GLOBALSINDEX, "manual_mode" );
+    EXPECT_EQ( 1, tolua_tonumber( L, -1, 0 ) );
+    lua_pop( L, 1 );
+
+    ASSERT_EQ( 0, luaL_dostring( L, "DI1:set_cmd( 'P_DT', 0, 1250 )" ) );
+    ASSERT_EQ( 0, luaL_dostring( L, "filter_time = DI1:get_cmd( 'P_DT', 0 )" ) );
+    lua_getfield( L, LUA_GLOBALSINDEX, "filter_time" );
+    EXPECT_EQ( 1250, tolua_tonumber( L, -1, 0 ) );
+    lua_pop( L, 1 );
+
     G_DEVICE_MANAGER()->clear_io_devices();
     lua_close( L );
     }
@@ -544,12 +584,20 @@ TEST( toLuapp, tolua_PAC_dev_V00 )
 
     ASSERT_EQ( 0, luaL_dostring( L,
         "G_DEVICE_MANAGER():add_io_device( "
-        "device.DT_V, device.DST_V_DO1, \'V1\', \'Test valve\', \'\' )" ) );
+        "device.DT_V, device.DST_V_DO1_DI1_FB_OFF, "
+        "\'V1\', \'Test valve\', \'\' )" ) );
     ASSERT_EQ( 0, luaL_dostring( L, "V1 = V( \'V1\' )" ) );
     lua_getfield( L, LUA_GLOBALSINDEX, "V1" );
     auto V1 = static_cast<valve*>( tolua_touserdata( L, -1, nullptr ) );
     EXPECT_NE( nullptr, V1 );
     lua_remove( L, -1 );
+
+    ASSERT_EQ( 0, luaL_dostring( L, "V1:set_cmd( 'P_ON_TIME', 0, 3000 )" ) );
+    ASSERT_EQ( 0, luaL_dostring( L,
+        "on_time = V1:get_cmd( 'P_ON_TIME', 0 )" ) );
+    lua_getfield( L, LUA_GLOBALSINDEX, "on_time" );
+    EXPECT_EQ( 3000, tolua_tonumber( L, -1, 0 ) );
+    lua_pop( L, 1 );
 
     G_DEVICE_MANAGER()->clear_io_devices();
     lua_close( L );

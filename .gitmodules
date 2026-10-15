@@ -3,7 +3,7 @@
 	url = https://github.com/google/googletest
 [submodule "demo_projects/T1-PLCnext-Demo"]
 	path = demo_projects/T1-PLCnext-Demo
-	url = https://github.com/savushkin-r-d/T1-PLCnext-Demo.git
+	url = https://github.com/rartem/T1-PLCnext-Demo.git
 [submodule "fmt"]
 	path = deps/fmt
 	url = https://github.com/fmtlib/fmt.git

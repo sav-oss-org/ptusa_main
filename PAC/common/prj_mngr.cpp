@@ -11,6 +11,7 @@
 
 #include "prj_mngr.h"
 #include "bus_coupler_io.h"
+#include "PAC_info.h"
 #include "device/device.h"
 #include "device/manager.h"
 #include "param_ex.h"
@@ -55,6 +56,10 @@ int project_manager::proc_main_params( int argc, const char* argv[] )
                 cxxopts::value<bool>()->default_value( DEFAULT_NO_IO ) )
         ( "read_only_io", "Read only from I\\O nodes",
             cxxopts::value<bool>()->default_value( DEFAULT_NO_IO ) )
+        ( "phoenix_modbus_udp", "Poll PHOENIX BK ETH nodes over Modbus UDP",
+            cxxopts::value<bool>()->default_value( "false" ) )
+        ( "phoenix_modbus_udp_timeout_ms", "PHOENIX Modbus UDP response timeout, ms",
+            cxxopts::value<unsigned int>()->default_value( "25" ) )
 
         ( "p,port", "Param port",
 
@@ -172,6 +177,15 @@ int project_manager::proc_main_params( int argc, const char* argv[] )
 
     // Только чтение/запись+чтение данных с модулей ввода/вывода.
     G_READ_ONLY_IO_NODES = result[ "read_only_io" ].as<bool>() ? true : false;
+    if ( G_PAC_INFO()->set_phoenix_modbus_udp_timeout_ms(
+        result[ "phoenix_modbus_udp_timeout_ms" ].as<unsigned int>() ) != 0 )
+        {
+        G_LOG->error( "PHOENIX Modbus UDP timeout must be 1..%u ms.",
+            PAC_info::MAX_PHOENIX_MODBUS_UDP_TIMEOUT_MS );
+        return 1;
+        }
+    G_PAC_INFO()->set_phoenix_modbus_udp(
+        result[ "phoenix_modbus_udp" ].as<bool>() );
 
     if ( G_NO_IO_NODES )
         G_LOG->warning( "Bus couplers are disabled." );

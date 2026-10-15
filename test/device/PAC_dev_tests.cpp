@@ -5722,6 +5722,37 @@ TEST( wages_eth, evaluate_io )
     EXPECT_EQ( 0, w2.get_wages_value() );
     }
 
+TEST( wages_eth, parse_ip_address )
+    {
+    std::string ip;
+    unsigned int port = 0;
+
+    ASSERT_TRUE( wages_eth::parse_ip_address( "192.168.1.1", ip, port ) );
+    EXPECT_EQ( "192.168.1.1", ip );
+    EXPECT_EQ( 1001u, port );
+
+    ASSERT_TRUE( wages_eth::parse_ip_address( "192.168.1.1:8888", ip, port ) );
+    EXPECT_EQ( "192.168.1.1", ip );
+    EXPECT_EQ( 8888u, port );
+
+    ASSERT_TRUE( wages_eth::parse_ip_address( "192.168.1.1:65535", ip, port ) );
+    EXPECT_EQ( 65535u, port );
+
+    EXPECT_FALSE( wages_eth::parse_ip_address( "192.168.1.1:", ip, port ) );
+    EXPECT_FALSE( wages_eth::parse_ip_address( "192.168.1.1:0", ip, port ) );
+    EXPECT_FALSE( wages_eth::parse_ip_address( "192.168.1.1:65536", ip, port ) );
+    EXPECT_FALSE( wages_eth::parse_ip_address( "192.168.1.1:abc", ip, port ) );
+    EXPECT_FALSE( wages_eth::parse_ip_address( "192.168.1.1:8888:1", ip, port ) );
+    }
+
+TEST( wages_eth, set_ip_with_port )
+    {
+    wages_eth w1( "W1" );
+    w1.set_string_property( "IP", "192.168.1.1:8888" );
+    w1.evaluate_io();
+    EXPECT_EQ( 0.0f, w1.get_value() );
+    }
+
 TEST( wages_eth, get_value )
     {
     G_PAC_INFO()->emulation_off();

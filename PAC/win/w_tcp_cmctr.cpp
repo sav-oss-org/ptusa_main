@@ -292,6 +292,7 @@ int tcp_communicator_win::evaluate()
         }
     // Инициализация сети, при необходимости.-!>
 
+    debugger_cycle = !debugger_cycle;
     int count_cycles = 0;
     while ( count_cycles < max_cycles )
         {
@@ -311,14 +312,24 @@ int tcp_communicator_win::evaluate()
             }
 
         //Добавляем асинхронные сокеты в список прослушки
-        for (std::map<int, tcp_client*>::iterator it = clients->begin(); it != clients->end(); ++ it)
+        for ( auto it = clients->begin(); it != clients->end(); )
             {
+            // A client can disconnect while its asynchronous request is queued.
+            // Remove stale requests before passing their sockets to select().
+            if ( it->second->get_connected_state() != tcp_client::ACS_CONNECTED ||
+                it->first != it->second->get_socket() )
+                {
+                it = clients->erase( it );
+                continue;
+                }
             FD_SET( it->second->get_socket(), &rfds);
+            ++it;
             }
 
         //-Ждём события в одном из сокетов.
-        rc = select( 0/*Не учитывается*/, &rfds, NULL, NULL, &tv );
-        if ( 0 == rc ) break; // Ничего не произошло.
+        if ( rfds.fd_count == 0 ) break;
+        timeval ready_timeout{};
+        rc = select( 0/*Не учитывается*/, &rfds, NULL, NULL, &ready_timeout );
 
         if ( rc < 0 )
             {
@@ -358,7 +369,10 @@ int tcp_communicator_win::evaluate()
                             }
                         continue;
                         }
-                    // Установка сокета в неблокирующий режим.
+                    const int no_delay = 1;
+                    setsockopt( slave_socket, IPPROTO_TCP, TCP_NODELAY,
+                        reinterpret_cast<const char*>( &no_delay ), sizeof( no_delay ) );
+                    // Установка режима сокета.
                     u_long mode = 0;
                     if ( ioctlsocket( slave_socket, FIONBIO, &mode ) == SOCKET_ERROR )
                         {
@@ -402,7 +416,6 @@ int tcp_communicator_win::evaluate()
 #ifdef MODBUS
                         }
 #endif
-                    FD_SET( slave_socket, &rfds );
                     socket_state slave_socket_state;
                     slave_socket_state.active = 1;
                     slave_socket_state.init   = 1;
@@ -416,8 +429,13 @@ int tcp_communicator_win::evaluate()
                     }
                 else         /* slave socket */
                     {
+                    if ( !frame_ready( sst[ i ].socket ) )
+                        {
+                        sst[ i ].evaluated = 1;
+                        continue;
+                        }
                     do_echo ( i );
-                    glob_last_transfer_time = get_sec();
+                    if ( !debugger_cycle ) glob_last_transfer_time = get_sec();
                     }
                 }
             }
@@ -462,6 +480,8 @@ int tcp_communicator_win::evaluate()
                 }
             }
 
+        // Even without socket events, pending requests must expire.
+        if ( 0 == rc ) break;
         }  /* service loop */
 
     for ( u_int i = 0; i < sst.size(); i++ )
@@ -492,8 +512,8 @@ int tcp_communicator_win::do_echo( int idx )
     sock_state.evaluated = 1;
     memset( buf, 0, BUFSIZE );
 
-    // Ожидаем данные с таймаутом 1 сек.
-    err = in_buffer_count = recvtimeout( sock_state.socket, buf, BUFSIZE, 1, 0 );
+    // Полный пакет уже проверен frame_ready; чтение без ожидания.
+    err = in_buffer_count = recvtimeout( sock_state.socket, buf, incoming_frame_size, 0, 0 );
 
     if ( err <= 0 )               /* read error */
         {

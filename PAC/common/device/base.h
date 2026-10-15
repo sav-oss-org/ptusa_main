@@ -54,6 +54,12 @@ class par_device: public i_Lua_save_device
         /// @return 1 - ошибка, параметр с таким именем не найден.
         int set_par_by_name( const char* name, double val );
 
+        /// @brief Получение значения параметра по имени.
+        ///
+        /// @param name - имя параметра.
+        /// @return значение параметра или 0, если параметр не найден.
+        float get_par_by_name( const char* name ) const;
+
         /// @brief Установка значения параметра.
         ///
         /// @param idx - индекс параметра (с единицы).
@@ -126,6 +132,12 @@ class device : public i_DO_AO_device, public par_device,
     public i_simple_error
     {
     public:
+        /// @brief Получение числового свойства устройства.
+        ///
+        /// Поддерживаются состояние (ST), значение (V), ручной режим (M) и
+        /// именованные параметры (P_*).
+        double get_cmd( const char* prop, u_int idx ) const override;
+
         /// @brief Выполнение команды.
         ///
         /// Запись в свойство объекта дробного числа.
