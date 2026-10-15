@@ -517,11 +517,6 @@ digital_io_device::digital_io_device( const char* dev_name, device::DEVICE_TYPE 
 //-----------------------------------------------------------------------------
 void digital_io_device::direct_set_state( int new_state )
     {
-    if ( G_PAC_INFO()->is_emulator() )
-        {
-        return device::direct_set_state( new_state );
-        }
-
     switch ( new_state )
         {
         case 0:
@@ -533,13 +528,7 @@ void digital_io_device::direct_set_state( int new_state )
             break;
 
         default:
-            if ( G_DEBUG )
-                {
-                G_LOG->warning(
-                    "%s\t digital_io_device::direct_set_state() - new_state = %d",
-                    get_name(), new_state );
-                }
-            break;
+            return device::direct_set_state( new_state );
         }
     }
 //-----------------------------------------------------------------------------
