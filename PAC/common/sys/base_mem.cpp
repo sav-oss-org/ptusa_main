@@ -108,12 +108,35 @@ int SRAM::safe_save()
     //    3. rename( temp, target )
     //    4. fsync( directory ) - для Linux
 
-    if ( FILE* temp = fopen( tmp_path.string().c_str(), "w+b" ); !temp )
+    FILE* temp = fopen( tmp_path.string().c_str(), "w+b" );
+    if ( !temp && !direct_write )
         {
         G_LOG->error( "SRAM() - ERROR: Can't open file (%s) : %s.\n",
             tmp_path.string().c_str(), strerror( errno ) );
+        G_LOG->warning( "SRAM() - Using direct write to (%s).",
+            file_path.string().c_str() );
+        direct_write = true;
+        }
 
-        return 1;
+    if ( !temp )
+        {
+        // Каталог недоступен для создания временного файла (например,
+        // только для чтения), пишем непосредственно в целевой файл.
+        temp = fopen( file_path.string().c_str(), "w+b" );
+        if ( !temp )
+            {
+            G_LOG->error( "SRAM() - ERROR: Can't open file (%s) : %s.\n",
+                file_path.string().c_str(), strerror( errno ) );
+            return 1;
+            }
+
+        auto res = fwrite( get_data(), sizeof( std::byte ), get_size(), temp );
+        fflush( temp );
+#ifndef WIN_OS
+        fsync( fileno( temp ) );
+#endif
+        fclose( temp );
+        return res == get_size() ? 0 : 2;
         }
     else
         {
