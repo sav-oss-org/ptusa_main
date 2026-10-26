@@ -68,6 +68,7 @@ class SRAM : public i_memory
 
     std::filesystem::path file_path;
     std::filesystem::path tmp_path;
+    bool direct_write = false;
 
     u_int total_size;
 
