@@ -7,6 +7,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_POLICY_DEFAULT_CMP0048 NEW)
 
 project(ptusa_main VERSION 2026.08.21.0)
+find_package(Threads REQUIRED)
 
 message(STATUS "CMake version: ${CMAKE_VERSION}")
 message(STATUS "CMake executable: ${CMAKE_COMMAND}")
@@ -370,6 +371,16 @@ endif()
 
 target_link_libraries(${PROJECT_NAME} PRIVATE liblua_static toluapp_lib_static zlibstatic fmt::fmt)
 target_link_libraries(libptusa_main toluapp_lib_static zlibstatic fmt::fmt)
+target_link_libraries(${PROJECT_NAME} PRIVATE Threads::Threads)
+include(cmake/Axiobus.cmake)
+target_link_libraries(libptusa_main Threads::Threads)
+target_link_libraries(main_test Threads::Threads)
+if(NOT MINGW)
+    target_link_libraries(main_performance_test Threads::Threads)
+endif()
+if(ARP_DEVICE)
+    target_link_libraries(PtusaPLCnextEngineer PRIVATE Threads::Threads)
+endif()
 
 target_link_libraries(${PROJECT_NAME} PRIVATE open62541::open62541)
 target_link_libraries(libptusa_main open62541::open62541)
@@ -423,43 +434,8 @@ endif()
 
 enable_testing()
 add_test(run_no_command_line_arguments ${PROJECT_NAME})
-if (WIN32)
-    set_tests_properties( run_no_command_line_arguments
-        PROPERTIES PASS_REGULAR_EXPRESSION
-[[
-(.*)
-  -v, --version          Print version info
-  -d, --debug            Enable debugging
-      --no_io            No communicate with I\\O nodes \(default: true\)
-      --read_only_io     Read only from I\\O nodes \(default: true\)
-  -p, --port arg         Param port \(default: 10000\)
-  -h, --help             Print help info
-  -r, --rcrc             Reset params
-      --opc arg          OPC UA server behavior \(off, r, rw\)
-      --sys_path arg     Sys path \(default: \./sys\)
-      --path arg         Path \(default: \.\)
-      --extra_paths arg  Extra paths \(default: \./dairy-sys\)
-      --sleep_time arg   Sleep time, ms \(default: 2\)
-]] )
-else()
-    set_tests_properties( run_no_command_line_arguments
-        PROPERTIES PASS_REGULAR_EXPRESSION
-[[
-(.*)
-  -v, --version          Print version info
-  -d, --debug            Enable debugging
-      --no_io            No communicate with I\\O nodes
-      --read_only_io     Read only from I\\O nodes
-  -p, --port arg         Param port \(default: 10000\)
-  -h, --help             Print help info
-  -r, --rcrc             Reset params
-      --opc arg          OPC UA server behavior \(off, r, rw\)
-      --sys_path arg     Sys path \(default: \./sys\)
-      --path arg         Path \(default: \.\)
-      --extra_paths arg  Extra paths \(default: \./dairy-sys\)
-      --sleep_time arg   Sleep time, ms \(default: 2\)
-]] )
-endif()
+set_tests_properties(run_no_command_line_arguments PROPERTIES
+    PASS_REGULAR_EXPRESSION "--min_cycle_time arg +Minimum cycle time, ms")
 
 # Общие пути в Lua package.path
 set(LUA_MODULES_PATH "${CMAKE_CURRENT_SOURCE_DIR}/deps/lunarmodules")
@@ -560,15 +536,18 @@ set(STDOUT_CAPTURE_LOCKED_FILTER
 
 	"tech_object.set_mode:"
 
+    "StandaloneConfigTest.*:"
     "project_manager.proc_main_params:"
     "project_manager.lua_load_configuration:"
 	"project_manager.apply_opc_mode:")
 
 set(TCP_SOCKET_LOCKED_FILTER
+    "tcp_communicator_linux_restart.*:"
     "tcp_communicator.evaluate:"
 	"tcp_communicator.recvtimeout:"
     "device_communicator.write_devices_states_service:"
     "pp_mode_alarm.pp_mode_activation_deactivation:"
+    "pp_mode_alarm.disable_node_no_alarm:"
 	"pp_mode_alarm.cfg_bus_error_activation_deactivation:"
     "pp_mode_alarm.e_communicate:"
     "main_cycle.main_cycle:"

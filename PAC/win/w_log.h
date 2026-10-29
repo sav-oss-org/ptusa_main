@@ -27,6 +27,7 @@ class w_log: public i_log
 #pragma warning( disable: 4996 ) //warning C4996: 'localtime': This function or variable may be unsafe.
 		void virtual write_log(PRIORITIES priority)
 			{
+            forward_to_debugger( priority );
             std::tm tm = get_time();
 
             std::cout << std::put_time( &tm, "%Y-%m-%d %H.%M.%S " );

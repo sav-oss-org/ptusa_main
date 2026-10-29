@@ -1,9 +1,13 @@
 #include <string.h>
 #include "fmt/format.h"
 #include <inttypes.h>
+#include <cmath>
+#include <limits>
 
 #include "PAC_info.h"
 #include "PAC_err.h"
+
+#include "tech_def.h"
 
 #include "lua_manager.h"
 #include "bus_coupler_io.h"
@@ -132,6 +136,11 @@ int PAC_info::save_device( char* buff ) const
 
     size += fmt::format_to_n( buff + size, MAX_COPY_SIZE,
         "\tCYCLE_TIME={},\n", cycle_time ).size;
+    size += fmt::format_to_n( buff + size, MAX_COPY_SIZE,
+        "\tPHOENIX_MODBUS_UDP={},\n", is_phoenix_modbus_udp() ? 1 : 0 ).size;
+    size += fmt::format_to_n( buff + size, MAX_COPY_SIZE,
+        "\tPHOENIX_MODBUS_UDP_TIMEOUT_MS={},\n",
+        get_phoenix_modbus_udp_timeout_ms() ).size;
 
     size += fmt::format_to_n( buff + size, MAX_COPY_SIZE,
         "\tWASH_VALVE_SEAT_PERIOD={},\n", par[ P_MIX_FLIP_PERIOD ] ).size;
@@ -238,6 +247,46 @@ int PAC_info::set_cmd( const char* prop, u_int idx, double val )
     {
     if ( strcmp( prop, "CMD" ) == 0 )
         {
+        if ( !std::isfinite( val ) || std::trunc( val ) != val ||
+            val < ( std::numeric_limits<int>::min )() ||
+            val > ( std::numeric_limits<int>::max )() )
+            {
+            return 10;
+            }
+        //Команда перезагрузки объекта в виде числа CMD = BASE + номер объекта.
+        const int cmd_val = static_cast< int >( val );
+        if ( cmd_val >= static_cast< int >( COMMANDS::RELOAD_TECH_OBJECT_BASE ) &&
+            cmd_val < static_cast< int >( COMMANDS::RELOAD_TECH_OBJECT_BASE ) + 1000 )
+            {
+            const u_int obj_n = static_cast< u_int >(
+                cmd_val - static_cast< int >( COMMANDS::RELOAD_TECH_OBJECT_BASE ) );
+            G_LOG->notice( "Reload tech object [%u] (CMD=%d).", obj_n, cmd_val );
+            const int res = G_TECH_OBJECT_MNGR()->reload_object( obj_n );
+            cmd = res;
+            auto msg = "Reload object - Ok.";
+            if ( res == -1 )
+                {
+                msg = "Reload object error - object not found.";
+                }
+            else if ( res == -2 )
+                {
+                msg = "Reload object error - object is not idle.";
+                }
+            else if ( res == -3 )
+                {
+                msg = "Reload object failed - see log for details.";
+                }
+            else if ( res == -4 )
+                {
+                msg = "Reload object rejected - Lua retains operation handles.";
+                }
+            cmd_answer[ 0 ] = 0;
+            auto r = fmt::format_to_n( cmd_answer,
+                sizeof( cmd_answer ) - 1, "{}", msg );
+            *r.out = '\0';
+            return res;
+            }
+
         switch ( static_cast<COMMANDS>( static_cast<int>( val ) ) )
             {
             case COMMANDS::CLEAR_RESULT_CMD:
@@ -268,7 +317,17 @@ int PAC_info::set_cmd( const char* prop, u_int idx, double val )
             case COMMANDS::FORCE_SAVE_PARAMS:
                 G_LOG->notice( "Force saving parameters (remote monitor "
                     "client command)." );
+                // Keep the existing success response; the write finishes in
+                // params_manager's background worker.
                 return params_manager::get_instance()->save_params();
+
+            case COMMANDS::PHOENIX_MODBUS_UDP_ON:
+                set_phoenix_modbus_udp( true );
+                return 0;
+
+            case COMMANDS::PHOENIX_MODBUS_UDP_OFF:
+                set_phoenix_modbus_udp( false );
+                return 0;
             }
 
         return 0;
@@ -442,6 +501,35 @@ int PAC_info::set_cmd( const char* prop, u_int idx, double val )
         return 0;
         }
 
+    if ( strcmp( prop, "PHOENIX_MODBUS_UDP" ) == 0 )
+        {
+        if ( val != 0.0 && val != 1.0 ) return 10;
+        set_phoenix_modbus_udp( val == 1.0 );
+        return 0;
+        }
+
+    if ( strcmp( prop, "PHOENIX_MODBUS_UDP_TIMEOUT_MS" ) == 0 )
+        {
+        if ( !std::isfinite( val ) || val < 1.0 ||
+            val > MAX_PHOENIX_MODBUS_UDP_TIMEOUT_MS || std::trunc( val ) != val )
+            return 10;
+        return set_phoenix_modbus_udp_timeout_ms( static_cast<uint32_t>( val ) );
+        }
+
+    return 0;
+    }
+//-----------------------------------------------------------------------------
+void PAC_info::set_phoenix_modbus_udp( bool enabled )
+    {
+    if ( phoenix_modbus_udp.exchange( enabled, std::memory_order_relaxed ) != enabled )
+        G_LOG->notice( "PHOENIX Modbus transport: %s.", enabled ? "UDP" : "TCP" );
+    }
+//-----------------------------------------------------------------------------
+int PAC_info::set_phoenix_modbus_udp_timeout_ms( uint32_t timeout_ms )
+    {
+    if ( timeout_ms == 0 || timeout_ms > MAX_PHOENIX_MODBUS_UDP_TIMEOUT_MS )
+        return 10;
+    phoenix_modbus_udp_timeout_ms.store( timeout_ms, std::memory_order_relaxed );
     return 0;
     }
 

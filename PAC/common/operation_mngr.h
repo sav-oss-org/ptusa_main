@@ -38,6 +38,7 @@
 
 class operation_manager;
 class operation_state;
+struct lua_State;
 
 //-----------------------------------------------------------------------------
 /// @brief Действие над устройствами (включение, выключение и т.д.).
@@ -470,6 +471,7 @@ class enable_step_by_signal : public action
 /// Также дополнительно можно включать 1 либо более шагов параллельно.
 class step
     {
+    friend class operation_manager;
     public:
         enum ACTIONS
             {
@@ -580,6 +582,7 @@ class step
 /// У объекта (танк, линия, ...) может быть включена только одна операция.
 class operation_state
     {
+    friend class operation_manager;
     public:
         operation_state( const char* name, operation_manager *owner, int n );
 
@@ -728,6 +731,7 @@ class operation_state
 /// @brief Содержит информацию об операции.
 class operation
     {
+    friend class operation_manager;
     public:
         operation( const char* name, operation_manager *owner, int n );
 
@@ -967,6 +971,9 @@ class operation
 class operation_manager
     {
     public:
+        // A reload must not destroy objects still referenced by Lua code.
+        bool has_lua_references( lua_State* L ) const;
+        size_t size() const { return operations.size(); }
         /// @brief Конструктор с параметрами.
         ///
         /// @param i_tech_object - техобъект-владелец.

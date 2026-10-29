@@ -87,7 +87,7 @@ int main( int argc, const char *argv[] )
     int res = G_PROJECT_MANAGER->proc_main_params( argc, argv_utf8 );
     if ( res )
         {
-        exit( EXIT_SUCCESS );
+        return res == 1 ? EXIT_SUCCESS : EXIT_FAILURE;
         }
 
     //-Инициализация Lua.
@@ -129,8 +129,9 @@ int main( int argc, const char *argv[] )
     //Инициализация дополнительных устройств
     IOT_INIT();
 
-    G_LOG->info( "Starting main loop! Sleep time is %u ms.",
-        G_PROJECT_MANAGER->sleep_time_ms );
+    G_LOG->info( "Starting main loop! Sleep time is %g ms. "
+        "Minimum cycle time is %g ms.", G_PROJECT_MANAGER->sleep_time_ms,
+        G_PROJECT_MANAGER->min_cycle_time );
 
     if ( !params_manager::get_instance()->was_successful_init() )
         {

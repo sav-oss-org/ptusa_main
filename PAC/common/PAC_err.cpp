@@ -6,6 +6,63 @@
 #include <vector>
 #include <cstring>
 #include <algorithm>
+#include <iterator>
+
+namespace
+    {
+    // Поле описания должно оставаться корректной строкой Lua даже при ошибке,
+    // содержащей кавычки, обратные слеши и управляющие символы.
+    std::string escape_alarm_description( const std::string& description )
+        {
+        std::string result;
+        for ( size_t i = 0; i < description.size(); )
+            {
+            auto c = static_cast<unsigned char>( description[i] );
+            std::string part;
+            size_t count = 1;
+            switch ( c )
+                {
+                case '"': part = "\\\""; break;
+                case '\\': part = "\\\\"; break;
+                case '\n': part = "\\n"; break;
+                case '\r': part = "\\r"; break;
+                case '\t': part = "\\t"; break;
+                default:
+                    if ( c < 32 || c == 127 )
+                        {
+                        part = fmt::format( "\\{:03}", c );
+                        }
+                    else
+                        {
+                        // Не обрезаем символ UTF-8 посередине.
+                        if ( c >= 0xC2 && c <= 0xDF ) count = 2;
+                        else if ( c >= 0xE0 && c <= 0xEF ) count = 3;
+                        else if ( c >= 0xF0 && c <= 0xF4 ) count = 4;
+                        count = ( std::min )( count, description.size() - i );
+                        for ( size_t j = 1; j < count; ++j )
+                            {
+                            if ( ( static_cast<unsigned char>(
+                                description[i + j] ) & 0xC0 ) != 0x80 )
+                                {
+                                count = 1;
+                                break;
+                                }
+                            }
+                        part = description.substr( i, count );
+                        }
+                    break;
+                }
+            if ( result.size() + part.size() > MAX_COPY_SIZE - 64 )
+                {
+                result += "...";
+                break;
+                }
+            result += part;
+            i += count;
+            }
+        return result;
+        }
+    }
 
 #include "log.h"
 
@@ -77,29 +134,37 @@ void PAC_critical_errors_manager::show_errors() const
 void PAC_critical_errors_manager::set_global_error( ALARM_CLASS eclass,
     ALARM_SUBCLASS p1, unsigned int p2 )
     {
-    int b = 0;
+    set_global_error( eclass, p1, p2, "" );
+    }
 
-    //1.try to find
-    for ( u_int i = 0; i < errors.size(); i++ )
+void PAC_critical_errors_manager::set_global_error( ALARM_CLASS eclass,
+    ALARM_SUBCLASS p1, unsigned int p2, const std::string& details,
+    ALARM_CLASS_PRIORITY priority )
+    {
+    auto current = std::find_if( errors.begin(), errors.end(),
+        [=]( const critical_error& error )
         {
-        if ( errors[ i ].err_class == eclass &&
-            static_cast<unsigned int>( p1 ) == errors[ i ].err_sub_class &&
-            p2 == errors[ i ].param )
-            {
-            b = 1;
-            break;
-            }
-        }
+        return error.err_class == eclass && error.err_sub_class == p1 &&
+            error.param == p2;
+        } );
 
-    if ( b == 0 )
+    if ( current != errors.end() && current->details == details &&
+        current->priority == priority ) return;
+    if ( current == errors.end() )
         {
-        G_LOG->error( "%s",
-            get_alarm_descr( eclass, p1, p2, true ) );
-
-        errors.emplace_back( eclass, p1, p2,
-            ALARM_CLASS_PRIORITY::P_ERR_CONNECTION );
-        errors_id++;
+        errors.emplace_back( eclass, p1, p2, priority );
+        current = std::prev( errors.end() );
         }
+    current->details = details;
+    current->priority = priority;
+    std::string description = get_alarm_descr( eclass, p1, p2, true );
+    if ( !details.empty() ) description += ": " + details;
+    if ( priority == P_MESSAGE )
+        {
+        G_LOG->warning( "%s", description.c_str() );
+        }
+    else G_LOG->error( "%s", description.c_str() );
+    errors_id++;
     }
 //-----------------------------------------------------------------------------
 void PAC_critical_errors_manager::reset_all_error()
@@ -144,11 +209,14 @@ int PAC_critical_errors_manager::save_as_Lua_str( char *str, u_int_2 &id )
         {
         res += fmt::format_to_n( str + res, MAX_COPY_SIZE, "\t{{\n" ).size;
 
+        std::string description = get_alarm_descr(
+            static_cast<ALARM_CLASS>( err.err_class ),
+            static_cast<ALARM_SUBCLASS>( err.err_sub_class ), err.param, true );
+        if ( !err.details.empty() ) description += ": " + err.details;
+
         res += fmt::format_to_n( str + res, MAX_COPY_SIZE,
             "\tdescription = \"{}\",\n",
-            get_alarm_descr( static_cast<ALARM_CLASS>( err.err_class ),
-                static_cast<ALARM_SUBCLASS>( err.err_sub_class ),
-                err.param, true ) ).size;
+            escape_alarm_description( description ) ).size;
 
         res += fmt::format_to_n( str + res, MAX_COPY_SIZE,
             "\ttype = AT_SPECIAL,\n" ).size;
@@ -275,9 +343,8 @@ const char* PAC_critical_errors_manager::get_alarm_descr( ALARM_CLASS err_class,
             res += fmt::format_to_n( tmp + res, BUFF_SIZE - res, "{}", is_set ?
                 " : Ошибка сетевой работы: " : " : Сетевая работа в норме : " ).size;
 
-            res += fmt::format_to_n( tmp + res, BUFF_SIZE - res, "{}",
-                par == 0 ? "Modbus-устройство 11 №{} : " :
-                    par == 1 ? "Мастер {} : " : "? {} : ", par ).size;
+            res += fmt::format_to_n( tmp + res, BUFF_SIZE - res, "{} : ",
+                par == 0 ? "Мастер" : par == 1 ? "Modbus" : "?" ).size;
 
             res += fmt::format_to_n( tmp + res, BUFF_SIZE - res, "{}",
                 err_sub_class == AS_SOCKET_F ? "вызов функции socket(...)" :

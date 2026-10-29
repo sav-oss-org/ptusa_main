@@ -81,7 +81,9 @@ int tcp_client::checkConnection()
             if ( connectres == ACS_DISCONNECTED )
                 {
                 async_result = AR_SOCKETERROR;
-                reconnectTimeout > maxreconnectTimeout ? maxreconnectTimeout : reconnectTimeout *= 2;
+                // Saturate before doubling to avoid exceeding the cap or overflowing.
+                reconnectTimeout = reconnectTimeout > maxreconnectTimeout / 2
+                    ? maxreconnectTimeout : reconnectTimeout * 2;
                 return 0;
                 }
 

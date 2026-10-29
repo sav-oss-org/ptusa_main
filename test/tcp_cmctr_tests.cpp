@@ -1,7 +1,171 @@
 #include "tcp_cmctr_tests.h"
 #include "PAC_info.h"
+#include <memory>
+
+#ifdef LINUX_OS
+#include "l_tcp_cmctr.h"
+#include "PAC_err.h"
+#include <dirent.h>
+#endif
 
 using namespace ::testing;
+
+namespace
+    {
+    class frame_scheduler_test : public tcp_communicator
+        {
+        public:
+            int evaluate() override { return 0; }
+            bool ready( bool debug, int service, int available )
+                {
+                debugger_cycle = debug;
+                buf[ 0 ] = 's';
+                buf[ 1 ] = static_cast<u_char>( service );
+                buf[ 2 ] = 1;
+                buf[ 3 ] = 1;
+                buf[ 4 ] = 0;
+                buf[ 5 ] = 4;
+                return buffered_frame_ready( available );
+                }
+            int frame_size() const { return incoming_frame_size; }
+        };
+    }
+
+TEST( tcp_communicator, separates_debugger_cycles_and_waits_for_complete_frames )
+    {
+    auto scheduler = std::make_unique<frame_scheduler_test>();
+    EXPECT_FALSE( scheduler->ready( false, 2, 10 ) );
+    EXPECT_TRUE( scheduler->ready( true, 2, 10 ) );
+    EXPECT_FALSE( scheduler->ready( true, 1, 10 ) );
+    EXPECT_TRUE( scheduler->ready( false, 1, 10 ) );
+    EXPECT_FALSE( scheduler->ready( true, 2, 5 ) );
+    EXPECT_FALSE( scheduler->ready( true, 2, 9 ) );
+    EXPECT_TRUE( scheduler->ready( true, 2, 20 ) );
+    EXPECT_EQ( 10, scheduler->frame_size() );
+    }
+
+#ifdef LINUX_OS
+namespace
+    {
+    class tcp_communicator_linux_restart : public Test
+        {
+        protected:
+            int master_reservation = -1;
+            int modbus_reservation = -1;
+            int original_port = tcp_communicator::get_port();
+            int original_modbus_port = tcp_communicator::get_modbus_port();
+
+            static void close_socket( int& descriptor )
+                {
+                if ( descriptor >= 0 ) close( descriptor );
+                descriptor = -1;
+                }
+
+            static int reserve_port( int& descriptor )
+                {
+                descriptor = socket( AF_INET, SOCK_STREAM, 0 );
+                if ( descriptor < 0 ) return -1;
+                sockaddr_in address{};
+                address.sin_family = AF_INET;
+                address.sin_addr.s_addr = htonl( INADDR_ANY );
+                if ( bind( descriptor, reinterpret_cast<sockaddr*>( &address ),
+                    sizeof( address ) ) < 0 || listen( descriptor, 1 ) < 0 )
+                    return -1;
+                socklen_t size = sizeof( address );
+                if ( getsockname( descriptor,
+                    reinterpret_cast<sockaddr*>( &address ), &size ) < 0 )
+                    return -1;
+                return ntohs( address.sin_port );
+                }
+
+            static int descriptor_count()
+                {
+                auto directory = opendir( "/proc/self/fd" );
+                if ( !directory ) return -1;
+                int count = 0;
+                while ( readdir( directory ) ) ++count;
+                closedir( directory );
+                return count;
+                }
+
+            void SetUp() override
+                {
+                tcp_communicator::clear_instance();
+                PAC_critical_errors_manager::get_instance()->reset_all_error();
+                int master_port = reserve_port( master_reservation );
+                int modbus_port = reserve_port( modbus_reservation );
+                ASSERT_GT( master_port, 0 );
+                ASSERT_GT( modbus_port, 0 );
+                tcp_communicator::set_port( master_port, modbus_port );
+                }
+
+            void TearDown() override
+                {
+                tcp_communicator::clear_instance();
+                close_socket( master_reservation );
+                close_socket( modbus_reservation );
+                tcp_communicator::set_port( original_port, original_modbus_port );
+                PAC_critical_errors_manager::get_instance()->reset_all_error();
+                }
+        };
+    }
+
+TEST_F( tcp_communicator_linux_restart, restarts_after_active_modbus_connection )
+    {
+    close_socket( master_reservation );
+    close_socket( modbus_reservation );
+    for ( int restart = 0; restart < 3; ++restart )
+        {
+        tcp_communicator::init_instance( "Тест", "Test" );
+        ASSERT_EQ( 0, G_CMMCTR->evaluate() );
+        // The server closes first so the accepted connection enters TIME_WAIT.
+        modbus_reservation = socket( AF_INET, SOCK_STREAM, 0 );
+        ASSERT_GE( modbus_reservation, 0 );
+        sockaddr_in address{};
+        address.sin_family = AF_INET;
+        address.sin_addr.s_addr = htonl( INADDR_LOOPBACK );
+        address.sin_port = htons( tcp_communicator::get_modbus_port() );
+        ASSERT_EQ( 0, connect( modbus_reservation,
+            reinterpret_cast<sockaddr*>( &address ), sizeof( address ) ) );
+        ASSERT_EQ( 0, G_CMMCTR->evaluate() );
+        tcp_communicator::clear_instance();
+        timeval timeout{ 1, 0 };
+        ASSERT_EQ( 0, setsockopt( modbus_reservation, SOL_SOCKET, SO_RCVTIMEO,
+            &timeout, sizeof( timeout ) ) );
+        char byte{};
+        ASSERT_EQ( 0, recv( modbus_reservation, &byte, 1, 0 ) );
+        close_socket( modbus_reservation );
+        }
+    tcp_communicator::init_instance( "Тест", "Test" );
+    EXPECT_EQ( 0, G_CMMCTR->evaluate() );
+    }
+
+TEST_F( tcp_communicator_linux_restart, retries_busy_modbus_without_leaking_sockets )
+    {
+    close_socket( master_reservation );
+    tcp_communicator::init_instance( "Тест", "Test" );
+    auto initial_count = descriptor_count();
+    ASSERT_GT( initial_count, 0 );
+    for ( int attempt = 0; attempt < 3; ++attempt )
+        {
+        EXPECT_EQ( -100, G_CMMCTR->evaluate() );
+        EXPECT_EQ( initial_count, descriptor_count() );
+        EXPECT_EQ( -1, tcp_communicator::get_master_socket() );
+        }
+    close_socket( modbus_reservation );
+    EXPECT_EQ( 0, G_CMMCTR->evaluate() );
+    }
+
+TEST_F( tcp_communicator_linux_restart, waits_for_existing_master_listener )
+    {
+    close_socket( modbus_reservation );
+    tcp_communicator::init_instance( "Тест", "Test" );
+    EXPECT_EQ( -100, G_CMMCTR->evaluate() );
+    EXPECT_EQ( -1, tcp_communicator::get_master_socket() );
+    close_socket( master_reservation );
+    EXPECT_EQ( 0, G_CMMCTR->evaluate() );
+    }
+#endif
 
 #ifndef WIN_OS // For linux to deal with __stdcall.
 #define __stdcall
@@ -40,6 +204,7 @@ TEST( tcp_communicator, evaluate )
     cnt = 0;
     while ( size <= 0 && cnt < 1000 )
         {
+        EXPECT_EQ( 0, G_CMMCTR->evaluate() );
         sleep_ms( 1 );
         size = cl.AsyncReceive();
         cnt++;
@@ -48,9 +213,11 @@ TEST( tcp_communicator, evaluate )
     cl.buff[ size ] = '\0';
     EXPECT_STREQ( cl.buff, "PAC accept" );
 
-    cl.AsyncSend( 10 );
-    G_CMMCTR->evaluate();
-
+    // Queue a complete frame, then disconnect before evaluate can handle the
+    // request. A stale asynchronous client must not tear down the server.
+    const char request[] = { 's', 1, 1, 1, 0, 0 };
+    memcpy( cl.buff, request, sizeof( request ) );
+    cl.AsyncSend( sizeof( request ) );
     cl.Disconnect();
     EXPECT_EQ( 0, G_CMMCTR->evaluate() );
 
@@ -79,8 +246,24 @@ TEST( tcp_communicator, evaluate )
     EXPECT_EQ( 0, G_CMMCTR->evaluate() );
     sleep_ms( 1 );
     //Для модбас клиента ответа на подключение не будет.
-    size = modbus_cl.AsyncReceive();
-    ASSERT_EQ( size, 0 );
+    EXPECT_FALSE( tcp_communicator::checkBuff( modbus_cl.get_socket() ) );
+
+    // Queue a receive without sending data: no socket event should be needed
+    // to expire the request. Keep the peer open and silent.
+    modbus_cl.tcp_client::AsyncReceive();
+    ASSERT_EQ( tcp_client::ACS_CONNECTED, modbus_cl.get_connected_state() );
+    EXPECT_EQ( 0, G_CMMCTR->evaluate() );
+    ASSERT_EQ( tcp_client::ACS_CONNECTED, modbus_cl.get_connected_state() );
+    EXPECT_EQ( tcp_client::AR_BUSY, modbus_cl.get_async_result() );
+    modbus_cl.async_queued = get_millisec() - modbus_cl.async_timeout - 1;
+    EXPECT_EQ( 0, G_CMMCTR->evaluate() );
+    EXPECT_EQ( tcp_client::AR_TIMEOUT, modbus_cl.get_async_result() );
+    EXPECT_EQ( tcp_client::ACS_DISCONNECTED, modbus_cl.get_connected_state() );
+
+    // The completed request must no longer be processed by the communicator.
+    modbus_cl.set_async_result( tcp_client::AR_FREE );
+    EXPECT_EQ( 0, G_CMMCTR->evaluate() );
+    EXPECT_EQ( tcp_client::AR_FREE, modbus_cl.get_async_result() );
 
     modbus_cl.Disconnect();
     EXPECT_EQ( 0, G_CMMCTR->evaluate() );

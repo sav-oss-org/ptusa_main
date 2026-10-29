@@ -25,8 +25,14 @@
 
 #include <array>
 #include <cstddef>
+#include <condition_variable>
+#include <cstdint>
+#include <deque>
 #include <math.h>
+#include <memory>
+#include <mutex>
 #include <string.h>
+#include <thread>
 
 #include "base_mem.h"
 #include "g_device.h"
@@ -125,6 +131,9 @@ class params_manager
 
         virtual ~params_manager();
 
+        /// @brief Поставить снимок параметров в очередь фоновой записи.
+        /// @return 0 после постановки в очередь; результат записи появляется
+        /// позднее в журнале и счётчике сохранений.
         int save_params();
 
         int evaluate();
@@ -168,9 +177,31 @@ class params_manager
         /// Для вызова методов используется статический метод @ref get_instance.
         params_manager();
 
-	private:
+    private:
         void reset_to_default( void( *custom_init_params_function )( ),
             int auto_init_params, int auto_init_work_params );
+
+        struct save_snapshot
+            {
+            std::array<std::byte,
+                static_cast<size_t>( CONSTANTS::C_TOTAL_PARAMS_SIZE )> params;
+            std::array<std::byte,
+                static_cast<size_t>( CONSTANTS::C_SYS_MEM_SIZE )> crc_mem;
+            uint64_t generation{};
+            };
+
+        struct save_result
+            {
+            uint64_t generation{};
+            int error_stage{};
+            int error_code{};
+            long long crc_write_us{};
+            long long params_write_us{};
+            };
+
+        void save_worker_loop();
+        void collect_save_results();
+        bool save_is_pending() const;
 
         /// Статический экземпляр класса для вызова методов.
         static auto_smart_ptr< params_manager > instance;
@@ -193,6 +224,17 @@ class params_manager
 
         int params_change_counter{ 0 };
         int params_save_counter{ 0 };
+        uint64_t change_generation{};
+        uint32_t last_failed_save_ms{};
+        bool save_failed{ false };
+
+        mutable std::mutex save_mutex;
+        std::condition_variable save_cv;
+        std::unique_ptr<save_snapshot> pending_save;
+        std::deque<save_result> completed_saves;
+        bool save_in_progress{ false };
+        bool stop_save_worker{ false };
+        std::thread save_worker;
 
         ///< Флаг успешной инициализации параметров.
         bool successful_init{ false };

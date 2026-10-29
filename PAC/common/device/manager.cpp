@@ -1533,6 +1533,8 @@ void device_manager::clear_io_devices()
 //-----------------------------------------------------------------------------
 int device_manager::init_params()
     {
+    for ( auto dev : project_devices ) dev->init_params();
+
     lua_manager::get_instance()->void_exec_lua_method( "system",
         "init_devices_params", "device_manager::init_params()" );
 

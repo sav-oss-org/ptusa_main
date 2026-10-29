@@ -379,12 +379,18 @@ class io_manager
 
 				WAGO_750_XXX_ETHERNET = 100,///< Wago Ethernet 750-341 и т.д.
 				PHOENIX_BK_ETH		  = 200,///< Phoenix 2702177
+
+                PHOENIX_AXC_F_2152 = 202, ///< Локальная шина AXC F 2152.
+                PHOENIX_AXC_F_3152 = 203, ///< Локальная шина AXC F 3152.
+                PHOENIX_AXC_F_2152_IOCTL = 204, ///< AXC F 2152 через ioctl.
+                PHOENIX_AXC_F_3152_IOCTL = 205, ///< AXC F 3152 через ioctl.
 				};
 
 			enum STATES           ///< Состояния работы с узлом.
 				{
 				ST_NO_CONNECT = 0,
 				ST_OK = 1,
+                ST_CONNECTING = 2,
 				};
 
             enum class DISPLAY_STATES  ///< Отображение работы с узлом.
@@ -423,7 +429,9 @@ class io_manager
 
             uint32_t last_poll_time{ get_millisec() }; ///< Время последнего опроса.
             bool is_set_err{};       ///< Установлена ли ошибка связи.
+            uint32_t connect_start_time{}; ///< Start of nonblocking connect.
             int sock{};              ///< Сокет соединения.
+            uint16_t modbus_transaction_id{}; ///< Per-node request sequence, kept across reconnects.
 
 			// Digital outputs ( DO ).
 			u_int  DO_cnt;      ///< Amount of DO.
@@ -470,9 +478,13 @@ class io_manager
             /// Previous status register value for detecting changes.
             u_int_2 prev_status_register{};
 
-            /// Diagnostic status register (7997) for Phoenix BK ETH nodes.
-            /// Bits 2 and 8 indicate configuration/bus errors.
+            /// Диагностический статус: регистр 7997 каплера или статус Axiobus.
             u_int_2 diagnostic_status_register{};
+
+            /// Код и дополнительная информация локальной шины PLCnext.
+            u_int_2 local_bus_error_code{};
+            u_int_2 local_bus_error_location{};
+            bool local_bus_diagnostics_valid = false;
 
             /// Previous diagnostic register value for detecting changes.
             u_int_2 prev_diagnostic_status_register{};
@@ -488,6 +500,9 @@ class io_manager
             /// @brief Checks PP mode state of the node.
             /// @return true if PP mode is active (bit 4 set), else false.
             bool is_pp_mode_active() const;
+
+            bool is_local_bus() const;
+            bool is_ioctl_local_bus() const;
 
             /// @return One of `io_node::DISPLAY_STATES`:
             ///         `DST_OK` for a connected and healthy node.

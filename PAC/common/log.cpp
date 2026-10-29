@@ -1,6 +1,8 @@
 #include "log.h"
 #include <stdarg.h>
 
+#include "lua_debugger.h"
+
 #if defined  WIN_OS
 #include "w_log.h"
 #elif defined LINUX_OS
@@ -40,6 +42,11 @@ void i_log::write_log( PRIORITIES priority, const char* debug_message )
     strncpy( msg, debug_message, C_BUFF_SIZE - 1 );
     msg[ C_BUFF_SIZE - 1 ] = 0;
     write_log( priority );
+    }
+//-----------------------------------------------------------------------------
+void i_log::forward_to_debugger( PRIORITIES priority ) const
+    {
+    G_LUA_DEBUGGER->publish_message( "log", static_cast<int>( priority ), msg );
     }
 //-----------------------------------------------------------------------------
 void i_log::debug(const char* debug_message, ...)

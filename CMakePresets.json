@@ -228,6 +228,11 @@
 
   "buildPresets": [
     {
+      "name": "build-windows-Mingw64-default",
+      "displayName": "Windows MinGW64 Default",
+      "configurePreset": "windows-Mingw64-default"
+    },
+    {
       "name": "build-windows-VS2026-release",
       "displayName": " Windows VS2026 Release",
       "configurePreset": "windows-VS2026-default",

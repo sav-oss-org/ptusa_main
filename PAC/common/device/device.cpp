@@ -1838,6 +1838,12 @@ DI1::DI1( const char* dev_name, device::DEVICE_TYPE type,
     current_state( current_state_init_val )
     {
     set_par_name( P_DT, 0, "P_DT" );
+    set_par_name( P_DTO, 0, "P_DTO" );
+    }
+//-----------------------------------------------------------------------------
+void DI1::init_params()
+    {
+    set_par( P_DTO, 0, -1 );
     }
 //-----------------------------------------------------------------------------
 void DI1::direct_on()
@@ -1852,13 +1858,17 @@ void DI1::direct_off()
 //-----------------------------------------------------------------------------
 void DI1::evaluate_io()
     {
-    if ( auto dt = static_cast<u_int_4>( get_par( P_DT, 0 ) ); dt > 0 )
+    const auto state = get_DI( DI_INDEX );
+    const auto off_dt = get_par( P_DTO, 0 );
+    const auto dt = static_cast<u_int_4>( state == 0 && off_dt >= 0 ?
+        off_dt : get_par( P_DT, 0 ) );
+    if ( dt > 0 )
         {
-        if ( current_state != get_DI( DI_INDEX ) )
+        if ( current_state != state )
             {
             if ( get_delta_millisec( state_change_time ) > dt )
                 {
-                current_state = get_DI( DI_INDEX );
+                current_state = state;
                 state_change_time = get_millisec();
                 }
             }
@@ -1867,7 +1877,11 @@ void DI1::evaluate_io()
             state_change_time = get_millisec();
             }
         }
-    else current_state = get_DI( DI_INDEX );
+    else
+        {
+        current_state = state;
+        if ( off_dt >= 0 ) state_change_time = get_millisec();
+        }
     }
 //-----------------------------------------------------------------------------
 int DI1::get_state() const
@@ -2241,6 +2255,37 @@ wages_eth::wages_eth( const char* dev_name ) :
     set_par_name( static_cast<int>( CONSTANTS::P_CZ ), 0, "P_CZ" );
     }
 
+bool wages_eth::parse_ip_address( const char* address, std::string& ip,
+    unsigned int& port )
+    {
+    if ( !address ) return false;
+
+    const std::string endpoint( address );
+    const auto separator = endpoint.find( ':' );
+    const auto host = endpoint.substr( 0, separator );
+    if ( host.empty() || host.size() > 15 ) return false;
+
+    unsigned int parsed_port = 1001;
+    if ( separator != std::string::npos )
+        {
+        if ( separator + 1 == endpoint.size() ) return false;
+        parsed_port = 0;
+        for ( auto i = separator + 1; i < endpoint.size(); ++i )
+            {
+            const char digit = endpoint[ i ];
+            if ( digit < '0' || digit > '9' ) return false;
+            const auto value = static_cast<unsigned int>( digit - '0' );
+            if ( parsed_port > ( 65535 - value ) / 10 ) return false;
+            parsed_port = parsed_port * 10 + value;
+            }
+        if ( parsed_port == 0 ) return false;
+        }
+
+    ip = host;
+    port = parsed_port;
+    return true;
+    }
+
 float wages_eth::get_value() const
     {
     if ( G_PAC_INFO()->is_emulator() )
@@ -2270,7 +2315,7 @@ void wages_eth::evaluate_io()
     {
     if ( G_PAC_INFO()->is_emulator() ) return;
 
-    weth->evaluate();
+    if ( weth ) weth->evaluate();
     }
 
 void wages_eth::tare()
@@ -2285,9 +2330,15 @@ void wages_eth::set_string_property( const char* field, const char* value )
 
     if ( !weth && strcmp( field, "IP" ) == 0 )
         {
-        int port = 1001;
+        std::string ip;
+        unsigned int port;
+        if ( !parse_ip_address( value, ip, port ) )
+            {
+            G_LOG->error( "%s: invalid scales IP address '%s'", get_name(), value );
+            return;
+            }
         int id = 0;
-        weth = new iot_wages_eth( id, value, port, get_name() );
+        weth = new iot_wages_eth( id, ip.c_str(), port, get_name() );
         }
     }
 
@@ -2338,7 +2389,7 @@ void wages_eth::direct_on()
 void wages_eth::direct_set_tcp_buff( const char* new_value, size_t size,
     int new_status )
     {
-    weth->direct_set_tcp_buff( new_value, size, new_status );
+    if ( weth ) weth->direct_set_tcp_buff( new_value, size, new_status );
     }
 //-----------------------------------------------------------------------------
 wages_pxc_axl::wages_pxc_axl( const char* dev_name ) :
@@ -3047,6 +3098,12 @@ level_s_iolink::level_s_iolink( const char *dev_name,
     {
     set_par_name( P_DT, 0, "P_DT" );
     set_par_name( P_ERR, 0, "P_ERR" );
+    set_par_name( P_DTO, 0, "P_DTO" );
+    }
+
+void level_s_iolink::init_params()
+    {
+    set_par( P_DTO, 0, -1 );
     }
 
 void level_s_iolink::evaluate_io()
@@ -3100,7 +3157,10 @@ void level_s_iolink::evaluate_io()
             break;
         }
 
-    if ( auto dt = static_cast<u_int_4>( get_par( P_DT, 0 ) ); dt > 0 )
+    const auto off_dt = get_par( P_DTO, 0 );
+    const auto dt = static_cast<u_int_4>( st == 0 && off_dt >= 0 ?
+        off_dt : get_par( P_DT, 0 ) );
+    if ( dt > 0 )
         {
         if ( current_state != st )
             {
@@ -3115,7 +3175,11 @@ void level_s_iolink::evaluate_io()
             time = get_millisec();
             }
         }
-    else current_state = st;
+    else
+        {
+        current_state = st;
+        if ( off_dt >= 0 ) time = get_millisec();
+        }
     }
 
 void level_s_iolink::set_article( const char* new_article )

@@ -2215,9 +2215,10 @@ TEST( flow_s, flow_s )
     const int BUFF_SIZE = 200;
     char buff[ BUFF_SIZE ] = { 0 };
     flow_s FS1( "FS1" );
+    FS1.init_params();
 
     FS1.save_device( buff );
-    EXPECT_STREQ( "FS1={M=0, ST=0, P_DT=0},\n", buff );
+    EXPECT_STREQ( "FS1={M=0, ST=0, P_DT=0, P_DTO=-1},\n", buff );
     }
 
 TEST( flow_s, get_type_name )
@@ -2232,9 +2233,10 @@ TEST( DI_signal, DI_signal )
     const int BUFF_SIZE = 200;
     char buff[ BUFF_SIZE ] = { 0 };
     DI_signal DI1( "DI1" );
+    DI1.init_params();
 
     DI1.save_device( buff );
-    EXPECT_STREQ( "DI1={M=0, ST=0, P_DT=0},\n", buff );
+    EXPECT_STREQ( "DI1={M=0, ST=0, P_DT=0, P_DTO=-1},\n", buff );
     }
 
 TEST( DI_signal, get_type_name )
@@ -2243,9 +2245,92 @@ TEST( DI_signal, get_type_name )
     EXPECT_STREQ( "Дискретный входной сигнал", test_dev.get_type_name() );
     }
 
+TEST( DI_signal, separate_on_and_off_delays )
+    {
+    DI_signal input( "DI1" );
+    input.init_params();
+    G_PAC_INFO()->emulation_off();
+    input.init_and_alloc( 0, 1 );
+    input.set_cmd( "P_DT", 0, 100 );
+    input.set_cmd( "P_DTO", 0, 300 );
+    DeltaMilliSecSubHooker elapsed( 0 );
+
+    *input.DI_channels.char_read_values[ 0 ] = 1;
+    input.evaluate_io();
+    EXPECT_EQ( input.get_state(), 0 );
+    DeltaMilliSecSubHooker::set_millisec( 101 );
+    input.evaluate_io();
+    EXPECT_EQ( input.get_state(), 1 );
+
+    *input.DI_channels.char_read_values[ 0 ] = 0;
+    input.evaluate_io();
+    EXPECT_EQ( input.get_state(), 1 );
+    DeltaMilliSecSubHooker::set_millisec( 300 );
+    input.evaluate_io();
+    EXPECT_EQ( input.get_state(), 1 );
+    DeltaMilliSecSubHooker::set_millisec( 301 );
+    input.evaluate_io();
+    EXPECT_EQ( input.get_state(), 0 );
+    G_PAC_INFO()->emulation_on();
+    }
+
+TEST( DI_signal, zero_off_delay_preserves_on_delay )
+    {
+    DI_signal input( "DI1" );
+    input.init_params();
+    G_PAC_INFO()->emulation_off();
+    input.init_and_alloc( 0, 1 );
+    input.set_cmd( "P_DT", 0, 100 );
+    input.set_cmd( "P_DTO", 0, 0 );
+    DeltaMilliSecSubHooker elapsed( 101 );
+    *input.DI_channels.char_read_values[ 0 ] = 1;
+    input.evaluate_io();
+    EXPECT_EQ( input.get_state(), 1 );
+
+    *input.DI_channels.char_read_values[ 0 ] = 0;
+    input.evaluate_io();
+    EXPECT_EQ( input.get_state(), 0 );
+    DeltaMilliSecSubHooker::set_millisec( 0 );
+    *input.DI_channels.char_read_values[ 0 ] = 1;
+    input.evaluate_io();
+    EXPECT_EQ( input.get_state(), 0 );
+    DeltaMilliSecSubHooker::set_millisec( 101 );
+    input.evaluate_io();
+    EXPECT_EQ( input.get_state(), 1 );
+    G_PAC_INFO()->emulation_on();
+    }
+
+TEST( DI1, default_off_delay_and_parameter_order )
+    {
+    DI_signal di( "DI1" );
+    flow_s fs( "FS1" );
+    state_s gs( "GS1" );
+    state_s_inverse gs_inverse( "GS2" );
+    level_s ls_min( "LS1", device::DST_LS_MIN );
+    level_s ls_max( "LS2", device::DST_LS_MAX );
+    diff_pressure pds( "PDS1" );
+    temperature_signal ts( "TS1" );
+    button sb( "SB1" );
+    DI1* inputs[] = { &di, &fs, &gs, &gs_inverse, &ls_min, &ls_max,
+        &pds, &ts, &sb };
+    for ( auto input : inputs )
+        {
+        input->init_params();
+        EXPECT_EQ( input->get_cmd( "P_DTO", 0 ), -1 );
+        input->set_par( 1, 0, 150 );
+        input->set_par( 2, 0, 250 );
+        EXPECT_EQ( input->get_cmd( "P_DT", 0 ), 150 );
+        EXPECT_EQ( input->get_cmd( "P_DTO", 0 ), 250 );
+        input->init_params();
+        EXPECT_EQ( input->get_cmd( "P_DTO", 0 ), -1 );
+        EXPECT_EQ( input->get_cmd( "P_DT", 0 ), 150 );
+        }
+    }
+
 TEST( DI_signal, get_state )
     {
     DI_signal DI1( "DI1" );
+    DI1.init_params();
 
     EXPECT_EQ( DI1.get_state(), 0 );
 
@@ -2284,9 +2369,10 @@ TEST( button, button )
     const int BUFF_SIZE = 200;
     char buff[ BUFF_SIZE ] = { 0 };
     button BT1( "BT1" );
+    BT1.init_params();
 
     BT1.save_device( buff );
-    EXPECT_STREQ( "BT1={M=0, ST=0, P_DT=0},\n", buff );
+    EXPECT_STREQ( "BT1={M=0, ST=0, P_DT=0, P_DTO=-1},\n", buff );
     }
 
 TEST( button, get_type_name )
@@ -2454,11 +2540,12 @@ TEST( state_s, is_active )
     const int BUFF_SIZE = 200;
     char buff[ BUFF_SIZE ] = { 0 };
     state_s GS1( "GS1" );
+    GS1.init_params();
 
     EXPECT_FALSE( GS1.is_active() );
 
     GS1.save_device( buff );
-    EXPECT_STREQ( "GS1={M=0, ST=0, P_DT=0},\n", buff );
+    EXPECT_STREQ( "GS1={M=0, ST=0, P_DT=0, P_DTO=-1},\n", buff );
     }
 
 TEST( state_s, get_type_name )
@@ -2472,11 +2559,12 @@ TEST( state_s_inverse, is_active )
     const int BUFF_SIZE = 200;
     char buff[ BUFF_SIZE ] = { 0 };
     state_s_inverse GS1( "GS1" );
+    GS1.init_params();
 
     EXPECT_TRUE( GS1.is_active() );
 
     GS1.save_device( buff );
-    EXPECT_STREQ( "GS1={M=0, ST=0, P_DT=0},\n", buff );
+    EXPECT_STREQ( "GS1={M=0, ST=0, P_DT=0, P_DTO=-1},\n", buff );
     }
 
 
@@ -4369,6 +4457,7 @@ TEST_F( LevelSIOLinkTest, is_active )
 TEST_F( iolink_dev_test, level_s_iolink_evaluate_io )
     {
     level_s_iolink test_dev_max( "TestDevice", device::LS_IOLINK_MAX );
+    test_dev_max.init_params();
     test_dev_max.set_article( "IFM.LMT100" );
     EXPECT_TRUE( test_dev_max.is_active() );
 
@@ -4412,15 +4501,75 @@ TEST_F( iolink_dev_test, level_s_iolink_evaluate_io )
     G_PAC_INFO()->emulation_on();
     }
 
+TEST_F( iolink_dev_test, level_s_iolink_separate_delays )
+    {
+    G_PAC_INFO()->emulation_off();
+    for ( auto subtype : { device::LS_IOLINK_MIN, device::LS_IOLINK_MAX } )
+        {
+        level_s_iolink input( "LS1", subtype );
+        input.init_params();
+        EXPECT_EQ( input.get_cmd( "P_DTO", 0 ), -1 );
+        input.set_article( "IFM.LMT100" );
+        init_channels( input );
+        set_iol_state_to_OK( input );
+        input.set_par( 1, 0, 0 );
+        input.set_par( 2, 0, -10 );
+        input.set_par( 3, 0, 0 );
+        EXPECT_EQ( input.get_cmd( "P_ERR", 0 ), -10 );
+        EXPECT_EQ( input.get_cmd( "P_DTO", 0 ), 0 );
+
+        *input.AI_channels.int_read_values[ 0 ] = 0;
+        input.evaluate_io();
+        EXPECT_EQ( input.get_state(), 0 );
+        input.set_cmd( "P_DT", 0, 100 );
+        input.set_cmd( "P_DTO", 0, 300 );
+        DeltaMilliSecSubHooker elapsed( 100 );
+        *input.AI_channels.int_read_values[ 0 ] = 0x0100;
+        input.evaluate_io();
+        EXPECT_EQ( input.get_state(), 0 );
+        DeltaMilliSecSubHooker::set_millisec( 101 );
+        input.evaluate_io();
+        EXPECT_EQ( input.get_state(), 1 );
+
+        *input.AI_channels.int_read_values[ 0 ] = 0;
+        input.evaluate_io();
+        EXPECT_EQ( input.get_state(), 1 );
+        DeltaMilliSecSubHooker::set_millisec( 300 );
+        input.evaluate_io();
+        EXPECT_EQ( input.get_state(), 1 );
+        DeltaMilliSecSubHooker::set_millisec( 301 );
+        input.evaluate_io();
+        EXPECT_EQ( input.get_state(), 0 );
+
+        input.init_params();
+        EXPECT_EQ( input.get_cmd( "P_DTO", 0 ), -1 );
+        EXPECT_EQ( input.get_cmd( "P_ERR", 0 ), -10 );
+        DeltaMilliSecSubHooker::set_millisec( 101 );
+        *input.AI_channels.int_read_values[ 0 ] = 0x0100;
+        input.evaluate_io();
+        EXPECT_EQ( input.get_state(), 1 );
+        *input.AI_channels.int_read_values[ 0 ] = 0;
+        DeltaMilliSecSubHooker::set_millisec( 100 );
+        input.evaluate_io();
+        EXPECT_EQ( input.get_state(), 1 );
+        DeltaMilliSecSubHooker::set_millisec( 101 );
+        input.evaluate_io();
+        EXPECT_EQ( input.get_state(), 0 );
+        }
+    G_PAC_INFO()->emulation_on();
+    }
+
 TEST_F( iolink_dev_test, level_s_iolink_get_error_description )
     {
     level_s_iolink test_dev_max( "TestDevice", device::LS_IOLINK_MAX );
+    test_dev_max.init_params();
     test_dev_err( test_dev_max, test_dev_max, 0 );
     }
 
 TEST_F( iolink_dev_test, level_s_iolink_get_value )
     {
     level_s_iolink test_dev_max( "TestDevice", device::LS_IOLINK_MAX );
+    test_dev_max.init_params();
 
     EXPECT_EQ( test_dev_max.get_value(), .0f );
     G_PAC_INFO()->emulation_off();
@@ -5720,6 +5869,37 @@ TEST( wages_eth, evaluate_io )
 
     w2.evaluate();
     EXPECT_EQ( 0, w2.get_wages_value() );
+    }
+
+TEST( wages_eth, parse_ip_address )
+    {
+    std::string ip;
+    unsigned int port = 0;
+
+    ASSERT_TRUE( wages_eth::parse_ip_address( "192.168.1.1", ip, port ) );
+    EXPECT_EQ( "192.168.1.1", ip );
+    EXPECT_EQ( 1001u, port );
+
+    ASSERT_TRUE( wages_eth::parse_ip_address( "192.168.1.1:8888", ip, port ) );
+    EXPECT_EQ( "192.168.1.1", ip );
+    EXPECT_EQ( 8888u, port );
+
+    ASSERT_TRUE( wages_eth::parse_ip_address( "192.168.1.1:65535", ip, port ) );
+    EXPECT_EQ( 65535u, port );
+
+    EXPECT_FALSE( wages_eth::parse_ip_address( "192.168.1.1:", ip, port ) );
+    EXPECT_FALSE( wages_eth::parse_ip_address( "192.168.1.1:0", ip, port ) );
+    EXPECT_FALSE( wages_eth::parse_ip_address( "192.168.1.1:65536", ip, port ) );
+    EXPECT_FALSE( wages_eth::parse_ip_address( "192.168.1.1:abc", ip, port ) );
+    EXPECT_FALSE( wages_eth::parse_ip_address( "192.168.1.1:8888:1", ip, port ) );
+    }
+
+TEST( wages_eth, set_ip_with_port )
+    {
+    wages_eth w1( "W1" );
+    w1.set_string_property( "IP", "192.168.1.1:8888" );
+    w1.evaluate_io();
+    EXPECT_EQ( 0.0f, w1.get_value() );
     }
 
 TEST( wages_eth, get_value )
