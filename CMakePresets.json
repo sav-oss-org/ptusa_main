@@ -101,6 +101,20 @@
 
 
     {
+      "name": "build-windows-AXCF2000-2026-LTS-Release",
+      "displayName": "Windows AXCF2000 2026 LTS Release",
+      "description": "Using Windows OS",
+      "inherits": "windows-AXCF-default",
+      "environment": {
+        "ARP_DEVICE": "AXCF2000EA",
+        "ARP_DEVICE_VERSION": "2026.0.4 LTS (26.0.4.13)",
+        "ARP_DEVICE_SHORT_VERSION": "2026.0",
+        "ARP_SDK_PACKAGE_NAME": "x86_64-w64-mingw32"
+      }
+    },
+
+
+    {
       "name": "build-linux-AXCF2152-2024-LTS-Release",
       "displayName": "Linux AXCF2152 2024.0 LTS Release",
       "description": "Using Linux OS",
@@ -172,6 +186,17 @@
         "ARP_DEVICE_SHORT_VERSION": "2026.0",
         "ARP_DEVICE_VERSION": "2026.0.3 LTS (26.0.3.88)",
         "ARP_SDK_PACKAGE_NAME": "x86_64-pokysdk-mingw32"
+      }
+    },
+    {
+      "name": "build-linux-AXCF2000-2026-LTS-Release",
+      "displayName": "Linux AXCF2000EA 2026.0 LTS Release",
+      "description": "Using Linux OS",
+      "inherits": "linux-AXCF-default",
+      "environment": {
+        "ARP_DEVICE": "AXCF2000EA",
+        "ARP_DEVICE_SHORT_VERSION": "2026.0",
+        "ARP_DEVICE_VERSION": "2026.0.4 LTS (26.0.4.13)"
       }
     },
 
@@ -250,6 +275,11 @@
       "displayName": "AXCF3152 2026 LTS",
       "configurePreset": "build-linux-AXCF3152-2026-LTS-Release"
     },
+    {
+      "name": "build-linux-AXCF2000-2026-LTS-Release",
+      "displayName": "AXCF2000 2026 LTS",
+      "configurePreset": "build-linux-AXCF2000-2026-LTS-Release"
+    },
 
 
     {
@@ -261,6 +291,13 @@
       "name": "build-windows-AXCF3152-2026-LTS-Release",
       "displayName": "AXCF3152 2026 LTS",
       "configurePreset": "build-windows-AXCF3152-2026-LTS-Release"
+    },
+
+
+    {
+      "name": "build-windows-AXCF2000-2026-LTS-Release",
+      "displayName": "AXCF2000 2026 LTS",
+      "configurePreset": "build-windows-AXCF2000-2026-LTS-Release"
     },
 
 

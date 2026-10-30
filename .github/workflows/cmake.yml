@@ -139,6 +139,20 @@ jobs:
             dir: "2026.0",
             plcncli: "PLCnext_Toolchain_Linux_2026.0-LTS"
           }
+
+        - {
+            name: "Ubuntu Latest AXCF2000 2026 LTS",
+            artifact: "Linux-AXCF2000-2026.7z",
+            os: ubuntu-latest,
+            targets: "ptusa_main libptusa_main PtusaPLCnextEngineer",
+            run_tests: "false",
+
+            axc: "AXCF2000EA",
+            preset: "build-linux-AXCF2000-2026-LTS-Release",
+            sdk: "axcf2000ea-linux_sdk-2026.0.4_LTS-26.0.4.13",
+            dir: "2026.0",
+            plcncli: "PLCnext_Toolchain_Linux_2026.0-LTS"
+          }
     steps:
     - name: Harden the runner (Audit all outbound calls)
       uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
