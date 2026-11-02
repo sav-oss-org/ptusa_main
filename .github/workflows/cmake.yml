@@ -292,6 +292,7 @@ jobs:
         chmod +x "$plcncli.sh"
         ./$plcncli.sh --quiet --accept
         sudo ln -sf "$GITHUB_WORKSPACE/PLCnext_Toolchain/plcncli" /bin/plcncli
+        plcncli set setting SdkPaths -a "/opt/pxc/sdks/${{ matrix.config.axc }}/${{ matrix.config.dir }}"
         plcncli --version
 
     - name: Cache MinGW archive
