@@ -195,7 +195,7 @@ if(LINUX)
         if(PLCNEXT_TARGET_VERSION)
             execute_process(COMMAND plcncli set target --add
                 -p "${PLCNEXT_PROJECT_DIR}"
-                -n ${ARP_DEVICE}
+                -n "${ARP_DEVICE}"
                 -v "${PLCNEXT_TARGET_VERSION}"
                 --quiet
                 COMMAND_ECHO STDOUT )
