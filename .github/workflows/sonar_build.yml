@@ -41,7 +41,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       # To see list of versions https://binaries.sonarsource.com/?prefix=Distribution/sonar-scanner-cli/
-      SONAR_SCANNER_VERSION: 7.2.0.5079
+      SONAR_SCANNER_VERSION: 8.3.1.16491
       SONAR_SERVER_URL: "https://sonarcloud.io"
       BUILD_WRAPPER_OUT_DIR: build_wrapper_output_directory # Directory where build-wrapper output will be placed
       # ccache
