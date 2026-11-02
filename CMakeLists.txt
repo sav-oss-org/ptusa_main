@@ -199,6 +199,9 @@ if(LINUX)
                 -v "${PLCNEXT_TARGET_VERSION}"
                 --quiet
                 COMMAND_ECHO STDOUT )
+        else()
+            message(WARNING
+                "No short SDK version: plcncli will generate without a valid target.")
         endif()
 
         execute_process(COMMAND plcncli
