@@ -171,19 +171,19 @@ if(LINUX)
         set(PLCNEXT_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/PAC/linux/PAC_PLCnext/PtusaPLCnextEngineer")
         set(PLCNEXT_PROJECT_DIR "${CMAKE_BINARY_DIR}/PtusaPLCnextEngineer")
 
-        # Keep an existing settings file: re-configuring an already configured build tree
-        # without the preset environment must not drop the previously registered target.
-        if(NOT EXISTS "${PLCNEXT_PROJECT_DIR}/plcnext.proj")
-            file(WRITE "${PLCNEXT_PROJECT_DIR}/plcnext.proj"
-                "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n"
-                "<ProjectSettings xmlns=\"http://www.phoenixcontact.com/schema/cliproject\">\n"
-                "  <Type>project</Type>\n"
-                "  <Version>4.0</Version>\n"
-                "  <Name>PtusaPLCnextEngineer</Name>\n"
-                "  <GenerateDTArrayNameByType>true</GenerateDTArrayNameByType>\n"
-                "  <GenerateNamespaces>true</GenerateNamespaces>\n"
-                "</ProjectSettings>\n")
-        endif()
+        # Rewrite the settings file on every configure so that re-adding the target
+        # stays idempotent: plcncli rejects a duplicate target and appends a second
+        # <Target> when the full SDK version changes. The previously registered target
+        # is restored from the cached device version on standalone reconfigure.
+        file(WRITE "${PLCNEXT_PROJECT_DIR}/plcnext.proj"
+            "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n"
+            "<ProjectSettings xmlns=\"http://www.phoenixcontact.com/schema/cliproject\">\n"
+            "  <Type>project</Type>\n"
+            "  <Version>4.0</Version>\n"
+            "  <Name>PtusaPLCnextEngineer</Name>\n"
+            "  <GenerateDTArrayNameByType>true</GenerateDTArrayNameByType>\n"
+            "  <GenerateNamespaces>true</GenerateNamespaces>\n"
+            "</ProjectSettings>\n")
 
         # The short SDK version comes from the preset environment, but a standalone
         # re-configure has no preset environment, so fall back to the cached device version.
@@ -207,11 +207,22 @@ if(LINUX)
         execute_process(COMMAND plcncli
             generate code -p "${PLCNEXT_PROJECT_DIR}" -s "${PLCNEXT_SOURCE_DIR}" -n -o "${PLCNEXT_PROJECT_DIR}/intermediate/code" --verbose
             WORKING_DIRECTORY ${PLCNEXT_SOURCE_DIR}
-            COMMAND_ECHO STDOUT )
+            COMMAND_ECHO STDOUT
+            RESULT_VARIABLE PLCNCLI_CODE_RESULT )
+        if(NOT PLCNCLI_CODE_RESULT EQUAL 0)
+            message(FATAL_ERROR
+                "plcncli generate code failed with exit code ${PLCNCLI_CODE_RESULT}.")
+        endif()
+
         execute_process(COMMAND plcncli
             generate config -p "${PLCNEXT_PROJECT_DIR}" -s "${PLCNEXT_SOURCE_DIR}" -n -o "${PLCNEXT_PROJECT_DIR}/intermediate/config" --verbose
             WORKING_DIRECTORY ${PLCNEXT_SOURCE_DIR}
-            COMMAND_ECHO STDOUT )
+            COMMAND_ECHO STDOUT
+            RESULT_VARIABLE PLCNCLI_CONFIG_RESULT )
+        if(NOT PLCNCLI_CONFIG_RESULT EQUAL 0)
+            message(FATAL_ERROR
+                "plcncli generate config failed with exit code ${PLCNCLI_CONFIG_RESULT}.")
+        endif()
 
         file(GLOB PLCnext_engineer_src CONFIGURE_DEPENDS
             PAC/linux/PAC_PLCnext/PtusaPLCnextEngineer/*.cpp
