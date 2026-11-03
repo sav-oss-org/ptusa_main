@@ -3,6 +3,7 @@
 #include "OPCUAServer.h"
 #include "lua_manager.h"
 #include <cstdio>
+#include <limits>
 
 // Мок для G_OPCUA_SERVER.
 class MockOPCUAServer : public OPCUA_server
@@ -153,6 +154,42 @@ TEST( PAC_info, proc_OPC )
     EXPECT_EQ( 10, G_PAC_INFO()->proc_OPC( 0, 10, false ) );
     }
 
+TEST( PAC_info, phoenix_modbus_udp_commands )
+    {
+    EXPECT_EQ( 301, static_cast<int>( PAC_info::COMMANDS::PHOENIX_MODBUS_UDP_ON ) );
+    EXPECT_EQ( 302, static_cast<int>( PAC_info::COMMANDS::PHOENIX_MODBUS_UDP_OFF ) );
+    auto* info = G_PAC_INFO();
+    info->set_phoenix_modbus_udp( false );
+    EXPECT_EQ( 25u, info->get_phoenix_modbus_udp_timeout_ms() );
+    EXPECT_EQ( 10, info->set_phoenix_modbus_udp_timeout_ms( 0 ) );
+    EXPECT_EQ( 10, info->set_cmd( "PHOENIX_MODBUS_UDP_TIMEOUT_MS", 0, 2.5 ) );
+    EXPECT_EQ( 0, info->set_cmd( "PHOENIX_MODBUS_UDP_TIMEOUT_MS", 0, 40 ) );
+    EXPECT_EQ( 40u, info->get_phoenix_modbus_udp_timeout_ms() );
+    EXPECT_EQ( 0, info->set_phoenix_modbus_udp_timeout_ms( 25 ) );
+    EXPECT_EQ( 10, info->set_cmd( "PHOENIX_MODBUS_UDP", 0, 2 ) );
+    EXPECT_FALSE( info->is_phoenix_modbus_udp() );
+    EXPECT_EQ( 0, info->set_cmd( "PHOENIX_MODBUS_UDP", 0, 1 ) );
+    EXPECT_TRUE( info->is_phoenix_modbus_udp() );
+    EXPECT_EQ( 0, info->set_cmd( "CMD", 0,
+        static_cast<double>( PAC_info::COMMANDS::PHOENIX_MODBUS_UDP_OFF ) ) );
+    EXPECT_FALSE( info->is_phoenix_modbus_udp() );
+    EXPECT_EQ( 0, info->set_cmd( "CMD", 0,
+        static_cast<double>( PAC_info::COMMANDS::PHOENIX_MODBUS_UDP_ON ) ) );
+    EXPECT_TRUE( info->is_phoenix_modbus_udp() );
+    info->set_phoenix_modbus_udp( false );
+    }
+
+TEST( PAC_info, invalid_numeric_commands )
+    {
+    for ( const auto value : { 1030001.5,
+        std::numeric_limits<double>::quiet_NaN(),
+        std::numeric_limits<double>::infinity(),
+        static_cast<double>( ( std::numeric_limits<int>::max )() ) + 1.0 } )
+        {
+        EXPECT_EQ( 10, G_PAC_INFO()->set_cmd( "CMD", 0, value ) );
+        }
+    }
+
 TEST( PAC_info, reset_params )
     {
     G_PAC_INFO()->par[ PAC_info::P_MIX_FLIP_PERIOD ] = 100;
@@ -187,6 +224,8 @@ TEST( PAC_info, save_device )
         "\tUP_SECS=0,\n"
         "\tUP_TIME=\"0 дн. 0:0:0\",\n"
         "\tCYCLE_TIME=100,\n"
+        "\tPHOENIX_MODBUS_UDP=0,\n"
+        "\tPHOENIX_MODBUS_UDP_TIMEOUT_MS=25,\n"
         "\tWASH_VALVE_SEAT_PERIOD=180,\n"
         "\tWASH_VALVE_UPPER_SEAT_TIME=2000,\n"
         "\tWASH_VALVE_LOWER_SEAT_TIME=1000,\n"
@@ -233,6 +272,8 @@ TEST( PAC_info, save_device )
             "\tUP_SECS=1,\n"
             "\tUP_TIME=\"0 дн. 00:00:01\",\n"
             "\tCYCLE_TIME=100,\n"
+            "\tPHOENIX_MODBUS_UDP=0,\n"
+            "\tPHOENIX_MODBUS_UDP_TIMEOUT_MS=25,\n"
             "\tWASH_VALVE_SEAT_PERIOD=180,\n"
             "\tWASH_VALVE_UPPER_SEAT_TIME=2000,\n"
             "\tWASH_VALVE_LOWER_SEAT_TIME=1000,\n"

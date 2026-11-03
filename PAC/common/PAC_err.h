@@ -23,6 +23,7 @@
 
 #include <string.h>
 #include <vector>
+#include <string>
 
 #include "g_errors.h"
 #include "smart_ptr.h"
@@ -82,6 +83,10 @@ class PAC_critical_errors_manager
         void show_errors() const;
         void set_global_error( ALARM_CLASS eclass, ALARM_SUBCLASS p1,
             unsigned int param );
+        /// @brief Установить или обновить подробности существующей тревоги.
+        void set_global_error( ALARM_CLASS eclass, ALARM_SUBCLASS p1,
+            unsigned int param, const std::string& details,
+            ALARM_CLASS_PRIORITY priority = P_ERR_CONNECTION );
         void reset_global_error( ALARM_CLASS eclass, ALARM_SUBCLASS p1,
             unsigned int param, bool is_print_msg = true );
 
@@ -121,6 +126,7 @@ class PAC_critical_errors_manager
             unsigned int    err_sub_class;       ///< Подкласс ошибки.
             unsigned int    param;               ///< Параметр ошибки.
             int             priority;            ///< Приоритет ошибки.
+            std::string     details;             ///< Подробности диагностики.
 
             critical_error( int err_class = 0, u_int err_sub_class = 0,
                 u_int param = 0,

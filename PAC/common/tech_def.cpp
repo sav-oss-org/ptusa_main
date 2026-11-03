@@ -6,8 +6,21 @@
 #include "tech_def.h"
 
 #include "lua_manager.h"
+#include "lua_debugger.h"
 
 #include "g_errors.h"
+#include "prj_mngr.h"
+#include <filesystem>
+#include <memory>
+namespace
+{
+struct operations_call_guard
+    {
+    unsigned& depth;
+    explicit operations_call_guard( unsigned& depth ) : depth( depth ) { ++depth; }
+    ~operations_call_guard() { --depth; }
+    };
+}
 //-----------------------------------------------------------------------------
 auto_smart_ptr < tech_object_manager > tech_object_manager::instance;
 
@@ -95,6 +108,7 @@ int tech_object::init_runtime_params()
 //-----------------------------------------------------------------------------
 int tech_object::set_mode( u_int operation_n, int newm )
     {
+    const operations_call_guard guard( operations_call_depth );
     int res = 0;
 
     static u_char idx = 0;
@@ -355,6 +369,7 @@ int tech_object::check_on_mode( u_int operation, char* reason, int max_len )
 //-----------------------------------------------------------------------------
 int tech_object::evaluate()
     {
+    const operations_call_guard guard( operations_call_depth );
     for ( u_int i = 0; i < operations_count; i++ )
         {
         int idx = i + 1;
@@ -1299,6 +1314,11 @@ int tech_object::set_err_msg( const char *err_msg, int mode, int new_mode,
     if ( errors.size() < E_MAX_ERRORS_SIZE )
         {
         errors.push_back( new_err );
+        const int priority = type == ERR_ALARM || type == ERR_TO_FAIL_STATE ?
+            3 : type == ERR_OFF || type == ERR_OFF_AND_ON ||
+            type == ERR_DURING_WORK ? 5 : 4;
+        G_LUA_DEBUGGER->publish_message(
+            "set_err_msg", priority, new_err->msg );
         }
     else
         {
@@ -1618,6 +1638,86 @@ int tech_object_manager::save_params_as_Lua_str( char* str )
         res += tech_objects[ i ]->save_params_as_Lua_str( str + res );
         }
     return res;
+    }
+//-----------------------------------------------------------------------------
+int tech_object::reload_operations( lua_State* L, const std::string& path,
+    std::string& error )
+    {
+    if ( operations_call_depth )
+        {
+        error = "Object operations are in use by a controller/Lua call.";
+        return -2;
+        }
+    const operations_call_guard guard( operations_call_depth );
+    if ( !L )
+        {
+        error = "Lua runtime is unavailable.";
+        return -3;
+        }
+    // Drop temporary binding handles, then reject persistent references before
+    // replacing their C++ owners. Parameters and the object itself stay alive.
+    lua_gc( L, LUA_GCCOLLECT, 0 );
+    if ( operations_manager->has_lua_references( L ) )
+        {
+        error = "Lua code retains operation/step handles; release them before reload.";
+        return -4;
+        }
+    const int top = lua_gettop( L );
+    auto replacement = std::make_unique<operation_manager>( this );
+    lua_getglobal( L, "prepare_tech_object_reload" );
+    lua_pushinteger( L, serial_idx );
+    tolua_pushusertype( L, replacement.get(), "operation_manager" );
+    lua_pushlstring( L, path.data(), path.size() );
+    const int result = lua_pcall( L, 3, 1, 0 );
+    const bool prepared = result == 0 && lua_isboolean( L, -1 ) &&
+        lua_toboolean( L, -1 ) && replacement->size() == operations_count;
+    if ( !prepared )
+        {
+        const char* message = result ? lua_tostring( L, -1 ) : nullptr;
+        error = message ? message : "Invalid result from prepare_tech_object_reload.";
+        }
+    lua_settop( L, top );
+    // Remove temporary userdata before deleting a failed build or reusing its
+    // address on the next attempt. The system builder never exports handles.
+    lua_gc( L, LUA_GCCOLLECT, 0 );
+    if ( !prepared ) return -3;
+    if ( !is_idle() )
+        {
+        error = "Object is not idle.";
+        return -2;
+        }
+    auto* previous = static_cast<operation_manager*>( operations_manager );
+    operations_manager = replacement.release();
+    delete previous;
+    return 0;
+    }
+//-----------------------------------------------------------------------------
+int tech_object_manager::reload_object( u_int serial_number )
+    {
+    reload_error.clear();
+    for ( auto* object : tech_objects )
+        {
+        if ( object->get_serial_idx() != serial_number ) continue;
+        if ( !object->is_idle() )
+            {
+            reload_error = "Object is not idle.";
+            return -2;
+            }
+        const auto utf8_path = ( std::filesystem::u8path( G_PROJECT_MANAGER->path ) /
+            "main.objects.lua" ).u8string();
+        // u8string() uses char8_t in C++20; Lua still accepts UTF-8 char bytes.
+        const std::string path( utf8_path.begin(), utf8_path.end() );
+        const int result = object->reload_operations(
+            G_LUA_MANAGER->get_Lua(), path, reload_error );
+        if ( result )
+            G_LOG->error( "Reload object [%u]: %s", serial_number,
+                reload_error.c_str() );
+        else
+            G_LOG->notice( "Object [%u] reloaded.", serial_number );
+        return result;
+        }
+    reload_error = "Object not found.";
+    return -1;
     }
 //-----------------------------------------------------------------------------
 //-----------------------------------------------------------------------------

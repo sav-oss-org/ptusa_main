@@ -1,0 +1,25 @@
+# Необязательная конфигурация standalone-приложения.
+# Запуск из каталога проекта: ptusa_main --config ptusa_main.ini
+# Параметры командной строки имеют приоритет над значениями этого файла.
+script=main.plua
+path=.
+sys_path=./sys
+extra_paths=./dairy-sys
+debug=false
+rcrc=false
+port=10000
+
+# Режим OPC UA: off, r или rw. Без параметра используются настройки ПЛК.
+# opc=off
+
+# В Windows no_io и read_only_io по умолчанию true, в Linux — false.
+# no_io=true
+# read_only_io=true
+phoenix_modbus_udp=false
+phoenix_modbus_udp_timeout_ms=25
+
+# Основная пауза: 0.1..10 мс, по умолчанию 1 мс.
+sleep_time=1
+# Минимальный цикл с учетом основной паузы: 0..20 мс, по умолчанию 5 мс.
+# Если цикл быстрее, добавляется пауза на оставшееся время; 0 отключает ее.
+min_cycle_time=5

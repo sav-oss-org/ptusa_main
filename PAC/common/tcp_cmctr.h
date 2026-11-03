@@ -140,6 +140,11 @@ class tcp_communicator
         char host_name_eng[ TC_MAX_HOST_NAME + 1] = { 0 }; ///< Сетевое eng имя PAC.
 
         int max_cycles;         ///< Максимальное количество циклов обработки состояний сокетов за 1 проход.
+        bool debugger_cycle = false;
+        int incoming_frame_size = BUFSIZE;
+        /// Called only for a readable socket. Defer incomplete/wrong-class frames.
+        bool frame_ready( int socket );
+        bool buffered_frame_ready( int available );
         int glob_cmctr_ok;      ///< Флаг активности обмена с сервером.
 
         u_int   in_buffer_count;        ///< Количество данных в буфере.

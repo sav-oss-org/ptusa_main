@@ -29,7 +29,7 @@ class project_manager
     friend class test_project_manager;
 #endif
     public:
-        /// @brief Обработка параметров командной строки.
+        /// @brief Обработка параметров командной строки и файла --config.
         ///
         /// @param argc - количество параметров.
         /// @param argv - массив параметров.
@@ -67,7 +67,10 @@ class project_manager
         std::string path = "";       //Путь к описывающим проект скриптам Lua.
         std::string extra_paths = "";//Дополнительный путь к user-скриптам Lua.
 
-        unsigned int sleep_time_ms = 0;
+        /// @brief Основная пауза цикла, мс (0.1..10).
+        double sleep_time_ms = 1;
+        /// @brief Минимальная длительность цикла, мс (0..20).
+        double min_cycle_time = 5;
 
     protected:
         void log_opc_mode() const;

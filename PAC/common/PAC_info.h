@@ -6,6 +6,7 @@
 #include "g_device.h"
 #include "param_ex.h"
 #include "version_info.h"
+#include <atomic>
 
 class PAC_info: public i_Lua_save_device
     {
@@ -98,6 +99,15 @@ class PAC_info: public i_Lua_save_device
 
         int set_cmd( const char *prop, u_int idx, double val );
 
+        bool is_phoenix_modbus_udp() const
+            { return phoenix_modbus_udp.load( std::memory_order_relaxed ); }
+        void set_phoenix_modbus_udp( bool enabled );
+        static constexpr uint32_t DEFAULT_PHOENIX_MODBUS_UDP_TIMEOUT_MS = 25;
+        static constexpr uint32_t MAX_PHOENIX_MODBUS_UDP_TIMEOUT_MS = 60'000;
+        uint32_t get_phoenix_modbus_udp_timeout_ms() const
+            { return phoenix_modbus_udp_timeout_ms.load( std::memory_order_relaxed ); }
+        int set_phoenix_modbus_udp_timeout_ms( uint32_t timeout_ms );
+
         int proc_OPC( int prev_val, int val, bool is_save );
 
         const char* get_name_in_Lua() const
@@ -117,6 +127,13 @@ class PAC_info: public i_Lua_save_device
             RELOAD_RESTRICTIONS = 100,
             RESET_PARAMS = 101,
             FORCE_SAVE_PARAMS = 102,
+            PHOENIX_MODBUS_UDP_ON = 301,
+            PHOENIX_MODBUS_UDP_OFF = 302,
+
+            //База команд перезагрузки объекта: CMD = BASE + номер объекта [N].
+            //Нужна, когда интерфейс шлёт только число (без индекса).
+            //Например, перезагрузка объекта [4] - команда 1030004.
+            RELOAD_TECH_OBJECT_BASE = 1030000,
             };
 
 #ifdef PTUSA_TEST
@@ -192,6 +209,9 @@ class PAC_info: public i_Lua_save_device
         uint32_t restrictions_set_to_off_time{};
 
         uint32_t cycle_time{};
+        std::atomic_bool phoenix_modbus_udp{ false };
+        std::atomic<uint32_t> phoenix_modbus_udp_timeout_ms{
+            DEFAULT_PHOENIX_MODBUS_UDP_TIMEOUT_MS };
 
         /// @brief Indicator: any node has communication error or warning.
         /// 0 - all OK, 1 - at least one node has error or PP mode active.

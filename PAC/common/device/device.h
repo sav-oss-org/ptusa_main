@@ -726,6 +726,10 @@ class wages_eth : public analog_io_device, public i_wages
     public:
         explicit wages_eth( const char* dev_name );
 
+        /// IP address may include a TCP port (default: 1001).
+        static bool parse_ip_address( const char* address, std::string& ip,
+            unsigned int& port );
+
         float get_value() const override;
 
         int get_state() const override;
@@ -937,6 +941,8 @@ class DI1 : public digital_io_device
             device::DEVICE_SUB_TYPE sub_type, u_int par_cnt,
             int current_state_init_val = 0 );
 
+        void init_params() override;
+
         void direct_on() override;
 
         void direct_off() override;
@@ -953,9 +959,10 @@ class DI1 : public digital_io_device
             {
             DI_INDEX = 0,   ///< Индекс канала дискретного входа.
 
-            ADDITIONAL_PARAMS_COUNT = 1,
+            ADDITIONAL_PARAMS_COUNT = 2,
 
             P_DT = 1,
+            P_DTO,         ///< Задержка выключения; -1 - использовать P_DT.
             };
     };
 //-----------------------------------------------------------------------------
@@ -1127,6 +1134,8 @@ class level_s_iolink : public analog_io_device
     public:
         level_s_iolink( const char *dev_name, device::DEVICE_SUB_TYPE sub_type );
 
+        void init_params() override;
+
         float get_value() const override;
 
         int get_state() const override;
@@ -1186,6 +1195,7 @@ class level_s_iolink : public analog_io_device
 
             P_DT,
             P_ERR,              ///< Аварийное значение уровня.
+            P_DTO,              ///< Задержка выключения; -1 - использовать P_DT.
 
             LAST_PARAM_IDX,
             };

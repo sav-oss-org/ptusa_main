@@ -26,6 +26,14 @@ class i_cmd_device
     public:
         virtual ~i_cmd_device() = default;
 
+        /// @brief Получение числового свойства устройства.
+        ///
+        /// @param prop [ in ] - имя свойства.
+        /// @param idx [ in ]  - индекс для свойства.
+        ///
+        /// @return значение свойства или 0, если свойство не найдено.
+        virtual double get_cmd( const char* prop, u_int idx ) const = 0;
+
         /// @brief Выполнение числовой команды.
         ///
         /// @param prop [ in ] - имя свойства.

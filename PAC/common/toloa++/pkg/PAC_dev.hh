@@ -38,6 +38,12 @@ $#endif // WIN_OS
 class i_DI_device
     {
     public:
+        /// @brief Получение свойства устройства (ST, V, M или P_*).
+        double get_cmd( const char* prop, unsigned int idx );
+
+        /// @brief Установка свойства устройства (ST, V, M или P_*).
+        int set_cmd( const char* prop, unsigned int idx, double val );
+
         /// @brief Получение отфильтрованного состояния устройства.
         ///
         /// Устройство меняет свое состояние, если дискретный вход находится в
@@ -88,6 +94,12 @@ class i_DO_device: public i_DI_device
 class i_AI_device
     {
     public:
+        /// @brief Получение свойства устройства (ST, V, M или P_*).
+        double get_cmd( const char* prop, unsigned int idx );
+
+        /// @brief Установка свойства устройства (ST, V, M или P_*).
+        int set_cmd( const char* prop, unsigned int idx, double val );
+
         /// @brief Получение текущего состояния устройства.
         ///
         /// @return - текущее состояние устройства в виде дробного числа.
@@ -237,6 +249,9 @@ class device : public i_DO_AO_device
 #pragma endregion
 
     public:
+        /// @brief Получение свойства устройства (ST, V, M или P_*).
+        double get_cmd( const char* prop, unsigned int idx );
+
         /// @brief Выполнение команды устройством.
         ///
         /// Для обработки команд, полученных от сервера.
@@ -908,6 +923,12 @@ class dev_errors_manager
 class valve
     {
     public:
+        /// @brief Получение свойства устройства (ST, V, M или P_*).
+        double get_cmd( const char* prop, unsigned int idx );
+
+        /// @brief Установка свойства устройства (ST, V, M или P_*).
+        int set_cmd( const char* prop, unsigned int idx, double val );
+
         /// @brief Получение значения включенного состояния.
         bool is_opened();
 
@@ -1774,6 +1795,10 @@ class PAC_info: public i_Lua_save_device
 
         int set_cmd( const char *prop, unsigned int idx, double val );
         bool is_emulator();
+        bool is_phoenix_modbus_udp() const;
+        void set_phoenix_modbus_udp( bool enabled );
+        unsigned int get_phoenix_modbus_udp_timeout_ms() const;
+        int set_phoenix_modbus_udp_timeout_ms( unsigned int timeout_ms );
     };
 //----------------------------------------------------------------------------
 class siren_lights_manager

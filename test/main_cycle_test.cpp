@@ -2,6 +2,8 @@
 #include "lua_manager.h"
 #include "tcp_cmctr.h"
 #include "PAC_info.h"
+#include "prj_mngr.h"
+#include <chrono>
 
 #include "dtime.h"
 
@@ -25,6 +27,18 @@ TEST( main_cycle, main_cycle )
         reinterpret_cast<void*>( &get_time_next_hour ), SUBHOOK_64BIT_OFFSET );
     subhook_install( get_time_hook );
     main_cycle();
+
+    // Минимальное время применяется при каждом вызове, без статического кэша.
+    const auto savedSleep = G_PROJECT_MANAGER->sleep_time_ms;
+    const auto savedMinimum = G_PROJECT_MANAGER->min_cycle_time;
+    G_PROJECT_MANAGER->sleep_time_ms = 0.1;
+    G_PROJECT_MANAGER->min_cycle_time = 20;
+    const auto started = std::chrono::steady_clock::now();
+    main_cycle();
+    EXPECT_GE( std::chrono::steady_clock::now() - started,
+        std::chrono::milliseconds( 20 ) );
+    G_PROJECT_MANAGER->sleep_time_ms = savedSleep;
+    G_PROJECT_MANAGER->min_cycle_time = savedMinimum;
 
     subhook_remove( get_time_hook );
     G_LUA_MANAGER->free_Lua();

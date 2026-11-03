@@ -28,13 +28,57 @@ int fail_fcntl( int, int )
     }
 #endif
 
-int __stdcall fail_select_m1( int, fd_set*, fd_set*, fd_set*, struct timeval* )
+namespace
+{
+void set_connect_test_error()
     {
+#ifdef WIN_OS
+    WSASetLastError( WSAENETUNREACH );
+#else
+    errno = ENETUNREACH;
+#endif
+    }
+
+int __stdcall pending_connect( int, const sockaddr*, int )
+    {
+#ifdef WIN_OS
+    WSASetLastError( WSAEWOULDBLOCK );
+#else
+    errno = EINPROGRESS;
+#endif
     return -1;
     }
 
-int __stdcall fail_select_0( int, fd_set*, fd_set*, fd_set*, struct timeval* )
+int __stdcall failed_connect( int, const sockaddr*, int )
     {
+    set_connect_test_error();
+    return -1;
+    }
+
+int __stdcall refused_getsockopt( int, int, int, char* value, int* )
+    {
+    // SO_ERROR is independent of errno / WSAGetLastError.
+#ifdef WIN_OS
+    *reinterpret_cast<int*>( value ) = WSAECONNREFUSED;
+    WSASetLastError( 0 );
+#else
+    *reinterpret_cast<int*>( value ) = ECONNREFUSED;
+    errno = 0;
+#endif
+    return 0;
+    }
+}
+
+int __stdcall fail_select_m1( int, fd_set*, fd_set*, fd_set*, struct timeval* )
+    {
+    set_connect_test_error();
+    return -1;
+    }
+
+int __stdcall fail_select_0( int, fd_set*, fd_set*, fd_set*, struct timeval* tv )
+    {
+    EXPECT_EQ( 0, tv->tv_sec );
+    EXPECT_EQ( 0, tv->tv_usec );
     return 0;
     }
 
@@ -45,6 +89,7 @@ int __stdcall success_select( int, fd_set*, fd_set*, fd_set*, struct timeval* )
 
 int __stdcall fail_getsockopt( int, int, int, char*, int* )
     {
+    set_connect_test_error();
     return -1;
     }
 
@@ -94,6 +139,10 @@ TEST( uni_io_manager, net_init )
     subhook_remove( fcntl_hook );
 #endif
 
+    auto connect_hook = subhook_new( reinterpret_cast<void*>( connect ),
+        reinterpret_cast<void*>( pending_connect ), SUBHOOK_64BIT_OFFSET );
+    subhook_install( connect_hook );
+
     subhook_t select_m1_hook = subhook_new( reinterpret_cast<void*>( select ),
         reinterpret_cast<void*>( fail_select_m1 ), SUBHOOK_64BIT_OFFSET );
     subhook_install( select_m1_hook );
@@ -103,8 +152,16 @@ TEST( uni_io_manager, net_init )
     subhook_t select_0_hook = subhook_new( reinterpret_cast<void*>( select ),
         reinterpret_cast<void*>( fail_select_0 ), SUBHOOK_64BIT_OFFSET );
     subhook_install( select_0_hook );
-    // Should fail - fail with select() - 0.
+    EXPECT_EQ( uni_io_manager::NET_CONNECTING, mngr.net_init( &node ) );
+    const int pending_sock = node.sock;
+    EXPECT_EQ( io_manager::io_node::ST_CONNECTING, node.state );
+    EXPECT_EQ( uni_io_manager::NET_CONNECTING, mngr.net_init( &node ) );
+    EXPECT_EQ( pending_sock, node.sock );
+    node.connect_start_time = get_millisec() -
+        io_manager::io_node::C_CNT_TIMEOUT_US / 1000;
     EXPECT_EQ( 6, mngr.net_init( &node ) );
+    EXPECT_EQ( io_manager::io_node::ST_NO_CONNECT, node.state );
+    EXPECT_EQ( 0, node.sock );
     subhook_remove( select_0_hook );
 
     subhook_t getsockopt_1_hook = subhook_new( reinterpret_cast<void*>( getsockopt ),
@@ -122,12 +179,36 @@ TEST( uni_io_manager, net_init )
     subhook_t getsockopt_0_hook = subhook_new( reinterpret_cast<void*>( getsockopt ),
         reinterpret_cast<void*>( success_getsockopt ), SUBHOOK_64BIT_OFFSET );
     subhook_install( getsockopt_0_hook );
+    subhook_remove( getsockopt_0_hook );
+    auto refused_hook = subhook_new( reinterpret_cast<void*>( getsockopt ),
+        reinterpret_cast<void*>( refused_getsockopt ), SUBHOOK_64BIT_OFFSET );
+    subhook_install( refused_hook );
+    EXPECT_EQ( 7, mngr.net_init( &node ) );
+    EXPECT_EQ( io_manager::io_node::ST_NO_CONNECT, node.state );
+    EXPECT_EQ( 0, node.sock );
+    subhook_remove( refused_hook );
+    subhook_free( refused_hook );
+    subhook_install( getsockopt_0_hook );
+
+    // A synchronous connect failure must not reach select/SO_ERROR success.
+    subhook_remove( connect_hook );
+    auto failed_hook = subhook_new( reinterpret_cast<void*>( connect ),
+        reinterpret_cast<void*>( failed_connect ), SUBHOOK_64BIT_OFFSET );
+    subhook_install( failed_hook );
+    EXPECT_EQ( 6, mngr.net_init( &node ) );
+    EXPECT_EQ( io_manager::io_node::ST_NO_CONNECT, node.state );
+    subhook_remove( failed_hook );
+    subhook_free( failed_hook );
+    subhook_install( connect_hook );
+
     // Should OK.
     EXPECT_EQ( 0, mngr.net_init( &node ) );
     subhook_remove( select_1_hook );
     subhook_remove( getsockopt_0_hook );
 
     mngr.disconnect( &node );
+    subhook_remove( connect_hook );
+    subhook_free( connect_hook );
 
     subhook_free( socket_hook );
     subhook_free( setsockopt_hook );
@@ -142,6 +223,57 @@ TEST( uni_io_manager, net_init )
     subhook_free( select_1_hook );
     subhook_free( getsockopt_0_hook );
     }
+
+TEST( uni_io_manager, pending_connection_and_retry_delay )
+    {
+    uni_io_manager mngr;
+    io_manager::io_node node( io_manager::io_node::TYPES::PHOENIX_BK_ETH,
+        1000, "127.0.0.1", "A100", 1, 1, 1, 1, 1, 1 );
+    G_PAC_INFO()->par[ PAC_info::P_BK_ANSWER_MAX_WAIT_TIME ] = 10'000;
+    auto connect_hook = subhook_new( reinterpret_cast<void*>( connect ),
+        reinterpret_cast<void*>( pending_connect ), SUBHOOK_64BIT_OFFSET );
+    auto select_hook = subhook_new( reinterpret_cast<void*>( select ),
+        reinterpret_cast<void*>( fail_select_0 ), SUBHOOK_64BIT_OFFSET );
+    subhook_install( connect_hook );
+    subhook_install( select_hook );
+
+    node.last_init_time = get_millisec() - node.delay_time;
+    EXPECT_EQ( 1, mngr.e_communicate( &node, 1, 1 ) );
+    EXPECT_EQ( io_manager::io_node::ST_CONNECTING, node.state );
+    const auto delay = node.delay_time;
+    const int sock = node.sock;
+    // A pending attempt must be polled even during the reconnect delay.
+    node.last_init_time = get_millisec();
+    node.connect_start_time = get_millisec() -
+        io_manager::io_node::C_CNT_TIMEOUT_US / 1000;
+    EXPECT_EQ( -100, mngr.e_communicate( &node, 1, 1 ) );
+    EXPECT_EQ( io_manager::io_node::ST_NO_CONNECT, node.state );
+    EXPECT_EQ( 0, node.sock );
+    EXPECT_EQ( delay * 2, node.delay_time );
+    EXPECT_EQ( 1, mngr.e_communicate( &node, 1, 1 ) );
+    EXPECT_EQ( io_manager::io_node::ST_NO_CONNECT, node.state );
+#ifdef WIN_OS
+    int value = 0, size = sizeof( value );
+    EXPECT_EQ( SOCKET_ERROR, getsockopt( sock, SOL_SOCKET, SO_ERROR,
+        reinterpret_cast<char*>( &value ), &size ) );
+#else
+    EXPECT_EQ( -1, fcntl( sock, F_GETFD ) );
+    EXPECT_EQ( EBADF, errno );
+#endif
+
+    // Explicit disconnect also closes a pending socket and delays the retry.
+    EXPECT_EQ( uni_io_manager::NET_CONNECTING, mngr.net_init( &node ) );
+    mngr.disconnect( &node );
+    EXPECT_EQ( 0, node.sock );
+    EXPECT_EQ( 1, mngr.e_communicate( &node, 1, 1 ) );
+    EXPECT_EQ( io_manager::io_node::ST_NO_CONNECT, node.state );
+    subhook_remove( select_hook );
+    subhook_remove( connect_hook );
+    subhook_free( select_hook );
+    subhook_free( connect_hook );
+    G_PAC_INFO()->reset_params();
+    }
+
 
 class test_uni_io_manager : public uni_io_manager
     {

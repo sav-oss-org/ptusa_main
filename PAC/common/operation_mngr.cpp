@@ -11,6 +11,7 @@
 #include "operation_mngr.h"
 #include "g_errors.h"
 #include "tech_def.h"
+#include "lua_manager.h"
 #include <fmt/chrono.h>
 #include <inttypes.h>
 
@@ -2997,6 +2998,65 @@ bool operation_state::is_active_extra_step( int step_idx ) const
     return false;
     }
 //-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
+bool operation_manager::has_lua_references( lua_State* L ) const
+    {
+    const auto referenced = [L]( const void* pointer, const char* type )
+        {
+        const int top = lua_gettop( L );
+        luaL_getmetatable( L, type );
+        if ( !lua_istable( L, -1 ) )
+            {
+            lua_settop( L, top );
+            return false;
+            }
+        lua_getfield( L, -1, "tolua_ubox" );
+        if ( !lua_istable( L, -1 ) )
+            {
+            lua_pop( L, 1 );
+            lua_getfield( L, LUA_REGISTRYINDEX, "tolua_ubox" );
+            }
+        bool result = false;
+        if ( lua_istable( L, -1 ) )
+            {
+            lua_pushlightuserdata( L, const_cast<void*>( pointer ) );
+            lua_rawget( L, -2 );
+            result = !lua_isnil( L, -1 );
+            }
+        lua_settop( L, top );
+        return result;
+        };
+    const auto step_referenced = [&]( const step* item )
+        {
+        if ( referenced( item, "step" ) ||
+            referenced( &item->action_stub, "action" ) ) return true;
+        for ( auto* action : item->actions )
+            if ( referenced( action, "action" ) ) return true;
+        return false;
+        };
+    const auto state_referenced = [&]( const operation_state* state )
+        {
+        if ( referenced( state, "operation_state" ) ||
+            step_referenced( state->mode_step ) ||
+            step_referenced( &state->step_stub ) ) return true;
+        for ( auto* item : state->steps )
+            if ( step_referenced( item ) ) return true;
+        return false;
+        };
+    const auto operation_referenced = [&]( const operation* item )
+        {
+        if ( referenced( item, "operation" ) ||
+            state_referenced( &item->stub ) ) return true;
+        for ( auto* state : item->states )
+            if ( state_referenced( state ) ) return true;
+        return false;
+        };
+    if ( referenced( this, "operation_manager" ) ||
+        operation_referenced( &oper_stub ) ) return true;
+    for ( auto* item : operations )
+        if ( operation_referenced( item ) ) return true;
+    return false;
+    }
 //-----------------------------------------------------------------------------
 operation* operation_manager::add_operation( const char* name )
     {

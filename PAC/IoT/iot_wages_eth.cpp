@@ -1,27 +1,33 @@
 #include "iot_wages_eth.h"
+#include "tcp_cmctr.h"
+#include "log.h"
 #include <cstring>
 #include <cstdlib>
 
-#include "fmt/format.h"
-
 iot_wages_eth::iot_wages_eth( unsigned int id, const char* ip,
-    unsigned int port, const char* wages_name ) :
+    unsigned int port, const char* name ) :
     tc( std::unique_ptr<tcp_client>( tcp_client::Create( ip, port, id, 0,
     static_cast<unsigned int> ( CONSTANTS::BUFF_SIZE ),
-    static_cast<unsigned long> ( CONSTANTS::SEND_RECEIVE_TIMEOUT ) ) ) )
+    static_cast<unsigned long> ( 500 ) ) ) )
     {
-    fmt::format_to_n( name.data(), name.size() - 1, "{}",
-        wages_name ? wages_name : fmt::to_string( id ) );
+    (void)name;
     }
 
 void iot_wages_eth::evaluate()
     {
-    status = tc->AsyncReceive();
-    if ( status > 0 )
-    {
+    if ( tc->AsyncReceive() > 0 )
+        {
         convert_value();
+        last_correct_recive = get_millisec();
+        }
+    else if ( get_delta_millisec( last_correct_recive ) > timeout &&
+        state != DISCONNECTED )
+        {
+        state = DISCONNECTED;
+        last_correct_recive = get_millisec();
+        tc->Disconnect();
+        }
     }
-}
 
 int iot_wages_eth::get_wages_state() const
     {
@@ -45,14 +51,13 @@ void iot_wages_eth::set_wages_state( int new_state )
 
 void iot_wages_eth::convert_value()
     {
-    if ( tc->buff[ 8 ] != 'k' || tc->buff[ 9 ] != 'g' || !status )
+    if ( tc->buff[ 8 ] != 'k' || tc->buff[ 9 ] != 'g' )
         {
-        state = 0;
-        return;
+        state = INCORRECTDATA;
         }
     else
         {
-        state = 1;
+        state = CORRECTDATA;
         value = static_cast<float>( atof( tc->buff + 1 ) );
         }
     }
@@ -61,6 +66,12 @@ void iot_wages_eth::direct_set_tcp_buff( const char* new_value, size_t size,
     int new_status )
     {
     memcpy( tc->buff, new_value, size );
-    status = new_status;
-    convert_value();
+    if ( new_status > 0 )
+        {
+        convert_value();
+        }
+    else
+        {
+        state = DISCONNECTED;
+        }
     }

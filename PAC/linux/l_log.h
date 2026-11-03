@@ -41,6 +41,7 @@ class l_log: public i_log
 
     void virtual write_log( PRIORITIES priority )
         {
+        forward_to_debugger( priority );
 #ifdef SIMPLE_LOG
         printf( "%s\n", msg );
 #else

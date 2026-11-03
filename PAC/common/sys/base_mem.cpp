@@ -96,8 +96,18 @@ int SRAM::load_data()
 //-----------------------------------------------------------------------------
 int SRAM::safe_save()
     {
+    return safe_save_buffer( get_data(), true );
+    }
+//-----------------------------------------------------------------------------
+int SRAM::safe_save( const std::byte* data )
+    {
+    return safe_save_buffer( data, false );
+    }
+//-----------------------------------------------------------------------------
+int SRAM::safe_save_buffer( const std::byte* data, bool log_messages )
+    {
     std::chrono::high_resolution_clock::time_point start;
-    if ( G_DEBUG )
+    if ( log_messages && G_DEBUG )
         {
         start = std::chrono::high_resolution_clock::now();
         }
@@ -110,24 +120,33 @@ int SRAM::safe_save()
 
     if ( FILE* temp = fopen( tmp_path.string().c_str(), "w+b" ); !temp )
         {
-        G_LOG->error( "SRAM() - ERROR: Can't open file (%s) : %s.\n",
-            tmp_path.string().c_str(), strerror( errno ) );
+        if ( log_messages )
+            G_LOG->error( "SRAM() - ERROR: Can't open file (%s) : %s.\n",
+                tmp_path.string().c_str(), strerror( errno ) );
 
         return 1;
         }
     else
         {
         if ( auto res =
-            fwrite( get_data(), sizeof( std::byte ), get_size(), temp );
+            fwrite( data, sizeof( std::byte ), get_size(), temp );
             res != get_size() )
             {
-            G_LOG->error( "SRAM() - ERROR: fwrite (%s) wrote %zu of %u bytes.",
-                tmp_path.string().c_str(), res, get_size() );
+            if ( log_messages )
+                G_LOG->error( "SRAM() - ERROR: fwrite (%s) wrote %zu of %u bytes.",
+                    tmp_path.string().c_str(), res, get_size() );
             fclose( temp );
             return 2;
             }
 
-        fflush( temp );
+        if ( fflush( temp ) != 0 )
+            {
+            if ( log_messages )
+                G_LOG->error( "SRAM() - ERROR: fflush (%s) failed: %s.",
+                    tmp_path.string().c_str(), strerror( errno ) );
+            fclose( temp );
+            return 2;
+            }
 
         auto fd =
 #ifdef WIN_OS
@@ -139,48 +158,91 @@ int SRAM::safe_save()
 #ifdef WIN_OS
         auto hFile = (HANDLE)_get_osfhandle( fd );
 
-        if ( hFile != INVALID_HANDLE_VALUE )
+        if ( hFile == INVALID_HANDLE_VALUE )
+            {
+            if ( log_messages )
+                G_LOG->error( "SRAM() - ERROR: Can't get handle (%s).",
+                    tmp_path.string().c_str() );
+            fclose( temp );
+            return 2;
+            }
+        else
             {
             if ( !FlushFileBuffers( hFile ) )
                 {
-                G_LOG->error(
-                    "SRAM() - ERROR: FlushFileBuffers (%s) failed (%lu).",
-                    file_path.string().c_str(), GetLastError() );
+                if ( log_messages )
+                    G_LOG->error(
+                        "SRAM() - ERROR: FlushFileBuffers (%s) failed (%lu).",
+                        file_path.string().c_str(), GetLastError() );
 
                 fclose( temp );
                 return 2;
                 }
             }
 #else
-        fsync( fd );
+        if ( fsync( fd ) != 0 )
+            {
+            if ( log_messages )
+                G_LOG->error( "SRAM() - ERROR: fsync (%s) failed: %s.",
+                    tmp_path.string().c_str(), strerror( errno ) );
+            fclose( temp );
+            return 2;
+            }
 #endif
 
-        fclose( temp );
+        if ( fclose( temp ) != 0 )
+            {
+            if ( log_messages )
+                G_LOG->error( "SRAM() - ERROR: fclose (%s) failed: %s.",
+                    tmp_path.string().c_str(), strerror( errno ) );
+            return 2;
+            }
         temp = nullptr;
 
 #ifdef WIN_OS
-        MoveFileExA( tmp_path.string().c_str(), file_path.string().c_str(),
-            MOVEFILE_REPLACE_EXISTING );
+        if ( !MoveFileExA( tmp_path.string().c_str(), file_path.string().c_str(),
+            MOVEFILE_REPLACE_EXISTING ) )
+            {
+            if ( log_messages )
+                G_LOG->error( "SRAM() - ERROR: Can't replace (%s): %lu.",
+                    file_path.string().c_str(), GetLastError() );
+            return 3;
+            }
 #else
         std::error_code ec;
         std::filesystem::rename( tmp_path, file_path, ec );
         if ( ec )
             {
-            G_LOG->error( "SRAM() - ERROR: Can't rename (%s) to (%s) : %s.\n",
-                tmp_path.string().c_str(), file_path.string().c_str(),
-                ec.message().c_str() );
+            if ( log_messages )
+                G_LOG->error( "SRAM() - ERROR: Can't rename (%s) to (%s) : %s.\n",
+                    tmp_path.string().c_str(), file_path.string().c_str(),
+                    ec.message().c_str() );
             return 3;
             }
 
         if ( auto dir = open( tmp_path.parent_path().string().c_str(), O_RDONLY );
             dir != -1 )
             {
-            fsync( dir );
+            if ( fsync( dir ) != 0 )
+                {
+                if ( log_messages )
+                    G_LOG->error( "SRAM() - ERROR: fsync directory (%s) failed: %s.",
+                        tmp_path.parent_path().string().c_str(), strerror( errno ) );
+                close( dir );
+                return 3;
+                }
             close( dir );
+            }
+        else
+            {
+            if ( log_messages )
+                G_LOG->error( "SRAM() - ERROR: Can't open directory (%s): %s.",
+                    tmp_path.parent_path().string().c_str(), strerror( errno ) );
+            return 3;
             }
 #endif
 
-        if ( G_DEBUG )
+        if ( log_messages && G_DEBUG )
             {
             auto end = std::chrono::high_resolution_clock::now();
             const auto duration = std::chrono::duration_cast<

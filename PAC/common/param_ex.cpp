@@ -18,6 +18,7 @@ char params_manager::is_init = 0;
 
 #include "log.h"
 
+#include <chrono>
 #include <cstring>
 //-----------------------------------------------------------------------------
 params_manager::params_manager(): par( 0 ), project_id( 0 )
@@ -28,6 +29,7 @@ params_manager::params_manager(): par( 0 ), project_id( 0 )
         static_cast<size_t>( CONSTANTS::C_SYS_MEM_SIZE ) );
     params_mem = new SRAM( "./eeprom.bin",
         static_cast<size_t>( CONSTANTS::C_TOTAL_PARAMS_SIZE ) );
+    save_worker = std::thread( &params_manager::save_worker_loop, this );
     }
 //-----------------------------------------------------------------------------
 u_int_2 params_manager::solve_CRC()
@@ -185,6 +187,7 @@ void params_manager::reset_to_default( void( *custom_init_params_function )( ),
 void params_manager::save()
     {
     params_change_counter++;
+    change_generation++;
 
     is_changed = true;
     last_change_ms = get_millisec();
@@ -222,6 +225,13 @@ params_manager* params_manager::get_instance()
 //-----------------------------------------------------------------------------
 params_manager::~params_manager()
     {
+    {
+    std::lock_guard<std::mutex> lock( save_mutex );
+    stop_save_worker = true;
+    }
+    save_cv.notify_one();
+    if ( save_worker.joinable() ) save_worker.join();
+
     if ( params_mem )
         {
         delete params_mem;
@@ -239,32 +249,128 @@ params_manager::~params_manager()
 //-----------------------------------------------------------------------------
 int params_manager::save_params()
     {
+    auto snapshot = std::unique_ptr<save_snapshot>( new save_snapshot );
     const auto CRC = solve_CRC();
     constexpr std::size_t OFFSET = sizeof( last_idx );
     std::memcpy( CRC_mem->get_data() + OFFSET, &CRC, sizeof( CRC ) );
-    auto res = CRC_mem->safe_save();
-    if ( res != 0 )
-        {
-        return res;
-        }
-    res = params_mem->safe_save();
-    if ( res != 0 )
-        {
-        return res;
-        }
+    std::memcpy( snapshot->params.data(), params_mem->get_data(),
+        snapshot->params.size() );
+    std::memcpy( snapshot->crc_mem.data(), CRC_mem->get_data(),
+        snapshot->crc_mem.size() );
+    snapshot->generation = change_generation;
 
-    is_changed = false;
-    last_save_ms = get_millisec();
-
-    params_save_counter++;
-    G_LOG->debug( "params_mem::safe_save() - call %d", params_save_counter );
+    {
+    std::lock_guard<std::mutex> lock( save_mutex );
+    // Keep only the newest snapshot while a previous one is being written.
+    pending_save = std::move( snapshot );
+    }
+    save_cv.notify_one();
 
     return 0;
     }
 //-----------------------------------------------------------------------------
+void params_manager::save_worker_loop()
+    {
+    for ( ;; )
+        {
+        std::unique_ptr<save_snapshot> snapshot;
+        {
+        std::unique_lock<std::mutex> lock( save_mutex );
+        save_cv.wait( lock, [this]
+            { return stop_save_worker || pending_save != nullptr; } );
+        if ( !pending_save ) return;
+        snapshot = std::move( pending_save );
+        save_in_progress = true;
+        }
+
+        save_result result;
+        result.generation = snapshot->generation;
+        std::error_code ec;
+        const auto current_path = std::filesystem::current_path( ec );
+        auto available = uintmax_t{};
+        if ( !ec )
+            available = std::filesystem::space( current_path, ec ).available;
+        if ( ec || available < snapshot->params.size() )
+            {
+            result.error_stage = 1;
+            result.error_code = ec ? ec.value() : 1;
+            }
+        else
+            {
+            auto start = std::chrono::steady_clock::now();
+            result.error_code = CRC_mem->safe_save( snapshot->crc_mem.data() );
+            result.crc_write_us = std::chrono::duration_cast<
+                std::chrono::microseconds>(
+                    std::chrono::steady_clock::now() - start ).count();
+            if ( result.error_code != 0 ) result.error_stage = 2;
+            else
+                {
+                start = std::chrono::steady_clock::now();
+                result.error_code = params_mem->safe_save(
+                    snapshot->params.data() );
+                result.params_write_us = std::chrono::duration_cast<
+                    std::chrono::microseconds>(
+                        std::chrono::steady_clock::now() - start ).count();
+                if ( result.error_code != 0 ) result.error_stage = 3;
+                }
+            }
+
+        {
+        std::lock_guard<std::mutex> lock( save_mutex );
+        completed_saves.push_back( result );
+        save_in_progress = false;
+        }
+        }
+    }
+//-----------------------------------------------------------------------------
+bool params_manager::save_is_pending() const
+    {
+    std::lock_guard<std::mutex> lock( save_mutex );
+    return pending_save != nullptr || save_in_progress;
+    }
+//-----------------------------------------------------------------------------
+void params_manager::collect_save_results()
+    {
+    std::deque<save_result> results;
+    {
+    std::lock_guard<std::mutex> lock( save_mutex );
+    results.swap( completed_saves );
+    }
+
+    for ( const auto& result : results )
+        {
+        if ( result.error_stage != 0 )
+            {
+            save_failed = true;
+            is_changed = true;
+            last_failed_save_ms = get_millisec();
+            const char* stage = result.error_stage == 1 ? "free space check" :
+                result.error_stage == 2 ? "nvram.bin" : "eeprom.bin";
+            G_LOG->error( "params_manager::save_params() - background save "
+                "failed at %s (code %d).", stage, result.error_code );
+            continue;
+            }
+
+        save_failed = false;
+        last_save_ms = get_millisec();
+        params_save_counter++;
+        if ( result.generation == change_generation ) is_changed = false;
+        if ( G_DEBUG )
+            {
+            G_LOG->debug( "SRAM::safe_save() - write time: %lld us (./nvram.bin).",
+                result.crc_write_us );
+            G_LOG->debug( "SRAM::safe_save() - write time: %lld us (./eeprom.bin).",
+                result.params_write_us );
+            G_LOG->debug( "params_mem::safe_save() - call %d",
+                params_save_counter );
+            }
+        }
+    }
+//-----------------------------------------------------------------------------
 int params_manager::evaluate()
     {
-    if ( is_changed )
+    collect_save_results();
+    if ( is_changed && !save_is_pending() )
         {
         auto since_save = get_delta_millisec( last_save_ms );
         auto since_change = get_delta_millisec( last_change_ms );
@@ -272,23 +378,18 @@ int params_manager::evaluate()
              G_PAC_INFO()->par[ PAC_info::P_MIN_SAVE_INTERVAL_MS ];
         const auto stable_delay =
              G_PAC_INFO()->par[ PAC_info::P_STABLE_SAVE_DELAY_MS ];
+        constexpr uint32_t RETRY_DELAY_MS = 5'000;
 
-        if ( since_save >= min_interval && since_change >= stable_delay )
+        // The first save must not be delayed by the regular minimum interval.
+        // In particular, final_init() can successfully read the files and then
+        // reject their parameter count or CRC. In that case reset_to_default()
+        // marks the new defaults as changed, and they have to reach disk after
+        // stable_delay instead of remaining invalid until min_interval expires.
+        if ( ( params_save_counter == 0 || since_save >= min_interval ) &&
+            since_change >= stable_delay &&
+            ( !save_failed ||
+                get_delta_millisec( last_failed_save_ms ) >= RETRY_DELAY_MS ) )
             {
-            // Проверка на наличие свободного места в файловой системе.
-            std::error_code ec;
-            if ( const auto AVAILABLE_SPACE = std::filesystem::space(
-                std::filesystem::current_path(), ec ).available,
-                SPACE_LIMIT = static_cast<uintmax_t>(
-                    CONSTANTS::C_TOTAL_PARAMS_SIZE );
-                AVAILABLE_SPACE < SPACE_LIMIT )
-                {
-                G_LOG->error( "params_manager::evaluate() - not enough free "
-                    "space in the file system (%ju < %ju)!",
-                    AVAILABLE_SPACE, SPACE_LIMIT );
-                return 1;
-                }
-
             return save_params();
             }
         }

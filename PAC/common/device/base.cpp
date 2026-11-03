@@ -74,7 +74,7 @@ int par_device::set_par_by_name( const char* name, double val )
         {
         for ( u_int i = 0; i < par->get_count(); i++ )
             {
-            if ( strcmp( par_name[ i ], name ) == 0 )
+            if ( par_name[ i ] && strcmp( par_name[ i ], name ) == 0 )
                 {
                 par->save( i + 1, (float)val );
                 return 0;
@@ -88,6 +88,27 @@ int par_device::set_par_by_name( const char* name, double val )
             name );
         }
     return 1;
+    }
+//-----------------------------------------------------------------------------
+float par_device::get_par_by_name( const char* name ) const
+    {
+    if ( par )
+        {
+        for ( u_int i = 0; i < par->get_count(); i++ )
+            {
+            if ( par_name[ i ] && strcmp( par_name[ i ], name ) == 0 )
+                {
+                return par[ 0 ][ i + 1 ];
+                }
+            }
+        }
+
+    if ( G_DEBUG )
+        {
+        printf( "par_device::get_par_by_name() - name = %s wasn't found.\n",
+            name );
+        }
+    return 0;
     }
 //-----------------------------------------------------------------------------
 void par_device::set_par( u_int idx, u_int offset, float value )
@@ -315,6 +336,34 @@ void device::evaluate_io()
 const char* device::get_name_in_Lua() const
     {
     return get_name();
+    }
+//-----------------------------------------------------------------------------
+double device::get_cmd( const char* prop, u_int idx ) const
+    {
+    (void)idx;
+
+    if ( strcmp( prop, "ST" ) == 0 )
+        {
+        return get_state();
+        }
+
+    if ( strcmp( prop, "V" ) == 0 )
+        {
+        return get_value();
+        }
+
+    if ( strcmp( prop, "M" ) == 0 )
+        {
+        return get_manual_mode() ? 1. : 0.;
+        }
+
+    if ( prop[ 0 ] == 'P' )
+        {
+        return get_par_by_name( prop );
+        }
+
+    G_LOG->debug( "Error device::get_cmd() - prop = %s\n", prop );
+    return 0;
     }
 //-----------------------------------------------------------------------------
 int device::set_cmd( const char* prop, u_int idx, double val )

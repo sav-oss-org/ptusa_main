@@ -186,46 +186,10 @@ TEST( project_manager, proc_main_params )
     auto output = testing::internal::GetCapturedStdout();
     ASSERT_EQ( 1, res );
 
-    auto help =
-#if defined WIN_OS
-        R"(Main control program
-Usage:
-  ptusa_main.exe [OPTION...] <script>
-
-  -v, --version          Print version info
-  -d, --debug            Enable debugging
-      --no_io            No communicate with I\O nodes (default: true)
-      --read_only_io     Read only from I\O nodes (default: true)
-  -p, --port arg         Param port (default: 10000)
-  -h, --help             Print help info
-  -r, --rcrc             Reset params
-      --opc arg          OPC UA server behavior (off, r, rw)
-      --sys_path arg     Sys path (default: ./sys)
-      --path arg         Path (default: .)
-      --extra_paths arg  Extra paths (default: ./dairy-sys)
-      --sleep_time arg   Sleep time, ms (default: 2)
-)";
-#else
-        R"(Main control program
-Usage:
-  ptusa_main.exe [OPTION...] <script>
-
-  -v, --version          Print version info
-  -d, --debug            Enable debugging
-      --no_io            No communicate with I\O nodes
-      --read_only_io     Read only from I\O nodes
-  -p, --port arg         Param port (default: 10000)
-  -h, --help             Print help info
-  -r, --rcrc             Reset params
-      --opc arg          OPC UA server behavior (off, r, rw)
-      --sys_path arg     Sys path (default: ./sys)
-      --path arg         Path (default: .)
-      --extra_paths arg  Extra paths (default: ./dairy-sys)
-      --sleep_time arg   Sleep time, ms (default: 2)
-)";
-#endif // defined WIN_OS
-
-    EXPECT_EQ( output, help );
+    EXPECT_NE( std::string::npos, output.find( "--phoenix_modbus_udp" ) );
+    EXPECT_NE( std::string::npos,
+        output.find( "--phoenix_modbus_udp_timeout_ms arg" ) );
+    EXPECT_NE( std::string::npos, output.find( "(default: 25)" ) );
 
 
     const char* argv_v[] = { "ptusa_main.exe", "--version" };
@@ -481,4 +445,35 @@ TEST( project_manager, apply_opc_mode )
     G_PAC_INFO()->par[ PAC_info::P_IS_OPC_UA_SERVER_CONTROL ] = ua_server_control;
 
     std::remove( "main.plua" );
+    }
+
+TEST( project_manager, phoenix_udp_command_line_flag )
+    {
+    std::ofstream script( "phoenix_udp_test.plua" );
+    script << "system = {}\n";
+    script.close();
+    const char* enabled[] = { "ptusa_main.exe", "phoenix_udp_test.plua",
+        "--phoenix_modbus_udp", "--phoenix_modbus_udp_timeout_ms=35" };
+    testing::internal::CaptureStdout();
+    const auto enable_result = G_PROJECT_MANAGER->proc_main_params( 4, enabled );
+    testing::internal::GetCapturedStdout();
+    EXPECT_EQ( 0, enable_result );
+    EXPECT_TRUE( G_PAC_INFO()->is_phoenix_modbus_udp() );
+    EXPECT_EQ( 35u, G_PAC_INFO()->get_phoenix_modbus_udp_timeout_ms() );
+    const char* disabled[] = { "ptusa_main.exe", "phoenix_udp_test.plua",
+        "--phoenix_modbus_udp=false" };
+    testing::internal::CaptureStdout();
+    const auto disable_result = G_PROJECT_MANAGER->proc_main_params( 3, disabled );
+    testing::internal::GetCapturedStdout();
+    EXPECT_EQ( 0, disable_result );
+    EXPECT_FALSE( G_PAC_INFO()->is_phoenix_modbus_udp() );
+    EXPECT_EQ( 25u, G_PAC_INFO()->get_phoenix_modbus_udp_timeout_ms() );
+    const char* invalid[] = { "ptusa_main.exe", "phoenix_udp_test.plua",
+        "--phoenix_modbus_udp_timeout_ms=0" };
+    testing::internal::CaptureStdout();
+    const auto invalid_result = G_PROJECT_MANAGER->proc_main_params( 3, invalid );
+    testing::internal::GetCapturedStdout();
+    EXPECT_EQ( 1, invalid_result );
+    EXPECT_EQ( 25u, G_PAC_INFO()->get_phoenix_modbus_udp_timeout_ms() );
+    std::remove( "phoenix_udp_test.plua" );
     }

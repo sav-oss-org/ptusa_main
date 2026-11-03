@@ -14,6 +14,7 @@
 #include "device/device.h"
 #include "tech_def.h"
 #include "modbus_serv.h"
+#include "lua_debugger.h"
 
 #include "log.h"
 //-----------------------------------------------------------------------------
@@ -30,6 +31,7 @@ void lua_manager::free_Lua()
     {
     if ( L )
         {
+        G_LUA_DEBUGGER->reset( L );
         lua_close( L );
         L = nullptr;
         }
@@ -345,6 +347,8 @@ int lua_manager::init( lua_State* lua_state, const char* script_name,
 
     G_CMMCTR->reg_service( device_communicator::C_SERVICE_N,
         device_communicator::write_devices_states_service );
+    G_CMMCTR->reg_service( lua_debugger::C_SERVICE_N,
+        lua_debugger::process_service );
     G_CMMCTR->reg_service( 15, ModbusServ::ModbusService );
 #endif
 
@@ -371,6 +375,7 @@ lua_manager::~lua_manager()
         {
         if ( L )
             {
+            G_LUA_DEBUGGER->reset( L );
             lua_close( L );
             L = nullptr;
             }

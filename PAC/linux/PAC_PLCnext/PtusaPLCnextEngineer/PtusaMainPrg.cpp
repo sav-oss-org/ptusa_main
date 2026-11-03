@@ -36,7 +36,8 @@ namespace PtusaPLCnextEngineer
 
     void PtusaMainPrg::Execute()
         {
-        static long int sleep_time_ms = 2;
+        G_PROJECT_MANAGER->sleep_time_ms = 1;
+        G_PROJECT_MANAGER->min_cycle_time = 7;
 
         if ( ptusaMainCmpnt.init_flag && !ptusaMainCmpnt.error_flag )
             {
@@ -71,8 +72,8 @@ namespace PtusaPLCnextEngineer
                     }
                 }
 
-            sprintf( G_LOG->msg, "Starting main loop! Sleep time is %li ms.",
-                sleep_time_ms );
+            sprintf( G_LOG->msg, "Starting main loop! Sleep time is %g ms.",
+                     G_PROJECT_MANAGER->sleep_time_ms );
             G_LOG->write_log( i_log::P_INFO );
 
             ptusaMainCmpnt.init_flag = false;

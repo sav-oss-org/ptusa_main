@@ -1345,7 +1345,8 @@ io_manager::io_node::io_node( int node_type, int number, const char* str_ip_addr
         strcpy( ip_address, str_ip_address );
         }
 
-    if ( ip_address[ 0 ] == 0 && type >= WAGO_750_XXX_ETHERNET )
+    if ( ip_address[ 0 ] == 0 && type >= WAGO_750_XXX_ETHERNET &&
+        !is_local_bus() )
         {
         is_active = false;
         sprintf( G_LOG->msg,
@@ -1400,6 +1401,17 @@ bool io_manager::io_node::is_pp_mode_active() const
         ( status_register & STATUS_REG_PP_MODE_MASK ) != 0;
     }
 //-----------------------------------------------------------------------------
+bool io_manager::io_node::is_local_bus() const
+    {
+    return type == PHOENIX_AXC_F_2152 || type == PHOENIX_AXC_F_3152 ||
+        is_ioctl_local_bus();
+    }
+//-----------------------------------------------------------------------------
+bool io_manager::io_node::is_ioctl_local_bus() const
+    {
+    return type == PHOENIX_AXC_F_2152_IOCTL || type == PHOENIX_AXC_F_3152_IOCTL;
+    }
+//-----------------------------------------------------------------------------
 io_manager::io_node::DISPLAY_STATES io_manager::io_node::get_display_state() const
     {
     if ( !is_active || G_PAC_INFO()->is_emulator() )
@@ -1417,6 +1429,12 @@ io_manager::io_node::DISPLAY_STATES io_manager::io_node::get_display_state() con
         ( ( status_register & STATUS_REG_ERROR_MASK ) ||
         ( diagnostic_status_register &
             DIAG_STATUS_REG_CFG_BUS_ERROR_MASK ) ) )
+        {
+        return io_node::DISPLAY_STATES::DST_WARNING;
+        }
+
+    if ( is_local_bus() && local_bus_diagnostics_valid &&
+        ( diagnostic_status_register & local_bus_driver::NOTIFICATION_MASK ) )
         {
         return io_node::DISPLAY_STATES::DST_WARNING;
         }
