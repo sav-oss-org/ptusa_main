@@ -139,6 +139,20 @@ jobs:
             dir: "2026.0",
             plcncli: "PLCnext_Toolchain_Linux_2026.0-LTS"
           }
+
+        - {
+            name: "Ubuntu Latest AXCF2000 2026 LTS",
+            artifact: "Linux-AXCF2000-2026.7z",
+            os: ubuntu-latest,
+            targets: "ptusa_main libptusa_main PtusaPLCnextEngineer",
+            run_tests: "false",
+
+            axc: "AXCF2000EA",
+            preset: "build-linux-AXCF2000-2026-LTS-Release",
+            sdk: "axcf2000ea-linux_sdk-2026.0.4_LTS-26.0.4.13",
+            dir: "2026.0",
+            plcncli: "PLCnext_Toolchain_Linux_2026.0-LTS"
+          }
     steps:
     - name: Harden the runner (Audit all outbound calls)
       uses: step-security/harden-runner@46b06cea07f9e64621fdf066ba77ac6915163d43 # v2.22.3
@@ -278,6 +292,7 @@ jobs:
         chmod +x "$plcncli.sh"
         ./$plcncli.sh --quiet --accept
         sudo ln -sf "$GITHUB_WORKSPACE/PLCnext_Toolchain/plcncli" /bin/plcncli
+        plcncli set setting SdkPaths -a "/opt/pxc/sdks/${{ matrix.config.axc }}/${{ matrix.config.dir }}"
         plcncli --version
 
     - name: Cache MinGW archive
