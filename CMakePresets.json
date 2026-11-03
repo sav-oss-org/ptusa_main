@@ -240,6 +240,7 @@
       "binaryDir": "${sourceDir}/bin/build/$env{ARP_DEVICE}_$env{ARP_DEVICE_SHORT_VERSION}",
       "cacheVariables": {
         "CMAKE_INSTALL_PREFIX": "${sourceDir}/bin/install",
+        "CMAKE_INTERPROCEDURAL_OPTIMIZATION": "ON",
         "CMAKE_TOOLCHAIN_FILE": {
           "value": "$env{PLCNEXT_SDK_ROOT}/toolchain.cmake",
           "type": "FILEPATH"
