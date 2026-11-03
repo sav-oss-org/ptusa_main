@@ -24,10 +24,17 @@ params_manager::params_manager(): par( 0 ), project_id( 0 )
     {
     last_idx = 0;
 
+#ifdef PAC_PLCNEXT
+    CRC_mem = new SRAM( "/opt/main/nvram.bin",
+        static_cast<size_t>( CONSTANTS::C_SYS_MEM_SIZE ) );
+    params_mem = new SRAM( "/opt/main/eeprom.bin",
+        static_cast<size_t>( CONSTANTS::C_TOTAL_PARAMS_SIZE ) );
+#else
     CRC_mem = new SRAM( "./nvram.bin",
         static_cast<size_t>( CONSTANTS::C_SYS_MEM_SIZE ) );
     params_mem = new SRAM( "./eeprom.bin",
         static_cast<size_t>( CONSTANTS::C_TOTAL_PARAMS_SIZE ) );
+#endif // PAC_PLCNEXT
     }
 //-----------------------------------------------------------------------------
 u_int_2 params_manager::solve_CRC()
