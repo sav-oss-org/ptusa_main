@@ -2529,9 +2529,13 @@ TEST( valve_DO1_DI1_off, set_cmd )
     valve_DO1_DI1_off V1( "V1" );
 
     EXPECT_EQ( V1.get_state(), 0 );
+    EXPECT_FALSE( V1.is_opened() );
+    EXPECT_TRUE( V1.is_closed() );
 
     V1.set_cmd( "ST", 0, 1 );
     EXPECT_EQ( V1.get_state(), 1 );
+    EXPECT_TRUE( V1.is_opened() );
+    EXPECT_FALSE( V1.is_closed() );
 
     G_PAC_INFO()->emulation_off();
     V1.init( 1, 1, 0, 0 );
@@ -2542,10 +2546,15 @@ TEST( valve_DO1_DI1_off, set_cmd )
 
     V1.set_cmd( "ST", 0, 1 );
     EXPECT_EQ( V1.get_state(), valve::VALVE_STATE::V_ON );
+    EXPECT_TRUE( V1.is_opened() );
+    EXPECT_FALSE( V1.is_closed() );
+
 
     V1.set_cmd( "ST", 0, 0 );
     *V1.DI_channels.char_read_values[ 0 ] = 1; // Включаем обратную связь.
     EXPECT_EQ( V1.get_state(), valve::VALVE_STATE::V_OFF );
+    EXPECT_FALSE( V1.is_opened() );
+    EXPECT_TRUE( V1.is_closed() );
 
     // Несуществующая команда - состояние не должно изменяться.
     V1.set_cmd( "ST", 0, 10 );
@@ -2661,22 +2670,43 @@ TEST( valve_DO1, get_fb_state )
     {
     valve_DO1 V1( "V1" );
     EXPECT_TRUE( V1.get_fb_state() );
+    EXPECT_FALSE( V1.is_opened() );
+    EXPECT_FALSE( V1.is_closed() );
+
+    V1.on();
+    EXPECT_TRUE( V1.get_fb_state() );
+    EXPECT_TRUE( V1.is_opened() );
+    EXPECT_FALSE( V1.is_closed() );
+
+    V1.instant_off();
+    valve::evaluate();
+    EXPECT_TRUE( V1.get_fb_state() );
+    EXPECT_FALSE( V1.is_opened() );
+    EXPECT_TRUE( V1.is_closed() );
+
 
     G_PAC_INFO()->emulation_off();
     V1.init_and_alloc( 1 );
 
+    V1.instant_off();
     EXPECT_TRUE( V1.get_fb_state() );
     EXPECT_EQ( V1.get_state(), 0 );
-    // Нет обратных связей.
-    EXPECT_FALSE( V1.get_off_fb_value() );
-    EXPECT_FALSE( V1.get_on_fb_value() );
 
-    *V1.DO_channels.char_write_values[ 0 ] = 1;
+    // Обратные связи.
+    EXPECT_TRUE( V1.get_off_fb_value() );
+    EXPECT_FALSE( V1.get_on_fb_value() );
+    EXPECT_FALSE( V1.is_opened() );
+    EXPECT_TRUE( V1.is_closed() );
+
+    V1.on();
     EXPECT_TRUE( V1.get_fb_state() );
     EXPECT_EQ( V1.get_state(), 1 );
-    // Нет обратных связей.
+
+    // Обратные связи.
     EXPECT_FALSE( V1.get_off_fb_value() );
-    EXPECT_FALSE( V1.get_on_fb_value() );
+    EXPECT_TRUE( V1.get_on_fb_value() );
+    EXPECT_TRUE( V1.is_opened() );
+    EXPECT_FALSE( V1.is_closed() );
 
     G_PAC_INFO()->emulation_on();
     }

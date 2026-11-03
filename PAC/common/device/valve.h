@@ -51,11 +51,13 @@ class valve : public digital_io_device
         /// @brief Получение значения выключенного состояния.
         bool is_closed() const;
 
+        void set_fb_state( bool new_on_fb, bool new_off_fb );
+
         /// @brief Получение значения обратной связи на включенное состояние.
-        virtual int get_on_fb_value() const;
+        virtual bool get_on_fb_value() const;
 
         /// @brief Получение значения обратной связи на выключенное состояние.
-        virtual int get_off_fb_value() const;
+        virtual bool get_off_fb_value() const;
 
         /// @brief Сохранение дополнительных данных.
         int save_device_ex( char* buff ) const override;
@@ -205,9 +207,6 @@ class valve_DO1 : public valve
 
         /// @brief Получение состояния клапана без учета обратной связи.
         VALVE_STATE get_valve_state() const override;
-
-        /// @brief Получение состояния обратной связи.
-        bool get_fb_state() const override;
     };
 //-----------------------------------------------------------------------------
 /// @brief Клапан с двумя каналами управления.
@@ -218,9 +217,6 @@ class valve_DO2 : public valve
 
         /// @brief Получение состояния клапана без учета обратной связи.
         VALVE_STATE get_valve_state() const override;
-
-        /// @brief Получение состояния обратной связи.
-        bool get_fb_state() const override;
 
         int  get_state() const override;
         void direct_on() override;
@@ -260,9 +256,9 @@ class valve_DO1_DI1_off : public valve
 
         bool get_fb_state() const override;
 
-        int get_off_fb_value() const override;
+        bool get_off_fb_value() const override;
 
-        int get_on_fb_value() const final;
+        bool get_on_fb_value() const final;
     };
 //-----------------------------------------------------------------------------
 /// @brief Клапан с одним дискретным выходом и одним дискретным входом.
@@ -291,9 +287,9 @@ class valve_DO1_DI1_on : public valve
 
         bool get_fb_state() const override;
 
-        int get_on_fb_value() const override;
+        bool get_on_fb_value() const override;
 
-        int get_off_fb_value() const final;
+        bool get_off_fb_value() const final;
     };
 //-----------------------------------------------------------------------------
 /// @brief Клапан с одним каналом управления и двумя обратными связями.
@@ -325,9 +321,9 @@ class valve_DO1_DI2 : public valve
 
         bool get_fb_state() const override;
 
-        int get_off_fb_value() const override;
+        bool get_off_fb_value() const override;
 
-        int get_on_fb_value() const override;
+        bool get_on_fb_value() const override;
     };
 //-----------------------------------------------------------------------------
 /// @brief Клапан с двумя каналами управления и двумя обратными связями.
@@ -359,9 +355,9 @@ class valve_DO2_DI2 : public valve
 
         bool get_fb_state() const override;
 
-        int get_off_fb_value() const override;
+        bool get_off_fb_value() const override;
 
-        int get_on_fb_value() const override;
+        bool get_on_fb_value() const override;
     };
 //-----------------------------------------------------------------------------
 /// @brief Клапан с двумя каналами управления и двумя обратными связями
@@ -393,9 +389,9 @@ class valve_DO2_DI2_bistable : public valve
 
         bool get_fb_state() const override;
 
-        int get_off_fb_value() const override;
+        bool get_off_fb_value() const override;
 
-        int get_on_fb_value() const override;
+        bool get_on_fb_value() const override;
 
         void direct_set_state( int new_state ) override;
 
@@ -443,9 +439,9 @@ class valve_mix_proof : public i_mix_proof, public valve
 
         bool get_fb_state() const override;
 
-        int get_off_fb_value() const override;
+        bool get_off_fb_value() const override;
 
-        int get_on_fb_value() const override;
+        bool get_on_fb_value() const override;
     };
 //-----------------------------------------------------------------------------
 //-----------------------------------------------------------------------------
@@ -475,9 +471,9 @@ class valve_AS : public valve
 
         int get_upper_seat_offset() const;
 
-        int get_off_fb_value() const override;
+        bool get_off_fb_value() const override;
 
-        int get_on_fb_value() const override;
+        bool get_on_fb_value() const override;
 
         void direct_off() override;
 
@@ -595,9 +591,9 @@ class valve_bottom_mix_proof : public i_mix_proof, public valve
 
         bool get_fb_state() const override;
 
-        int get_off_fb_value() const override;
+        bool get_off_fb_value() const override;
 
-        int get_on_fb_value() const override;
+        bool get_on_fb_value() const override;
     };
 //-----------------------------------------------------------------------------
 /// @brief Клапан донный.
@@ -641,8 +637,8 @@ class valve_mini_flushing : public i_mix_proof, public valve
 
         bool get_fb_state() const final;
 
-        int get_off_fb_value() const final;
-        int get_on_fb_value() const final;
+        bool get_off_fb_value() const final;
+        bool get_on_fb_value() const final;
     };
 //-----------------------------------------------------------------------------
 class io_link_valve
@@ -727,9 +723,9 @@ class valve_iolink_mix_proof : public i_mix_proof, public valve
 
         bool get_fb_state() const override;
 
-        int get_off_fb_value() const override;
+        bool get_off_fb_value() const override;
 
-        int get_on_fb_value() const override;
+        bool get_on_fb_value() const override;
 
         void direct_on() override;
 
@@ -781,9 +777,9 @@ class valve_iolink_shut_off_thinktop : public valve
 
         bool get_fb_state() const override;
 
-        int get_off_fb_value() const override;
+        bool get_off_fb_value() const override;
 
-        int get_on_fb_value() const override;
+        bool get_on_fb_value() const override;
 
         void direct_on() override;
 
@@ -837,9 +833,9 @@ class valve_iolink_shut_off_sorio : public valve
 
         bool get_fb_state() const override;
 
-        int get_off_fb_value() const override;
+        bool get_off_fb_value() const override;
 
-        int get_on_fb_value() const override;
+        bool get_on_fb_value() const override;
 
         void direct_on() override;
 
@@ -896,8 +892,8 @@ class valve_iolink_gea_tvis_a15 : public valve
         void direct_off() final;
         void direct_on() final;
         bool get_fb_state() const final;
-        int get_off_fb_value() const final;
-        int get_on_fb_value() const final;
+        bool get_off_fb_value() const final;
+        bool get_on_fb_value() const final;
 
         void set_rt_par( u_int idx, float value ) override;
 
@@ -1050,9 +1046,9 @@ class valve_iol_terminal_DO1_DI1_on : public valve_iol_terminal
         /// @brief Получение состояния обратной связи.
         bool get_fb_state() const override;
 
-        int get_on_fb_value() const override;
+        bool get_on_fb_value() const override;
 
-        int get_off_fb_value() const override;
+        bool get_off_fb_value() const override;
     };
 //-----------------------------------------------------------------------------
 /// @brief Клапан IO-link VTUG с одним каналом управления и обратной связью.
@@ -1064,9 +1060,9 @@ class valve_iol_terminal_DO1_DI1_off : public valve_iol_terminal
         /// @brief Получение состояния обратной связи.
         bool get_fb_state() const override;
 
-        int get_on_fb_value() const override;
+        bool get_on_fb_value() const override;
 
-        int get_off_fb_value() const override;
+        bool get_off_fb_value() const override;
     };
 //-----------------------------------------------------------------------------
 /// @brief IO-Link клапан (от пневмооострова) с тремя каналом управления.
@@ -1095,9 +1091,9 @@ class valve_iol_terminal_DO1_DI2 : public valve_iol_terminal
         /// @brief Получение состояния обратной связи.
         bool get_fb_state() const override;
 
-        int get_on_fb_value() const override;
+        bool get_on_fb_value() const override;
 
-        int get_off_fb_value() const override;
+        bool get_off_fb_value() const override;
     };
 //-----------------------------------------------------------------------------
 /// @brief IO-Link клапан (от пневмооострова) с тремя каналом управления и
@@ -1110,9 +1106,9 @@ class valve_iol_terminal_mixproof_DO3_DI2 : public valve_iol_terminal_mixproof_D
         /// @brief Получение состояния обратной связи.
         bool get_fb_state() const override;
 
-        int get_on_fb_value() const override;
+        bool get_on_fb_value() const override;
 
-        int get_off_fb_value() const override;
+        bool get_off_fb_value() const override;
     };
 //-----------------------------------------------------------------------------
 /// @brief Управляемый клапан.
