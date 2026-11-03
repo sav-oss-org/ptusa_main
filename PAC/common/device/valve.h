@@ -1225,19 +1225,19 @@ class analog_valve_iolink : public AO1
 #pragma pack(push,1)
         struct in_data
             {
-            float position;         //Valve position in percent
-            float setpoint;         //Used setpoint in percent
+            float position;         //Valve position in percent.
+            float setpoint;         //Used set-point in percent.
             uint8_t namur_state = 0;
-            bool closed : 1;        //True = Closed, False = Not closed
-            bool opened : 1;        //True = Opened, False = Not opened
+            bool closed : 1;        //True = Closed, False = Not closed.
+            bool opened : 1;        //True = Opened, False = Not opened.
             uint8_t status : 6;
             };
 
         struct out_data
             {
-            float position;     //Cyclic CMD setpoint in percent
+            float position;     //Cyclic CMD set-point in percent.
             uint8_t unused : 7;
-            bool wink : 1;      //Visual indication
+            bool wink : 1;      //Visual indication.
             };
 #pragma pack(pop)
 
@@ -1245,6 +1245,6 @@ class analog_valve_iolink : public AO1
         static out_data stub_out_info;
         out_data* out_info = &stub_out_info;
 
-        bool blink = false;     //Visual indication
+        bool blink = false;     //Visual indication.
         io_link_device iol_device;
     };

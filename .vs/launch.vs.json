@@ -16,6 +16,7 @@
         "--debug",
         "--no_io=false",
         "--read_only_io=false",
+        "--opc=rw",
         "./main.plua"
       ]
     },

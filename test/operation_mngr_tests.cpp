@@ -56,13 +56,13 @@ TEST( action, check_devices )
 	{
 	action a1( "test_action", 0 );
 	virtual_valve v1( "TEST1_V1" );
-	tech_dev_error err_v1( &v1 );
+	simple_error err_v1( &v1 );
 	v1.direct_set_state( valve::VALVE_STATE_EX::VX_ON_FB_ERR );
 	virtual_valve v2( "TEST1_V2" );
-	tech_dev_error err_v2( &v2 );
+	simple_error err_v2( &v2 );
 	v2.direct_set_state( valve::VALVE_STATE_EX::VX_ON_FB_ERR );
 	virtual_valve v3( "TEST1_V3" );
-	tech_dev_error err_v3( &v3 );
+	simple_error err_v3( &v3 );
 	v3.direct_set_state( valve::VALVE_STATE_EX::VX_ON_FB_ERR );
 
 	a1.add_dev( &v1 );
@@ -357,7 +357,7 @@ TEST( operation_state, check_devices )
 		( *additional_step_in_run )[ step::ACTIONS::A_ON ] );
 
 	virtual_valve v1( "TEST1_V1" );
-	tech_dev_error err_v1( &v1 );
+	simple_error err_v1( &v1 );
 	a1->add_dev( &v1 );
 	const auto MAX_SIZE = 20;
 	std::string buff( MAX_SIZE, '\0' );
@@ -385,7 +385,7 @@ TEST( operation_state, check_devices_extra_step )
     ASSERT_NE( a1, nullptr );
 
 	virtual_valve v1( "TEST1_V1" );
-	tech_dev_error err_v1( &v1 );
+	simple_error err_v1( &v1 );
 	a1->add_dev( &v1 );
 	const auto MAX_SIZE = 20;
 	std::string buff( MAX_SIZE, '\0' );
@@ -425,9 +425,9 @@ TEST( operation_state, check_devices_multiple_extra_steps )
     ASSERT_NE( a2, nullptr );
 
 	virtual_valve v1( "TEST1_V1" );
-	tech_dev_error err_v1( &v1 );
+	simple_error err_v1( &v1 );
 	virtual_valve v2( "TEST1_V2" );
-	tech_dev_error err_v2( &v2 );
+	simple_error err_v2( &v2 );
 	a1->add_dev( &v1 );
 	a2->add_dev( &v2 );
 	const auto MAX_SIZE = 50;

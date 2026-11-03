@@ -77,6 +77,11 @@ namespace PtusaPLCnextEngineer
 
             ptusaMainCmpnt.init_flag = false;
             ptusaMainCmpnt.running = 1;
+
+            if ( !params_manager::get_instance()->was_successful_init() )
+                {
+                params_manager::get_instance()->save_params();
+                }
             }
 
         while ( ptusaMainCmpnt.running )

@@ -9,6 +9,7 @@
 
 #include "s_types.h"
 #include "param_ex.h"
+#include "i_tech_dev_error_device.h"
 #include "analog_emulator.h"
 #include "bus_coupler_io.h"
 #include "i_base.h"
@@ -121,7 +122,8 @@ class par_device: public i_Lua_save_device
 //-----------------------------------------------------------------------------
 /// @brief Класс универсального простого устройства, который используется в
 /// режимах.
-class device : public i_DO_AO_device, public par_device
+class device : public i_DO_AO_device, public par_device,
+    public i_simple_error
     {
     public:
         /// @brief Выполнение команды.
@@ -403,7 +405,7 @@ class device : public i_DO_AO_device, public par_device
 
         const char* get_type_name() const;
 
-        const char* get_name() const
+        const char* get_name() const override
             {
             return name;
             }
@@ -413,7 +415,7 @@ class device : public i_DO_AO_device, public par_device
             return description;
             }
 
-        virtual const char* get_error_description()
+        const char* get_error_description() override
             {
             if ( auto err_id = get_error_id(); err_id < 0 )
                 {
@@ -424,7 +426,7 @@ class device : public i_DO_AO_device, public par_device
             }
 
         /// @brief Получение ошибки (активной или ранее возникшей).
-        virtual int get_error_id()
+        int get_error_id() override
             {
             if ( auto st = get_state(); st < 0 )
                 {
@@ -470,7 +472,7 @@ class device : public i_DO_AO_device, public par_device
         /// @brief Получение порядкового номера устройства.
         ///
         /// @return - номер устройства.
-        virtual u_int_4 get_serial_n() const
+        u_int_4 get_serial_n() const override
             {
             return s_number;
             }
@@ -487,6 +489,16 @@ class device : public i_DO_AO_device, public par_device
         device::DEVICE_TYPE get_type() const
             {
             return type;
+            }
+
+        void set_error_params( saved_params_u_int_4* err_par ) override
+            {
+            set_err_par( err_par );
+            }
+
+        int get_error_type() const override
+            {
+            return static_cast<int>( get_type() );
             }
 
         /// @brief Получение подтипа устройства.

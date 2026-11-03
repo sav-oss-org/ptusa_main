@@ -31,7 +31,7 @@ jobs:
     name: ${{ matrix.config.name }}
     if: >-
       ${{
-        github.repository == 'savushkin-r-d/ptusa_main' &&
+        github.repository == 'sav-oss-org/ptusa_main' &&
           (
           github.event_name == 'push' ||
           github.event_name == 'schedule' ||
@@ -141,7 +141,7 @@ jobs:
           }
     steps:
     - name: Harden the runner (Audit all outbound calls)
-      uses: step-security/harden-runner@05e31511f85b41b11d1cf0ef85d0992719546e2c # v2.21.0
+      uses: step-security/harden-runner@46b06cea07f9e64621fdf066ba77ac6915163d43 # v2.22.3
       with:
         egress-policy: audit
 
@@ -264,7 +264,7 @@ jobs:
         sdk="${{ matrix.config.sdk }}"
         echo "Downloading PLCnext SDK: $sdk"
         gh release download "$sdk" \
-          --repo savushkin-r-d/PLCnext_bin \
+          --repo sav-oss-org/PLCnext_bin \
           --pattern "$sdk.sh"
         chmod +x "$sdk.sh"
         ./${sdk}.sh -y -d /opt/pxc/sdks/${{ matrix.config.axc }}/${{ matrix.config.dir }}
@@ -273,7 +273,7 @@ jobs:
         plcncli="${{ matrix.config.plcncli }}"
         echo "Downloading plcncli: $plcncli"
         gh release download "$plcncli" \
-          --repo savushkin-r-d/PLCnext_bin \
+          --repo sav-oss-org/PLCnext_bin \
           --pattern "$plcncli.sh"
         chmod +x "$plcncli.sh"
         ./$plcncli.sh --quiet --accept
@@ -549,7 +549,7 @@ jobs:
 
     - name: Upload coverage to Codecov (Linux only)
       if: runner.os == 'Linux' && !matrix.config.preset
-      uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
+      uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
       with:
         fail_ci_if_error: true
         verbose: true
@@ -557,12 +557,12 @@ jobs:
 
     - name: Store benchmark result (Linux only)
       if: runner.os == 'Linux' && !matrix.config.preset
-      uses: benchmark-action/github-action-benchmark@52576c92bccf6ac60c8223ec7eb2565637cae9ba # v1.22.1
+      uses: benchmark-action/github-action-benchmark@4322e5726e6334590d251fc4f92bec0efafc45dc # v1.22.2
       with:
         name: C++ Benchmark
         tool: 'googlecpp'
         output-file-path: ./build/benchmark_result.json
-        gh-repository: github.com/savushkin-r-d/benchmark-ptusa-main
+        gh-repository: github.com/sav-oss-org/benchmark-ptusa-main
         gh-pages-branch: main
         benchmark-data-dir-path: docs/dev/bench
         github-token: ${{ secrets.BENCHMARK_PTUSA_MAIN_TOKEN }}
@@ -595,7 +595,7 @@ jobs:
 
     steps:
     - name: Harden the runner (Audit all outbound calls)
-      uses: step-security/harden-runner@05e31511f85b41b11d1cf0ef85d0992719546e2c # v2.21.0
+      uses: step-security/harden-runner@46b06cea07f9e64621fdf066ba77ac6915163d43 # v2.22.3
       with:
         egress-policy: audit
 
@@ -645,7 +645,7 @@ jobs:
 
     steps:
     - name: Harden the runner (Audit all outbound calls)
-      uses: step-security/harden-runner@05e31511f85b41b11d1cf0ef85d0992719546e2c # v2.21.0
+      uses: step-security/harden-runner@46b06cea07f9e64621fdf066ba77ac6915163d43 # v2.22.3
       with:
         egress-policy: audit
 

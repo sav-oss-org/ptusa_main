@@ -1,13 +1,16 @@
 #pragma once
 
 #include <memory>
+#include <array>
+
 #include "iot_base.h"
 #include "tcp_client.h"
 
 class iot_wages_eth : public i_iot_node
     {
     public:
-        iot_wages_eth( unsigned int id, const char* ip, unsigned int port );
+        iot_wages_eth( unsigned int id, const char* ip, unsigned int port,
+            const char* name );
 
         void evaluate();
 
@@ -35,4 +38,6 @@ class iot_wages_eth : public i_iot_node
         int state = 0;
         float value = .0f;
         std::unique_ptr < tcp_client > tc;
+
+        std::array<char, 50 > name{};
     };

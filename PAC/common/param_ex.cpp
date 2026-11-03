@@ -84,14 +84,20 @@ int params_manager::get_params_save_counter() const
     return params_save_counter;
     }
 //-----------------------------------------------------------------------------
+bool params_manager::was_successful_init() const
+    {
+    return successful_init;
+    }
+//-----------------------------------------------------------------------------
 int params_manager::init( unsigned int project_id )
     {
     params_manager::project_id = project_id;
 
-    params_mem->load_data();
-    CRC_mem->load_data();
+    auto res = params_mem->load_data();
+    res += CRC_mem->load_data();
 
-    return 0;
+    successful_init = ( res == 0 );
+    return res;
     }
 //-----------------------------------------------------------------------------
 void params_manager::final_init( int auto_init_params /*= 1*/,
@@ -126,7 +132,9 @@ void params_manager::final_init( int auto_init_params /*= 1*/,
     auto solved_CRC = solve_CRC();
     if ( saved_CRC != solved_CRC )
         {
-        G_LOG->notice( "Params CRC is not valid (%d != %d), re-initialization.",
+        G_LOG->notice(
+            "Parameters CRC is not valid (saved %d != solved %d), "
+            "re-initialization.",
             saved_CRC, solved_CRC );
 
         reset_to_default( custom_init_params_function, auto_init_params,
@@ -256,10 +264,6 @@ int params_manager::save_params()
 //-----------------------------------------------------------------------------
 int params_manager::evaluate()
     {
-    // После запуска управляющей программы при первом вызове метода evaluate()
-    // будет произведена запись параметров в энергонезависимую память при
-    // наличии изменений.
-
     if ( is_changed )
         {
         auto since_save = get_delta_millisec( last_save_ms );
@@ -269,8 +273,7 @@ int params_manager::evaluate()
         const auto stable_delay =
              G_PAC_INFO()->par[ PAC_info::P_STABLE_SAVE_DELAY_MS ];
 
-        if ( ( params_save_counter == 0 || since_save >= min_interval ) &&
-            since_change >= stable_delay )
+        if ( since_save >= min_interval && since_change >= stable_delay )
             {
             // Проверка на наличие свободного места в файловой системе.
             std::error_code ec;

@@ -7,16 +7,16 @@
     },
   "configurePresets": [
     {
-      "name": "windows-VS2022-default",
-      "displayName": "Visual Studio Community 2022 - x86 Release",
-      "description": "Using compilers for Visual Studio 17 2022 (x86 architecture)",
-      "generator": "Visual Studio 17 2022",
+      "name": "windows-VS2026-default",
+      "displayName": "Visual Studio Community 2026 - x86 Release",
+      "description": "Using compilers for Visual Studio 18 2026 (x86 architecture)",
+      "generator": "Visual Studio 18 2026",
       "toolset": "host=x86",
       "architecture": "win32",
       "binaryDir": "${sourceDir}/bin/build/${presetName}",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release",
-        "CMAKE_INSTALL_PREFIX": "${sourceDir}/bin/install/windows-default"
+        "CMAKE_INSTALL_PREFIX": "${sourceDir}/bin/install/windows-VS2026-default"
       },
       "condition": {
         "type": "equals",
@@ -25,10 +25,10 @@
       }
     },
     {
-      "name": "windows-VS2022-debug",
-      "displayName": "Visual Studio Community 2022 - x86 Debug",
-      "description": "Using compilers for Visual Studio 17 2022 (x86 architecture)",
-      "inherits": "windows-VS2022-default",
+      "name": "windows-VS2026-debug",
+      "displayName": "Visual Studio Community 2026 - x86 Debug",
+      "description": "Using compilers for Visual Studio 18 2026 (x86 architecture)",
+      "inherits": "windows-VS2026-default",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug"
       }
@@ -229,15 +229,15 @@
 
   "buildPresets": [
     {
-      "name": "build-windows-VS2022-release",
-      "displayName": " Windows VS2022 Release",
-      "configurePreset": "windows-VS2022-default",
+      "name": "build-windows-VS2026-release",
+      "displayName": " Windows VS2026 Release",
+      "configurePreset": "windows-VS2026-default",
       "configuration": "Release"
     },
     {
-      "name": "build-windows-VS2022-debug",
-      "displayName": " Windows VS2022 Debug",
-      "configurePreset": "windows-VS2022-debug",
+      "name": "build-windows-VS2026-debug",
+      "displayName": " Windows VS2026 Debug",
+      "configurePreset": "windows-VS2026-debug",
       "configuration": "Debug"
     },
 

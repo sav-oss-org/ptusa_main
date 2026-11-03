@@ -301,7 +301,8 @@ The project uses GitHub Actions for continuous integration:
 
 ## Code Style and Standards
 
-- If possible, limit line length to 80 characters
+- If possible, limit line length to 80 characters, including proposed code
+changes
 
 ### C++ Standards
 

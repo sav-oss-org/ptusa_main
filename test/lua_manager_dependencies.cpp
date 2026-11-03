@@ -20,7 +20,6 @@ void LuaManagerTest::SetUp()
 	lua_hooks.push_back(subhook_new((void *) lua_gc,                (void *) mock_lua_gc,               SUBHOOK_64BIT_OFFSET));
 	lua_hooks.push_back(subhook_new((void *) luaL_openlibs,         (void *) mock_luaL_openlibs,        SUBHOOK_64BIT_OFFSET));
 	lua_hooks.push_back(subhook_new((void *) tolua_PAC_dev_open,    (void *) mock_tolua_PAC_dev_open,   SUBHOOK_64BIT_OFFSET));
-	lua_hooks.push_back(subhook_new((void *) tolua_IOT_dev_open,    (void *) mock_tolua_IOT_dev_open,   SUBHOOK_64BIT_OFFSET));
 
 	lua_hooks.push_back(subhook_new((void *) check_file,            (void *) mock_check_file,           SUBHOOK_64BIT_OFFSET));
     lua_hooks.push_back(subhook_new((void *) G_TECH_OBJECT_MNGR,    (void *) mock_G_TECH_OBJECT_MNGR,   SUBHOOK_64BIT_OFFSET));

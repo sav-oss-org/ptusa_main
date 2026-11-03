@@ -2685,9 +2685,7 @@ analog_valve_iolink::analog_valve_iolink( const char* dev_name ) : AO1(
     in_info.closed = true;
     in_info.opened = false;
 
-    auto fb_par_idx = static_cast<int>( PAR_CONSTANTS::P_FB );
-    set_par_name( fb_par_idx, 0, "P_FB" );
-    set_par( fb_par_idx, 0, 1.0f );
+    set_par_name( static_cast<int>( PAR_CONSTANTS::P_FB ), 0, "P_FB" );
     }
 //-----------------------------------------------------------------------------
 void analog_valve_iolink::evaluate_io()

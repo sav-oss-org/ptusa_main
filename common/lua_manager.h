@@ -15,11 +15,14 @@ extern "C" {
 #include    "tolua++.h"
 //-----------------------------------------------------------------------------
 TOLUA_API int tolua_PAC_dev_open ( lua_State* tolua_S );
-
-TOLUA_API int tolua_IOT_dev_open(lua_State* tolua_S);
 //-----------------------------------------------------------------------------
 const int SYS_FILE_CNT = 3;
 const int FILE_CNT     = 7;
+/// Index of `main.restrictions.lua` in FILES[]. Keep it last so the
+/// restrictions hot reload survives adding or removing earlier scripts.
+const int RESTRICTIONS_SCRIPT_N = FILE_CNT - 1;
+//-----------------------------------------------------------------------------
+extern const char *FILES[ FILE_CNT ];
 //-----------------------------------------------------------------------------
 const int FILES_VERSION[ FILE_CNT ] =
     {

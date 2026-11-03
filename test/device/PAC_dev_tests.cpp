@@ -1286,6 +1286,29 @@ TEST( device_manager, clear_io_devices )
         G_DEVICE_MANAGER()->get_TE( "T1" ) );   // Search shouldn't find device.
     }
 
+TEST( device_manager, get_FQT_IOLINK )
+    {
+    G_DEVICE_MANAGER()->clear_io_devices();
+
+    auto* missing = G_DEVICE_MANAGER()->get_FQT_IOLINK( "NO_FQT" );
+    ASSERT_NE( nullptr, missing );
+    EXPECT_STREQ( "stub", missing->get_name() );
+
+    G_DEVICE_MANAGER()->add_io_device(
+        device::DT_FQT, device::DST_FQT, "FQT_BASE", "Base counter", "" );
+    auto* wrong_type = G_DEVICE_MANAGER()->get_FQT_IOLINK( "FQT_BASE" );
+    ASSERT_NE( nullptr, wrong_type );
+    EXPECT_STREQ( "stub", wrong_type->get_name() );
+
+    G_DEVICE_MANAGER()->add_io_device(
+        device::DT_FQT, device::DST_FQT_IOLINK, "FQT_IOL", "IOL counter", "IFM.SMF420" );
+    auto* iol = G_DEVICE_MANAGER()->get_FQT_IOLINK( "FQT_IOL" );
+    ASSERT_NE( nullptr, iol );
+    EXPECT_STREQ( "FQT_IOL", iol->get_name() );
+
+    G_DEVICE_MANAGER()->clear_io_devices();
+    }
+
 TEST( device_manager, get_device )
     {
     auto res = G_DEVICE_MANAGER()->add_io_device(
@@ -2386,13 +2409,43 @@ TEST( concentration_e_iolink, concentration_e_iolink )
     concentration_e_iolink Q1( "Q1" );
 
     Q1.save_device( buff );
-    EXPECT_STREQ( "Q1={M=0, ST=0, V=0, T=0.0, P_ERR=0},\n", buff );
+    EXPECT_STREQ( "Q1={M=0, ST=0, V=0, T=0.0, P_ERR=0, P_MAX_V=0},\n", buff );
     }
 
 TEST_F( iolink_dev_test, concentration_e_iolink_get_error_description )
     {
     concentration_e_iolink test_dev( "TestDevice" );
     test_dev_err( test_dev, test_dev, 0 );
+    }
+
+TEST_F( iolink_dev_test, concentration_e_iolink_get_value_clamps_to_p_max_v )
+    {
+    concentration_e_iolink test_dev( "Q1" );
+
+    G_PAC_INFO()->emulation_off();
+    init_channels( test_dev );
+    set_iol_state_to_OK( test_dev );
+
+    // Set raw conductivity value to 5000 (converts to 5.0 mS/cm
+    // when multiplied by 0.001).
+    test_dev.info->conductivity = 5000;
+
+    // Without P_MAX_V set (0), value should pass through unchanged.
+    EXPECT_NEAR( test_dev.get_value(), 5.0f, .001f );
+
+    // Set P_MAX_V to 3.0 to clamp value.
+    test_dev.set_par(
+        static_cast<int>( concentration_e_iolink::CONSTANTS::P_MAX_V ),
+        0, 3.0f );
+    EXPECT_NEAR( test_dev.get_value(), 3.0f, .001f );
+
+    // When value is within range, P_MAX_V should not affect the result.
+    test_dev.set_par(
+        static_cast<int>( concentration_e_iolink::CONSTANTS::P_MAX_V ),
+        0, 10.0f );
+    EXPECT_NEAR( test_dev.get_value(), 5.0f, .001f );
+
+    G_PAC_INFO()->emulation_on();
     }
 
 
@@ -4209,7 +4262,7 @@ TEST( analog_valve_iolink, analog_valve_iolink )
     V1.save_device( buff );
     EXPECT_STREQ(
         "V1={M=0, ST=0, V=0, NAMUR_ST=0, OPENED=0, CLOSED=1, "
-        "BLINK=0, P_FB=1},\n", buff );
+        "BLINK=0, P_FB=0},\n", buff );
     }
 
 
@@ -5384,6 +5437,87 @@ TEST( counter_iolink, article_sm6100 )
     test_counter_iolink_article( "IFM.SM6100", 0.01f );
     }
 
+TEST_F( iolink_dev_test, counter_iolink_get_state_iolink_errors )
+    {
+    counter_iolink fqt1( "FQT1" );
+    init_channels( fqt1 );
+    G_PAC_INFO()->emulation_off();
+
+    EXPECT_EQ( -io_device::IOLINKSTATE::NOTCONNECTED, fqt1.get_state() );
+
+    // Bit 0 - IO-Link connected.
+    *fqt1.AI_channels.int_module_read_values[ 0 ] = 0b1;
+    EXPECT_EQ( -io_device::IOLINKSTATE::DEVICEERROR, fqt1.get_state() );
+
+    set_iol_state_to_OK( fqt1 );
+    EXPECT_EQ( static_cast<int>( i_counter::STATES::S_WORK ), fqt1.get_state() );
+
+    G_PAC_INFO()->emulation_on();
+    }
+
+TEST_F( iolink_dev_test, counter_iolink_smfx20_evaluate_io_and_getters )
+    {
+    counter_iolink fqt1( "FQT1" );
+    fqt1.set_article( "IFM.SMF420" );
+
+    init_channels( fqt1 );
+    fqt1.AI_channels.int_read_values[ 0 ] = new int_2[ 8 ]{ 0 };
+    auto data = reinterpret_cast<std::byte*>( fqt1.AI_channels.int_read_values[ 0 ] );
+    set_iol_state_to_OK( fqt1 );
+    G_PAC_INFO()->emulation_off();
+
+    auto set_smfx20_payload = [&]( float totalizer, int16_t flow, int16_t temp,
+                                   uint16_t conductivity )
+        {
+        std::memset( data, 0, 16 );
+
+        std::memcpy( data, &totalizer, sizeof( totalizer ) );
+        std::swap( data[ 3 ], data[ 0 ] );
+        std::swap( data[ 1 ], data[ 2 ] );
+
+        std::memcpy( data + 4, &flow, sizeof( flow ) );
+        std::swap( data[ 4 ], data[ 5 ] );
+
+        std::memcpy( data + 6, &temp, sizeof( temp ) );
+        std::swap( data[ 6 ], data[ 7 ] );
+
+        std::memcpy( data + 8, &conductivity, sizeof( conductivity ) );
+        std::swap( data[ 8 ], data[ 9 ] );
+        };
+
+    // First read initializes internal base values.
+    set_smfx20_payload( 10.0f, 0, 0, 0 );
+    fqt1.evaluate_io();
+    EXPECT_EQ( 0, fqt1.get_quantity() );
+
+    set_smfx20_payload( 20.0f, 111, 333, 250 );
+    fqt1.evaluate_io();
+
+    EXPECT_EQ( counter_iolink::mL_in_L * 10, fqt1.get_quantity() );
+    EXPECT_FLOAT_EQ( 20.0f, fqt1.get_raw_value() );
+    EXPECT_NEAR( 11.1f, fqt1.get_flow(), 0.01f );
+    EXPECT_FLOAT_EQ( 33.3f, fqt1.get_temperature() );
+    EXPECT_FLOAT_EQ( 250.0f, fqt1.get_conductivity() );
+
+    fqt1.set_cmd( "C", 0, 321.0 );
+    fqt1.set_cmd( "F", 0, 9.9 );
+    fqt1.set_cmd( "T", 0, 4.2 );
+
+    EXPECT_FLOAT_EQ( 321.0f, fqt1.get_conductivity() );
+    EXPECT_NEAR( 9.9f, fqt1.get_flow(), 0.01f );
+    EXPECT_FLOAT_EQ( 4.2f, fqt1.get_temperature() );
+
+    std::array<char, 300> buff{};
+    fqt1.save_device( buff.data() );
+    EXPECT_THAT( std::string( buff.data() ), HasSubstr( "C=321" ) );
+    EXPECT_THAT( std::string( buff.data() ), HasSubstr( "F=9.90" ) );
+    EXPECT_THAT( std::string( buff.data() ), HasSubstr( "T=4.2" ) );
+
+    delete[] fqt1.AI_channels.int_read_values[ 0 ];
+    fqt1.AI_channels.int_read_values[ 0 ] = nullptr;
+    G_PAC_INFO()->emulation_on();
+    }
+
 
 TEST( virtual_wages, get_value )
     {
@@ -5579,7 +5713,10 @@ TEST( wages_eth, evaluate_io )
     w1.evaluate_io();
     EXPECT_EQ( 0, w1.get_value() );
 
-    iot_wages_eth w2( 1, "127.0.0.1", 10000 );
+    // Корректное создание с именем в виде пустой строки.
+    iot_wages_eth w( 10, "127.0.0.2", 10000, nullptr );
+
+    iot_wages_eth w2( 1, "127.0.0.1", 10000, "W2" );
 
     w2.evaluate();
     EXPECT_EQ( 0, w2.get_wages_value() );
@@ -6955,6 +7092,10 @@ TEST_F( iolink_dev_test, converter_iolink_ao_get_state )
 TEST_F( iolink_dev_test, analog_valve_iolink_get_error_description_and_state )
     {
     analog_valve_iolink VC1( "VC1" );
+    // Включаем параметр P_FB, чтобы проверка ошибок IO-Link была активна.
+    VC1.set_par( static_cast<int>( analog_valve_iolink::PAR_CONSTANTS::P_FB ),
+        0, 1.0f );
+
     // Повторно используем универсальную проверку ошибок IO-Link.
     // Ожидаемое состояние при OK — in_info.status, по умолчанию 0.
     test_dev_err( VC1, VC1, 0 );
@@ -6968,8 +7109,10 @@ TEST_F( iolink_dev_test, analog_valve_iolink_get_state_respects_P_FB )
     // Настраиваем только AI-канал для проверки IOLINK state.
     init_channels( VC1 );
 
-    // Без подключения IO-Link и P_FB=1 (по умолчанию) —
-    // ожидаем ошибку NOTCONNECTED.
+    // Включаем обратную связь (P_FB=1).
+    VC1.set_par( static_cast<int>( analog_valve_iolink::PAR_CONSTANTS::P_FB ),
+        0, 1.0f );
+    // Без подключения IO-Link и P_FB=1 — ожидаем ошибку NOTCONNECTED.
     VC1.evaluate_io();
     EXPECT_EQ( VC1.get_state(), -io_device::IOLINKSTATE::NOTCONNECTED );
 

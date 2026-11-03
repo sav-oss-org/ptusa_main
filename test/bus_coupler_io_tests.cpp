@@ -188,6 +188,35 @@ TEST( io_node, get_display_state_pp_mode_with_other_bits )
     G_PAC_INFO()->emulation_on();
 	}
 
+TEST( io_node, get_display_state_cfg_bus_error_from_diagnostic_register )
+    {
+    G_PAC_INFO()->emulation_off();
+
+    io_manager::get_instance()->init( 1 );
+    io_manager::get_instance()->add_node( 0,
+        io_manager::io_node::PHOENIX_BK_ETH, 1, "127.0.0.1",
+        "Axxx", 0, 0, 0, 0, 0, 0 );
+
+    auto node = io_manager::get_instance()->get_node( 0 );
+    node->is_active = true;
+    node->state = io_manager::io_node::ST_OK;
+    node->status_register = 0;
+
+    node->diagnostic_status_register = 0x0004;  // Bit 2.
+    EXPECT_EQ( io_manager::io_node::DISPLAY_STATES::DST_WARNING,
+        node->get_display_state() );
+
+    node->diagnostic_status_register = 0x0100;  // Bit 8.
+    EXPECT_EQ( io_manager::io_node::DISPLAY_STATES::DST_WARNING,
+        node->get_display_state() );
+
+    node->diagnostic_status_register = 0x0002;  // Non-target bit.
+    EXPECT_EQ( io_manager::io_node::DISPLAY_STATES::DST_OK,
+        node->get_display_state() );
+
+    G_PAC_INFO()->emulation_on();
+    }
+
 TEST( io_node, get_display_state_phoenix_not_active )
 	{
     G_PAC_INFO()->emulation_off();

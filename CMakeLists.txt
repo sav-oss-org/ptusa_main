@@ -6,7 +6,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(CMAKE_POLICY_DEFAULT_CMP0048 NEW)
 
-project(ptusa_main VERSION 2026.04.02.1)
+project(ptusa_main VERSION 2026.08.21.0)
 
 message(STATUS "CMake version: ${CMAKE_VERSION}")
 message(STATUS "CMake executable: ${CMAKE_COMMAND}")
@@ -211,14 +211,6 @@ elseif(WIN32)
         "${CMAKE_CURRENT_SOURCE_DIR}/PAC/common/PAC_dev_lua.cpp"
         PAC_dev
         "${CMAKE_CURRENT_SOURCE_DIR}/PAC/common/toloa++/pkg/PAC_dev.hh")
-    regenerate_tolua_file(
-        "${CMAKE_CURRENT_SOURCE_DIR}/PAC/IoT/IOT_dev_lua.cpp"
-        IOT_dev
-        "${CMAKE_CURRENT_SOURCE_DIR}/PAC/common/toloa++/pkg/IOT_dev.hh")
-    regenerate_tolua_file(
-        "${CMAKE_CURRENT_SOURCE_DIR}/PAC/common/OPCUA_tolua.cpp"
-        OPC_UA
-        "${CMAKE_CURRENT_SOURCE_DIR}/PAC/common/toloa++/pkg/OPC_UA.hh")
 endif()
 
 if(NOT ARP_DEVICE)
@@ -577,6 +569,7 @@ set(TCP_SOCKET_LOCKED_FILTER
 	"tcp_communicator.recvtimeout:"
     "device_communicator.write_devices_states_service:"
     "pp_mode_alarm.pp_mode_activation_deactivation:"
+	"pp_mode_alarm.cfg_bus_error_activation_deactivation:"
     "pp_mode_alarm.e_communicate:"
     "main_cycle.main_cycle:"
 	"PAC_info.set_cmd:"
