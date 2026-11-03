@@ -326,6 +326,15 @@ class tech_object: public i_tech_object, public i_Lua_save_device,
         /// @param idx - последовательный номер, >= 1.
         void set_serial_idx( u_int idx );
 
+        /// @brief Получение последовательного номера объекта (с 1).
+        ///
+        /// Это глобальный порядковый номер объекта - ключ [N] в
+        /// main.objects.lua, он же суффикс имени OBJECTn.
+        u_int get_serial_idx() const
+            {
+            return serial_idx;
+            }
+
         std::string lastLoadedRecipeName = "Не выбран";
         int lastLoadedRecipeNmr = 0;
 
@@ -403,6 +412,22 @@ class tech_object_manager
 
         /// @brief Добавление технологического объекта.
         void add_tech_object( tech_object* new_tech_object );
+
+        /// @brief Горячая перезагрузка технологического объекта.
+        ///
+        /// Новый технологический объект строится Lua-функцией
+        /// reload_tech_object (см. sys/sys.objects.lua), затем заменяется
+        /// в менеджере, коммуникаторе устройств и реестре ошибок без
+        /// остановки остальных объектов.
+        ///
+        /// @param serial_number - глобальный порядковый номер объекта (ключ [N]
+        /// в main.objects.lua, он же суффикс имени OBJECTn).
+        ///
+        /// @return 0 - объект перезагружен.
+        /// @return -1 - объект с номером не найден.
+        /// @return -2 - объект не в простое, перезагрузка невозможна.
+        /// @return -3 - ошибка построения нового объекта в Lua.
+        int reload_object( u_int serial_number );
 
         int save_params_as_Lua_str( char* str );
 

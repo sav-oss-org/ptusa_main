@@ -358,6 +358,16 @@ class errors_manager
         /// @return   0 - ОК.
         int add_error( base_error *s_error );
 
+        /// @brief Переназначение ошибок технологического объекта на новый
+        /// объект (при горячей перезагрузке объекта).
+        ///
+        /// @param old_object - прежний технологический объект.
+        /// @param new_tech_object - новый технологический объект.
+        ///
+        /// @return 0 - ошибки переназначены, -1 - не найдены.
+        int update_tech_object( tech_object* old_object,
+            tech_object* new_tech_object );
+
         /// @brief Сброс параметров всех ошибок в значение по умолчанию (0).
         void reset_errors_params();
 
