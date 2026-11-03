@@ -13,6 +13,18 @@
 #include "smart_ptr.h"
 #include <filesystem>
 //-----------------------------------------------------------------------------
+/// @brief Проверка, что в каталоге можно создать файл.
+///
+/// На контроллере каталог с файлами памяти может быть недоступен для создания
+/// новых файлов, поэтому состояние проверяется один раз при старте, а не при
+/// каждой попытке сохранения.
+///
+/// @param dir - каталог для проверки.
+///
+/// @return true - создание файла разрешено.
+/// @return false - каталог недоступен для создания файлов.
+bool is_dir_writable( const std::filesystem::path& dir );
+//-----------------------------------------------------------------------------
 /// @brief Интерфейс доступа к памяти.
 class i_memory
     {
@@ -37,6 +49,13 @@ class i_memory
         virtual void zero_fill() = 0;
 
         virtual std::byte* get_data() = 0;
+
+        /// @brief Изменение пути к файлу памяти.
+        ///
+        /// Нужен, когда каталог хранения задаётся уже после создания объекта.
+        ///
+        /// @param path - новый путь к файлу.
+        virtual void set_file_path( const std::filesystem::path& path ) = 0;
     };
 //-----------------------------------------------------------------------------
 /// @brief Работа с энергонезависимой ОЗУ (Static Memory).
@@ -59,6 +78,8 @@ class SRAM : public i_memory
         void zero_fill() override;
 
         u_int get_size() const override;
+
+        void set_file_path( const std::filesystem::path& path ) override;
     private:
 
     SRAM( const SRAM& ) = delete;

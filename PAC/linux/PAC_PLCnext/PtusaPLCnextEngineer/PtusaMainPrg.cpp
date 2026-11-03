@@ -13,6 +13,7 @@
 #include "log.h"
 
 #include "prj_mngr.h"
+#include "param_ex.h"
 #include "lua_manager.h"
 
 #include "iot_common.h"
@@ -45,8 +46,15 @@ namespace PtusaPLCnextEngineer
 
             G_PROJECT_MANAGER->init_path( "/opt/main/" );
             G_PROJECT_MANAGER->init_sys_path( "/opt/main/sys/" );
+            G_PROJECT_MANAGER->init_storage_path( "/opt/main/" );
 
             chdir( "/opt/main/" );
+
+            // Каталог артефакта может быть недоступен для создания временных
+            // файлов, поэтому каталог памяти задаётся явно и проверяется один
+            // раз при инициализации параметров.
+            params_manager::get_instance()->set_storage_dir(
+                G_PROJECT_MANAGER->storage_path );
 
             int res = G_LUA_MANAGER->init( 0, "/opt/main/main.plua",
                 G_PROJECT_MANAGER->path.c_str(),

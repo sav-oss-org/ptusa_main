@@ -118,3 +118,103 @@ TEST( SRAM, safe_save )
     subhook_remove( fopen_hook );
     subhook_free( fopen_hook );
     }
+
+TEST( SRAM, safe_save_direct_write )
+    {
+    namespace fs = std::filesystem;
+
+    fs::path dir = "test_direct_write";
+    fs::remove_all( dir );
+    fs::create_directory( dir );
+
+    fs::path file = dir / "mem.bin";
+    std::error_code ec;
+
+    auto f = fopen( file.string().c_str(), "wb" );
+    if ( !f )
+        {
+        fs::remove_all( dir );
+        return;
+        }
+    fclose( f );
+
+    // Файл существует, но в каталоге создать файл нельзя. Именно такая
+    // ситуация возникает на контроллере с прошивкой 2026.
+    fs::permissions( dir, fs::perms::owner_read, ec );
+
+    if ( is_dir_writable( dir ) )
+        {
+        // Ограничение прав не сработало, например запуск от root. Тест
+        // неприменим.
+        fs::permissions( dir, fs::perms::owner_all, ec );
+        fs::remove_all( dir );
+        return;
+        }
+
+    EXPECT_FALSE( is_dir_writable( dir ) );
+
+    SRAM sram( file, DATA_SIZE );
+    for ( size_t i = 0; i < static_cast<size_t>( DATA_SIZE ); i++ )
+        {
+        sram.get_data()[ i ] = static_cast<std::byte>( i % 256 );
+        }
+
+    // Временный файл создать нельзя, поэтому запись выполняется в целевой
+    // файл.
+    EXPECT_EQ( 0, sram.safe_save() );
+
+    // После переключения временный файл не открывается, запись повторяется.
+    EXPECT_EQ( 0, sram.safe_save() );
+
+    fs::permissions( dir, fs::perms::owner_all, ec );
+
+    auto read_back = fopen( file.string().c_str(), "rb" );
+    ASSERT_NE( nullptr, read_back );
+
+    std::array<std::byte, DATA_SIZE> saved = {};
+    EXPECT_EQ( static_cast<size_t>( DATA_SIZE ),
+        fread( saved.data(), sizeof( std::byte ), DATA_SIZE, read_back ) );
+    fclose( read_back );
+
+    for ( size_t i = 0; i < saved.size(); i++ )
+        {
+        EXPECT_EQ( static_cast<std::byte>( i % 256 ), saved[ i ] );
+        }
+
+    fs::remove_all( dir );
+    }
+
+TEST( params_manager, storage_dir )
+    {
+    namespace fs = std::filesystem;
+
+    fs::path dir = "test_storage_dir";
+    fs::remove_all( dir );
+    fs::create_directory( dir );
+
+    auto pm = params_manager::get_instance();
+    pm->set_storage_dir( dir );
+
+    // Файлов в новом каталоге ещё нет, но сохранение создаёт их там.
+    EXPECT_EQ( 0, pm->save_params() );
+    EXPECT_TRUE( fs::exists( dir / "nvram.bin" ) );
+    EXPECT_TRUE( fs::exists( dir / "eeprom.bin" ) );
+
+    // Файлы уже в целевом каталоге, поэтому загрузка успешна.
+    EXPECT_EQ( 0, pm->init( 0x12345678 ) );
+
+    std::error_code ec;
+    fs::permissions( dir, fs::perms::owner_read, ec );
+
+    if ( !is_dir_writable( dir ) )
+        {
+        // Каталог недоступен для записи, поэтому загрузка возвращает 4.
+        EXPECT_EQ( 4, pm->init( 0x12345678 ) );
+        }
+
+    fs::permissions( dir, fs::perms::owner_all, ec );
+
+    // Состояние singleton'а восстанавливается для остальных тестов.
+    pm->set_storage_dir( "." );
+    fs::remove_all( dir );
+    }

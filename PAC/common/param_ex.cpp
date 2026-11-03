@@ -23,15 +23,77 @@ char params_manager::is_init = 0;
 params_manager::params_manager(): par( 0 ), project_id( 0 )
     {
     last_idx = 0;
+    }
+//-----------------------------------------------------------------------------
+void params_manager::set_storage_dir( const std::filesystem::path& dir )
+    {
+    if ( dir.empty() )
+        {
+        return;
+        }
 
-    CRC_mem = new SRAM( "./nvram.bin",
-        static_cast<size_t>( CONSTANTS::C_SYS_MEM_SIZE ) );
-    params_mem = new SRAM( "./eeprom.bin",
-        static_cast<size_t>( CONSTANTS::C_TOTAL_PARAMS_SIZE ) );
+    storage_dir = dir.lexically_normal();
+
+    // Объекты памяти могут быть созданы раньше, например через `par` в
+    // `get_instance()`, поэтому пути обновляются.
+    if ( params_mem )
+        {
+        params_mem->set_file_path( storage_dir / "eeprom.bin" );
+        }
+
+    if ( CRC_mem )
+        {
+        CRC_mem->set_file_path( storage_dir / "nvram.bin" );
+        }
+    }
+//-----------------------------------------------------------------------------
+void params_manager::ensure_memory()
+    {
+    if ( !params_mem )
+        {
+        params_mem = new SRAM( storage_dir / "eeprom.bin",
+            static_cast<size_t>( CONSTANTS::C_TOTAL_PARAMS_SIZE ) );
+        }
+
+    if ( !CRC_mem )
+        {
+        CRC_mem = new SRAM( storage_dir / "nvram.bin",
+            static_cast<size_t>( CONSTANTS::C_SYS_MEM_SIZE ) );
+        }
+    }
+//-----------------------------------------------------------------------------
+void params_manager::migrate_files()
+    {
+    if ( storage_dir == "." )
+        {
+        return;
+        }
+
+    for ( const char* name : { "nvram.bin", "eeprom.bin" } )
+        {
+        auto old_path = std::filesystem::path( "." ) / name;
+        auto new_path = storage_dir / name;
+
+        if ( std::filesystem::exists( new_path ) )
+            {
+            continue;
+            }
+
+        std::error_code ec;
+        auto copied = std::filesystem::copy_file( old_path, new_path,
+            std::filesystem::copy_options::skip_existing, ec );
+        if ( copied )
+            {
+            G_LOG->notice( "params_manager - moved (%s) to (%s).",
+                old_path.string().c_str(), new_path.string().c_str() );
+            }
+        }
     }
 //-----------------------------------------------------------------------------
 u_int_2 params_manager::solve_CRC()
     {
+    ensure_memory();
+
     char Flag;
 
     u_int_2 CRC = 65535;
@@ -71,6 +133,7 @@ u_int_2 params_manager::solve_CRC()
 //-----------------------------------------------------------------------------
 void params_manager::reset_CRC_mem()
     {
+    ensure_memory();
     CRC_mem->zero_fill();
     }
 //-----------------------------------------------------------------------------
@@ -93,6 +156,19 @@ int params_manager::init( unsigned int project_id )
     {
     params_manager::project_id = project_id;
 
+    ensure_memory();
+
+    // Проверка выполняется один раз при старте, чтобы ошибка была видна в логе
+    // сразу, а не повторялась в каждом цикле сохранения.
+    if ( !is_dir_writable( storage_dir ) )
+        {
+        G_LOG->error( "params_manager - ERROR: storage dir (%s) is not "
+            "writable, saving is disabled.", storage_dir.string().c_str() );
+        return 4;
+        }
+
+    migrate_files();
+
     auto res = params_mem->load_data();
     res += CRC_mem->load_data();
 
@@ -104,6 +180,8 @@ void params_manager::final_init( int auto_init_params /*= 1*/,
                                 int auto_init_work_params /*= 1*/,
                                 void ( *custom_init_params_function )() /*= 0 */ )
     {
+    ensure_memory();
+
     sprintf( G_LOG->msg, "Total memory used: %u of %u bytes[ %.2f%c ].",
             last_idx, static_cast<unsigned int>( CONSTANTS::C_TOTAL_PARAMS_SIZE ),
             100. * last_idx / static_cast<float>( CONSTANTS::C_TOTAL_PARAMS_SIZE ), '%' );
@@ -145,6 +223,7 @@ void params_manager::final_init( int auto_init_params /*= 1*/,
 void params_manager::reset_to_default( void( *custom_init_params_function )( ),
     int auto_init_params, int auto_init_work_params )
     {
+    ensure_memory();
     params_mem->zero_fill();
 
     if ( custom_init_params_function != 0 )
@@ -192,6 +271,8 @@ void params_manager::save()
 //-----------------------------------------------------------------------------
 std::byte* params_manager::reserve_params_region( int size, int &start_pos )
     {
+    ensure_memory();
+
     if ( last_idx + size > params_mem->get_size() )
         {
         G_LOG->debug( "params_manager::reserve_params_region() - is not enough "
@@ -239,6 +320,8 @@ params_manager::~params_manager()
 //-----------------------------------------------------------------------------
 int params_manager::save_params()
     {
+    ensure_memory();
+
     const auto CRC = solve_CRC();
     constexpr std::size_t OFFSET = sizeof( last_idx );
     std::memcpy( CRC_mem->get_data() + OFFSET, &CRC, sizeof( CRC ) );

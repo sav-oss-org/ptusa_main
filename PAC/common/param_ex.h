@@ -88,7 +88,18 @@ class params_manager
         ///
         /// @return 0 - ОК.
         /// @return 1 - Ошибка контрольной суммы.
+        /// @return 4 - каталог хранения недоступен для создания файлов.
         virtual int init( unsigned int project_id );
+
+        /// @brief Установка каталога для файлов памяти параметров.
+        ///
+        /// Объекты памяти создаются при первой загрузке данных. Если они уже
+        /// созданы, пути к файлам обновляется. Используется явный путь, а не
+        /// текущий каталог процесса, так как на контроллере каталог артефакта
+        /// может быть недоступен для создания временных файлов.
+        ///
+        /// @param dir - каталог, доступный для создания файлов.
+        void set_storage_dir( const std::filesystem::path& dir );
 
         /// @brief Окончательная инициализация значений параметров.
         ///
@@ -172,6 +183,14 @@ class params_manager
         void reset_to_default( void( *custom_init_params_function )( ),
             int auto_init_params, int auto_init_work_params );
 
+        /// @brief Создание объектов памяти в каталоге @ref storage_dir.
+        void ensure_memory();
+
+        /// @brief Перенос файлов памяти в @ref storage_dir.
+        ///
+        /// Нужен для проектов, у которых файлы остались в текущем каталоге.
+        void migrate_files();
+
         /// Статический экземпляр класса для вызова методов.
         static auto_smart_ptr< params_manager > instance;
 
@@ -181,8 +200,11 @@ class params_manager
 
         u_int project_id;   ///< Номер проекта (для уникальности параметров).
 
-        i_memory* params_mem; ///< Память параметров.
-        i_memory* CRC_mem;    ///< Память контрольной суммы.
+        /// @brief Каталог файлов памяти. По умолчанию - текущий каталог.
+        std::filesystem::path storage_dir = ".";
+
+        i_memory* params_mem = nullptr; ///< Память параметров.
+        i_memory* CRC_mem = nullptr;    ///< Память контрольной суммы.
 
         /// Инициализируем начальное время - запись параметров произойдет
         /// через заданное время после запуска программы (при наличии

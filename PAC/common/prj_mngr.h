@@ -14,6 +14,8 @@
 
 #include "string"
 
+#include <filesystem>
+
 #include "smart_ptr.h"
 #include "base_mem.h"
 
@@ -62,10 +64,16 @@ class project_manager
         /// @brief Установка путей к пользовательским файлам Lua.
         int init_extra_paths( const char* paths );
 
+        /// @brief Установка каталога для файлов памяти параметров.
+        int init_storage_path( const char* path );
+
         std::string main_script = "";//Скрипт Lua.
         std::string sys_path = "";   //Путь к системным скриптам Lua.
         std::string path = "";       //Путь к описывающим проект скриптам Lua.
         std::string extra_paths = "";//Дополнительный путь к user-скриптам Lua.
+
+        /// @brief Каталог файлов памяти параметров (nvram.bin, eeprom.bin).
+        std::filesystem::path storage_path = ".";
 
         unsigned int sleep_time_ms = 0;
 

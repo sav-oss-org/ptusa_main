@@ -14,6 +14,7 @@
 #include <chrono>
 #include <cstdio>
 #include <cstdlib>
+#include <fstream>
 #include <fcntl.h>
 
 #ifdef WIN_OS
@@ -94,6 +95,89 @@ int SRAM::load_data()
     return 0;
     }
 //-----------------------------------------------------------------------------
+namespace
+{
+    /// @brief Flush, sync and close a stream.
+    ///
+    /// Используется обоими путями сохранения, чтобы прямая запись в целевой
+    /// файл имела те же гарантии, что и атомарная.
+    ///
+    /// @param stream - поток, созданный fopen.
+    /// @param path - путь до файла, нужен для сообщений об ошибках.
+    ///
+    /// @return 0 - ОК.
+    /// @return 2 - ошибка.
+    int flush_sync_close( FILE* stream, const std::filesystem::path& path )
+        {
+        if ( fflush( stream ) )
+            {
+            G_LOG->error( "SRAM() - ERROR: fflush (%s) failed : %s.\n",
+                path.string().c_str(), strerror( errno ) );
+            fclose( stream );
+            return 2;
+            }
+
+        auto fd =
+#ifdef WIN_OS
+            _fileno( stream );
+#else
+            fileno( stream );
+#endif
+
+#ifdef WIN_OS
+        auto hFile = (HANDLE)_get_osfhandle( fd );
+
+        if ( hFile == INVALID_HANDLE_VALUE || !FlushFileBuffers( hFile ) )
+            {
+            G_LOG->error(
+                "SRAM() - ERROR: FlushFileBuffers (%s) failed (%lu).",
+                path.string().c_str(), GetLastError() );
+            fclose( stream );
+            return 2;
+            }
+#else
+        if ( fsync( fd ) )
+            {
+            G_LOG->error( "SRAM() - ERROR: fsync (%s) failed : %s.\n",
+                path.string().c_str(), strerror( errno ) );
+            fclose( stream );
+            return 2;
+            }
+#endif
+
+        if ( fclose( stream ) )
+            {
+            G_LOG->error( "SRAM() - ERROR: fclose (%s) failed : %s.\n",
+                path.string().c_str(), strerror( errno ) );
+            return 2;
+            }
+
+        return 0;
+        }
+}
+//-----------------------------------------------------------------------------
+bool is_dir_writable( const std::filesystem::path& dir )
+    {
+    std::error_code ec;
+    if ( !std::filesystem::exists( dir, ec ) )
+        {
+        return false;
+        }
+
+    auto probe = dir / "write_probe.tmp";
+    std::ofstream f( probe );
+
+    if ( !f.is_open() )
+        {
+        return false;
+        }
+
+    f.close();
+    std::filesystem::remove( probe, ec );
+
+    return true;
+    }
+//-----------------------------------------------------------------------------
 int SRAM::safe_save()
     {
     std::chrono::high_resolution_clock::time_point start;
@@ -108,14 +192,21 @@ int SRAM::safe_save()
     //    3. rename( temp, target )
     //    4. fsync( directory ) - для Linux
 
-    FILE* temp = fopen( tmp_path.string().c_str(), "w+b" );
-    if ( !temp && !direct_write )
+    FILE* temp = nullptr;
+
+    // При прямой записи временный файл больше не открывается: повторные
+    // попытки создания файла в недоступном каталоге только грузят лог.
+    if ( !direct_write )
         {
-        G_LOG->error( "SRAM() - ERROR: Can't open file (%s) : %s.\n",
-            tmp_path.string().c_str(), strerror( errno ) );
-        G_LOG->warning( "SRAM() - Using direct write to (%s).",
-            file_path.string().c_str() );
-        direct_write = true;
+        temp = fopen( tmp_path.string().c_str(), "w+b" );
+        if ( !temp )
+            {
+            G_LOG->error( "SRAM() - ERROR: Can't open file (%s) : %s.\n",
+                tmp_path.string().c_str(), strerror( errno ) );
+            G_LOG->warning( "SRAM() - Using direct write to (%s).",
+                file_path.string().c_str() );
+            direct_write = true;
+            }
         }
 
     if ( !temp )
@@ -131,12 +222,17 @@ int SRAM::safe_save()
             }
 
         auto res = fwrite( get_data(), sizeof( std::byte ), get_size(), temp );
-        fflush( temp );
-#ifndef WIN_OS
-        fsync( fileno( temp ) );
-#endif
-        fclose( temp );
-        return res == get_size() ? 0 : 2;
+        if ( res != get_size() )
+            {
+            G_LOG->error( "SRAM() - ERROR: fwrite (%s) wrote %zu of %u bytes.",
+                file_path.string().c_str(), res, get_size() );
+            fclose( temp );
+            return 2;
+            }
+
+        // Путь не атомарен: падение в момент записи оставляет укороченный
+        // файл, что проверяется контрольной суммой при старте программы.
+        return flush_sync_close( temp, file_path );
         }
     else
         {
@@ -150,35 +246,11 @@ int SRAM::safe_save()
             return 2;
             }
 
-        fflush( temp );
-
-        auto fd =
-#ifdef WIN_OS
-            _fileno( temp );
-#else
-            fileno( temp );
-#endif
-
-#ifdef WIN_OS
-        auto hFile = (HANDLE)_get_osfhandle( fd );
-
-        if ( hFile != INVALID_HANDLE_VALUE )
+        if ( flush_sync_close( temp, tmp_path ) )
             {
-            if ( !FlushFileBuffers( hFile ) )
-                {
-                G_LOG->error(
-                    "SRAM() - ERROR: FlushFileBuffers (%s) failed (%lu).",
-                    file_path.string().c_str(), GetLastError() );
-
-                fclose( temp );
-                return 2;
-                }
+            return 2;
             }
-#else
-        fsync( fd );
-#endif
 
-        fclose( temp );
         temp = nullptr;
 
 #ifdef WIN_OS
@@ -233,6 +305,13 @@ void SRAM::zero_fill()
 u_int SRAM::get_size() const
     {
     return total_size;
+    }
+//-----------------------------------------------------------------------------
+void SRAM::set_file_path( const std::filesystem::path& path )
+    {
+    file_path = path;
+    tmp_path = path.string() + ".tmp";
+    direct_write = false;
     }
 //-----------------------------------------------------------------------------
 //-----------------------------------------------------------------------------

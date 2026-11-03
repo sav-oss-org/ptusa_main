@@ -204,6 +204,7 @@ Usage:
       --path arg         Path (default: .)
       --extra_paths arg  Extra paths (default: ./dairy-sys)
       --sleep_time arg   Sleep time, ms (default: 2)
+      --storage arg      Storage path (default: .)
 )";
 #else
         R"(Main control program
@@ -222,6 +223,7 @@ Usage:
       --path arg         Path (default: .)
       --extra_paths arg  Extra paths (default: ./dairy-sys)
       --sleep_time arg   Sleep time, ms (default: 2)
+      --storage arg      Storage path (default: .)
 )";
 #endif // defined WIN_OS
 

@@ -1,6 +1,6 @@
 /*
 ** Lua binding: PAC_dev
-** Generated automatically by tolua++-1.0.92 on Wed Aug 26 12:58:59 2026.
+** Generated automatically by tolua++-1.0.92 on Tue Nov  3 14:20:02 2026.
 */
 
 #ifndef __cplusplus
@@ -92,11 +92,11 @@ static void tolua_reg_types (lua_State* tolua_S)
  tolua_usertype(tolua_S,"saved_params_float");
  tolua_usertype(tolua_S,"device");
  tolua_usertype(tolua_S,"io_manager");
+ tolua_usertype(tolua_S,"timer_manager");
  tolua_usertype(tolua_S,"virtual_counter");
- tolua_usertype(tolua_S,"counter_iolink");
  tolua_usertype(tolua_S,"errors_manager");
  tolua_usertype(tolua_S,"tech_object_manager");
- tolua_usertype(tolua_S,"tech_object");
+ tolua_usertype(tolua_S,"counter_iolink");
  tolua_usertype(tolua_S,"operation_state");
  tolua_usertype(tolua_S,"timer");
  tolua_usertype(tolua_S,"PID");
@@ -124,14 +124,14 @@ static void tolua_reg_types (lua_State* tolua_S)
  tolua_usertype(tolua_S,"ParamsRecipeAdapter");
  tolua_usertype(tolua_S,"i_DO_device");
  tolua_usertype(tolua_S,"i_counter");
- tolua_usertype(tolua_S,"timer_manager");
+ tolua_usertype(tolua_S,"signal_column");
  tolua_usertype(tolua_S,"i_AO_device");
  tolua_usertype(tolua_S,"i_wages");
  tolua_usertype(tolua_S,"valve");
  tolua_usertype(tolua_S,"i_AI_device");
- tolua_usertype(tolua_S,"signal_column");
  tolua_usertype(tolua_S,"io_manager::io_node");
  tolua_usertype(tolua_S,"operation_manager");
+ tolua_usertype(tolua_S,"tech_object");
  tolua_usertype(tolua_S,"io_device");
  tolua_usertype(tolua_S,"i_motor");
 }

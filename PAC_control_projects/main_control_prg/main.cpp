@@ -90,6 +90,10 @@ int main( int argc, const char *argv[] )
         exit( EXIT_SUCCESS );
         }
 
+    // Явный каталог для файлов памяти, а не текущий каталог процесса.
+    params_manager::get_instance()->set_storage_dir(
+        G_PROJECT_MANAGER->storage_path );
+
     //-Инициализация Lua.
     res = G_LUA_MANAGER->init( nullptr, G_PROJECT_MANAGER->main_script.c_str(),
         G_PROJECT_MANAGER->path.c_str(), G_PROJECT_MANAGER->sys_path.c_str(),

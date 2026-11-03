@@ -73,6 +73,8 @@ int project_manager::proc_main_params( int argc, const char* argv[] )
             cxxopts::value<std::string>()->default_value( "./dairy-sys" ) )
         ( "sleep_time", "Sleep time, ms",
             cxxopts::value<unsigned int>()->default_value( "2" ) )
+        ( "storage", "Storage path",
+            cxxopts::value<std::string>()->default_value( "." ) )
 
         ( "script", "The script file to execute",
             cxxopts::value<std::string>()  );
@@ -166,6 +168,11 @@ int project_manager::proc_main_params( int argc, const char* argv[] )
     path = p_norm.generic_string();
     sys_path = s_norm.generic_string();
     extra_paths = e_norm.generic_string();
+
+    // Каталог файлов памяти параметров. Пути с слешем на конце здесь не нужно,
+    // так как файл формируется через operator/.
+    storage_path = std::filesystem::path(
+        result[ "storage" ].as<std::string>() ).lexically_normal();
 
     // Отключить/включить обмен с модулями ввода/вывода.
     G_NO_IO_NODES = result[ "no_io" ].as<bool>() ? true : false;
@@ -282,6 +289,16 @@ int project_manager::init_extra_paths( const char* paths )
     if ( paths )
         {
         this->extra_paths = paths;
+        }
+
+    return 0;
+    }
+//-----------------------------------------------------------------------------
+int project_manager::init_storage_path( const char* path )
+    {
+    if ( path )
+        {
+        this->storage_path = std::filesystem::path( path ).lexically_normal();
         }
 
     return 0;
