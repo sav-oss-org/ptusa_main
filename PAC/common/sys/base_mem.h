@@ -66,8 +66,14 @@ class SRAM : public i_memory
     SRAM& operator=( const SRAM& ) = delete;
     SRAM& operator=( SRAM&& ) = delete;
 
+    /// Пути хранятся в абсолютном виде, чтобы сообщения об ошибках были
+    /// однозначными.
     std::filesystem::path file_path;
     std::filesystem::path tmp_path;
+
+    /// Сообщение об ошибке создания временного файла выводится один раз,
+    /// так как сохранение выполняется циклически.
+    bool error_logged{ false };
 
     u_int total_size;
 

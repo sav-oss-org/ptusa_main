@@ -118,3 +118,40 @@ TEST( SRAM, safe_save )
     subhook_remove( fopen_hook );
     subhook_free( fopen_hook );
     }
+
+TEST( SRAM, safe_save_create_error_logged_once )
+    {
+    SRAM good_sram( "test_sram4.bin", DATA_SIZE );
+
+    auto fopen_hook = subhook_new( reinterpret_cast<void*>( &fopen ),
+        reinterpret_cast<void*>( &bad_fopen ), SUBHOOK_64BIT_OFFSET );
+    subhook_install( fopen_hook );
+
+    testing::internal::CaptureStdout();
+
+    // Сохранение выполняется циклически, поэтому второе обращение к закрытому
+    // каталогу не должно приводить к повторному сообщению.
+    EXPECT_EQ( 1, good_sram.safe_save() );
+    EXPECT_EQ( 1, good_sram.safe_save() );
+
+    auto output = testing::internal::GetCapturedStdout();
+
+    subhook_remove( fopen_hook );
+    subhook_free( fopen_hook );
+
+    const std::string marker = "Can't open file";
+    size_t count = 0;
+    for ( auto pos = output.find( marker );
+        pos != std::string::npos; pos = output.find( marker, pos + 1 ) )
+        {
+        count++;
+        }
+
+    EXPECT_EQ( 1u, count );
+
+    // Путь в сообщении должен быть абсолютным, иначе невозможно понять,
+    // в каком каталоге запрещена запись.
+    auto expected = ( std::filesystem::current_path()
+        / "test_sram4.bin.tmp" ).lexically_normal().string();
+    EXPECT_NE( std::string::npos, output.find( expected ) );
+    }
