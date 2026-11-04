@@ -134,10 +134,10 @@ TEST( SRAM, safe_save_create_error_logged_once )
     EXPECT_EQ( 1, good_sram.safe_save() );
     EXPECT_EQ( 1, good_sram.safe_save() );
 
-    auto output = testing::internal::GetCapturedStdout();
-
     subhook_remove( fopen_hook );
     subhook_free( fopen_hook );
+
+    auto output = testing::internal::GetCapturedStdout();
 
     const std::string marker = "Can't open file";
     size_t count = 0;
