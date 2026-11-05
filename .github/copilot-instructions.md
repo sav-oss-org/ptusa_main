@@ -25,7 +25,7 @@ Lua scripting.
 - **Build System:** CMake with presets
 - **Testing:** Google Test framework
 - **Benchmarking:** Google Benchmark
-- **Scripting:** Lua 5.1 for control logic
+- **Scripting:** Lua 5.5 for control logic
 - **Platforms:** Linux (GCC) and Windows (Visual Studio)
 
 ## Repository Structure
@@ -321,7 +321,7 @@ changes
 
 ### Lua Scripting
 
-- Lua 5.1 compatibility required
+- Lua 5.5 compatibility required
 - Follow project-specific control logic patterns
 - Document complex automation sequences
 
