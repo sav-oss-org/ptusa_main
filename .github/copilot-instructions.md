@@ -312,6 +312,16 @@ changes
 - Use RAII and modern C++ practices
 - Prefer standard library over custom implementations
 
+### C++ Initialization
+
+- Prefer brace initialization for new variables and class members:
+  `bool error_logged{ false };`, `int count{ 0 };`.
+- Value-initialize pointers with braces: `std::byte* params_data{};`.
+- Keep `auto x = expr;` when the value is the result of an expression.
+- Apply the rule to touched code; do not reformat untouched lines only for
+  brace initialization.
+- Follow `docs/style.md` for detailed project style.
+
 ### CMake Standards
 
 - Minimum version 3.13
@@ -329,6 +339,17 @@ changes
 
 - Limit line length to 80 characters
 - Write comments as complete sentences and end them with a period
+
+## Pull Request Rules
+
+- Keep each pull request focused on one concrete change.
+- Do not mix unrelated refactoring, formatting, test infrastructure,
+  dependency updates, and behavior changes unless they are required for the
+  same result.
+- Use concise pull request titles, for example:
+  `Removes DNS reverse lookup from TCP logging`.
+- Put useful follow-up ideas into separate pull requests.
+- Follow `docs/CONTRIBUTING.md` for the contribution process.
 
 ## Advanced Usage
 
