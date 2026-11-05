@@ -4,15 +4,15 @@
     https://www.openhub.net/p/ptusa_main/widgets/project_thin_badge.gif)](
         https://www.openhub.net/p/ptusa_main/)
 [![GitHub Actions CI](
-    https://github.com/savushkin-r-d/ptusa_main/actions/workflows/cmake.yml/badge.svg)](
-        https://github.com/savushkin-r-d/ptusa_main/actions/workflows/cmake.yml)
+    https://github.com/sav-oss-org/ptusa_main/actions/workflows/cmake.yml/badge.svg)](
+        https://github.com/sav-oss-org/ptusa_main/actions/workflows/cmake.yml)
 [![codecov](
-    https://codecov.io/gh/savushkin-r-d/ptusa_main/branch/master/graph/badge.svg?token=G1BK5054IJ)](
-        https://codecov.io/gh/savushkin-r-d/ptusa_main)
+    https://codecov.io/gh/sav-oss-org/ptusa_main/branch/master/graph/badge.svg?token=G1BK5054IJ)](
+        https://codecov.io/gh/sav-oss-org/ptusa_main)
 
 [![Downloads](
-    https://img.shields.io/github/downloads/savushkin-r-d/ptusa_main/total.svg)](
-        https://github.com/savushkin-r-d/ptusa_main/releases/)
+    https://img.shields.io/github/downloads/sav-oss-org/ptusa_main/total.svg)](
+        https://github.com/sav-oss-org/ptusa_main/releases/)
 
 Russian readme is [here](docs/russian_readme/readme.md).
 
@@ -117,7 +117,7 @@ flowchart TD
 
 You could clone repository by next command:
 `git clone --recurse-submodules
-https://github.com/savushkin-r-d/ptusa_main.git`
+https://github.com/sav-oss-org/ptusa_main.git`
 
 or, if you are cloned without initializing and updating submodules, try next:
 `git submodule update --init --recursive`
