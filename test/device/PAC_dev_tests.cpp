@@ -3223,6 +3223,38 @@ TEST( valve_iolink_shut_off_sorio, get_fb_state )
     G_PAC_INFO()->emulation_on();
     }
 
+/// @brief Проверка, что циклическое повторение уже активной команды не
+/// перезапускает таймер переключения клапана (#1414).
+///
+/// @param dev - тестируемый клапан с методом подготовки промежуточного
+///   положения prepare_intermediate_position().
+/// @param cmd - команда клапана, которую шаг операции вызывает каждый цикл.
+template < typename Dev, typename Cmd >
+void checkCyclicCommandDoesNotRestartSwitchTimer( Dev& dev, Cmd cmd )
+    {
+    G_PAC_INFO()->emulation_off();
+
+    dev.set_cmd( "P_FB", 0, 1 );       // Включаем проверку обратных связей.
+    dev.set_cmd( "P_ON_TIME", 0, 100 );// Задаем время проверки обратных связей.
+
+    // Промежуточное положение: битов крайнего положения нет.
+    dev.prepare_intermediate_position();
+
+    cmd( dev );
+    // Имитируем истечение P_ON_TIME с момента перехода команды.
+    dev.set_start_switch_time( get_millisec() - 101UL );
+
+    // Шаг операции циклически вызывает команду. Повторные вызовы при уже
+    // активной команде не должны перезапускать таймер переключения.
+    cmd( dev );
+    cmd( dev );
+
+    // P_ON_TIME истек без подтверждения крайнего положения - ошибка ОС.
+    EXPECT_EQ( valve::VALVE_STATE_EX::VX_OFF_FB_ERR, dev.get_state() );
+
+    G_PAC_INFO()->emulation_on();
+    }
+
 TEST( valve_iolink_shut_off_sorio, cyclic_on_does_not_restart_switch_timer )
     {
     class valve_iolink_shut_off_sorio_testable : public valve_iolink_shut_off_sorio
@@ -3234,26 +3266,17 @@ TEST( valve_iolink_shut_off_sorio, cyclic_on_does_not_restart_switch_timer )
                 {
                 start_switch_time = time;
                 }
+
+            // in_info обнулен при создании - клапан в промежуточном
+            // положении по умолчанию.
+            void prepare_intermediate_position()
+                {
+                }
         };
 
     valve_iolink_shut_off_sorio_testable V1( "V1" );
-    G_PAC_INFO()->emulation_off();
-
-    V1.set_cmd( "P_FB", 0, 1 );       // Включаем проверку обратных связей.
-    V1.set_cmd( "P_ON_TIME", 0, 100 );// Задаем время проверки обратных связей.
-
-    V1.on();
-    // Имитируем истечение P_ON_TIME с момента перехода команды.
-    V1.set_start_switch_time( get_millisec() - 101UL );
-
-    // Циклические повторные вызовы on() не должны перезапускать таймер.
-    V1.on();
-    V1.on();
-
-    // P_ON_TIME истек без подтверждения крайнего положения - ошибка ОС.
-    EXPECT_EQ( valve::VALVE_STATE_EX::VX_OFF_FB_ERR, V1.get_state() );
-
-    G_PAC_INFO()->emulation_on();
+    checkCyclicCommandDoesNotRestartSwitchTimer( V1,
+        []( valve_iolink_shut_off_sorio& dev ) { dev.on(); } );
     }
 
 TEST( valve_iolink_gea_tvis_a15_ds, save_device_ex )
@@ -4020,6 +4043,13 @@ class valve_iolink_mix_proof_testable : public valve_iolink_mix_proof
             {
             start_switch_time = time;
             }
+
+        void prepare_intermediate_position()
+            {
+            in_info.st = true;
+            in_info.main = false;
+            in_info.de_en = false;
+            }
     };
 
 TEST( valve_iolink_mix_proof, get_error_description )
@@ -4147,54 +4177,15 @@ TEST( valve_iolink_mix_proof, on_off_fb_values )
 TEST( valve_iolink_mix_proof, cyclic_on_does_not_restart_switch_timer )
     {
     valve_iolink_mix_proof_testable V1( "V1" );
-    G_PAC_INFO()->emulation_off();
-
-    V1.set_cmd( "P_FB", 0, 1 );       // Включаем проверку обратных связей.
-    V1.set_cmd( "P_ON_TIME", 0, 100 );// Задаем время проверки обратных связей.
-
-    // Промежуточное положение: битов крайнего положения нет.
-    V1.in_info.st = true;
-    V1.in_info.main = false;
-    V1.in_info.de_en = false;
-
-    V1.direct_off();
-    V1.on();
-    // Имитируем истечение P_ON_TIME с момента перехода команды.
-    V1.set_start_switch_time( get_millisec() - 101UL );
-
-    // Шаг операции циклически вызывает on(). Повторные вызовы при уже
-    // активной команде не должны перезапускать таймер переключения.
-    V1.on();
-    V1.on();
-
-    // P_ON_TIME истек без подтверждения крайнего положения - ошибка ОС.
-    EXPECT_EQ( valve::VALVE_STATE_EX::VX_OFF_FB_ERR, V1.get_state() );
-
-    G_PAC_INFO()->emulation_on();
+    checkCyclicCommandDoesNotRestartSwitchTimer( V1,
+        []( valve_iolink_mix_proof& dev ) { dev.on(); } );
     }
 
 TEST( valve_iolink_mix_proof, cyclic_open_upper_seat_does_not_restart_switch_timer )
     {
     valve_iolink_mix_proof_testable V1( "V1" );
-    G_PAC_INFO()->emulation_off();
-
-    V1.set_cmd( "P_FB", 0, 1 );       // Включаем проверку обратных связей.
-    V1.set_cmd( "P_ON_TIME", 0, 100 );// Задаем время проверки обратных связей.
-
-    V1.in_info.st = true;
-
-    V1.open_upper_seat();
-    // Имитируем истечение P_ON_TIME с момента перехода команды.
-    V1.set_start_switch_time( get_millisec() - 101UL );
-
-    // Повторные вызовы с уже активной командой не должны перезапускать таймер.
-    V1.open_upper_seat();
-    V1.open_upper_seat();
-
-    // Команда верхнего седла активна, подтверждения usl нет - ошибка ОС.
-    EXPECT_EQ( valve::VALVE_STATE_EX::VX_OFF_FB_ERR, V1.get_state() );
-
-    G_PAC_INFO()->emulation_on();
+    checkCyclicCommandDoesNotRestartSwitchTimer( V1,
+        []( valve_iolink_mix_proof& dev ) { dev.open_upper_seat(); } );
     }
 
 class valve_iolink_shut_off_thinktop_testable : public valve_iolink_shut_off_thinktop
@@ -4210,6 +4201,13 @@ class valve_iolink_shut_off_thinktop_testable : public valve_iolink_shut_off_thi
         void set_start_switch_time( uint32_t time )
             {
             start_switch_time = time;
+            }
+
+        void prepare_intermediate_position()
+            {
+            in_info.st = true;
+            in_info.main = false;
+            in_info.de_en = false;
             }
     };
 
@@ -4293,29 +4291,8 @@ TEST( valve_iolink_shut_off_thinktop, get_fb_state )
 TEST( valve_iolink_shut_off_thinktop, cyclic_on_does_not_restart_switch_timer )
     {
     valve_iolink_shut_off_thinktop_testable V1( "V1" );
-    G_PAC_INFO()->emulation_off();
-
-    V1.set_cmd( "P_FB", 0, 1 );       // Включаем проверку обратных связей.
-    V1.set_cmd( "P_ON_TIME", 0, 100 );// Задаем время проверки обратных связей.
-
-    // Промежуточное положение: битов крайнего положения нет.
-    V1.in_info.st = true;
-    V1.in_info.main = false;
-    V1.in_info.de_en = false;
-
-    V1.direct_off();
-    V1.on();
-    // Имитируем истечение P_ON_TIME с момента перехода команды.
-    V1.set_start_switch_time( get_millisec() - 101UL );
-
-    // Циклические повторные вызовы on() не должны перезапускать таймер.
-    V1.on();
-    V1.on();
-
-    // P_ON_TIME истек без подтверждения крайнего положения - ошибка ОС.
-    EXPECT_EQ( valve::VALVE_STATE_EX::VX_OFF_FB_ERR, V1.get_state() );
-
-    G_PAC_INFO()->emulation_on();
+    checkCyclicCommandDoesNotRestartSwitchTimer( V1,
+        []( valve_iolink_shut_off_thinktop& dev ) { dev.on(); } );
     }
 
 
