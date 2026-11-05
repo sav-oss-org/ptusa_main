@@ -346,8 +346,10 @@ changes
 - Do not mix unrelated refactoring, formatting, test infrastructure,
   dependency updates, and behavior changes unless they are required for the
   same result.
-- Use concise pull request titles, for example:
-  `Removes DNS reverse lookup from TCP logging`.
+- Use concise pull request titles.
+- Use Markdown backticks to highlight technical words when useful, for
+  example:
+  ``Removes `DNS` reverse lookup from `TCP` logging``.
 - Put useful follow-up ideas into separate pull requests.
 - Follow `docs/CONTRIBUTING.md` for the contribution process.
 
