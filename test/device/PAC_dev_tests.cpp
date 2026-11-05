@@ -3223,6 +3223,38 @@ TEST( valve_iolink_shut_off_sorio, get_fb_state )
     G_PAC_INFO()->emulation_on();
     }
 
+TEST( valve_iolink_shut_off_sorio, cyclic_on_does_not_restart_switch_timer )
+    {
+    class valve_iolink_shut_off_sorio_testable : public valve_iolink_shut_off_sorio
+        {
+        public:
+            using valve_iolink_shut_off_sorio::valve_iolink_shut_off_sorio;
+
+            void set_start_switch_time( uint32_t time )
+                {
+                start_switch_time = time;
+                }
+        };
+
+    valve_iolink_shut_off_sorio_testable V1( "V1" );
+    G_PAC_INFO()->emulation_off();
+
+    V1.set_cmd( "P_FB", 0, 1 );       // Включаем проверку обратных связей.
+    V1.set_cmd( "P_ON_TIME", 0, 100 );// Задаем время проверки обратных связей.
+
+    V1.on();
+    // Имитируем истечение P_ON_TIME с момента перехода команды.
+    V1.set_start_switch_time( get_millisec() - 101UL );
+
+    // Циклические повторные вызовы on() не должны перезапускать таймер.
+    V1.on();
+    V1.on();
+
+    // P_ON_TIME истек без подтверждения крайнего положения - ошибка ОС.
+    EXPECT_EQ( valve::VALVE_STATE_EX::VX_OFF_FB_ERR, V1.get_state() );
+
+    G_PAC_INFO()->emulation_on();
+    }
 
 TEST( valve_iolink_gea_tvis_a15_ds, save_device_ex )
     {
@@ -3983,6 +4015,11 @@ class valve_iolink_mix_proof_testable : public valve_iolink_mix_proof
             {
             in_info.err = err;
             }
+
+        void set_start_switch_time( uint32_t time )
+            {
+            start_switch_time = time;
+            }
     };
 
 TEST( valve_iolink_mix_proof, get_error_description )
@@ -4079,6 +4116,86 @@ TEST( valve_iolink_mix_proof, get_state_with_feedback_enabled_and_al_error )
     G_PAC_INFO()->emulation_on();
     }
 
+TEST( valve_iolink_mix_proof, on_off_fb_values )
+    {
+    valve_iolink_mix_proof V1( "V1" );
+    G_PAC_INFO()->emulation_off();
+
+    // Открытое крайнее положение подтверждается битом main.
+    V1.direct_on();
+    V1.in_info.st = true;
+    V1.in_info.main = true;
+    V1.in_info.de_en = false;
+    EXPECT_EQ( 1, V1.get_on_fb_value() );
+    EXPECT_EQ( 0, V1.get_off_fb_value() );
+
+    // Закрытое крайнее положение подтверждается битом de_en.
+    V1.direct_off();
+    V1.in_info.main = false;
+    V1.in_info.de_en = true;
+    EXPECT_EQ( 0, V1.get_on_fb_value() );
+    EXPECT_EQ( 1, V1.get_off_fb_value() );
+
+    // Промежуточное положение - подтверждения нет.
+    V1.in_info.de_en = false;
+    EXPECT_EQ( 0, V1.get_on_fb_value() );
+    EXPECT_EQ( 0, V1.get_off_fb_value() );
+
+    G_PAC_INFO()->emulation_on();
+    }
+
+TEST( valve_iolink_mix_proof, cyclic_on_does_not_restart_switch_timer )
+    {
+    valve_iolink_mix_proof_testable V1( "V1" );
+    G_PAC_INFO()->emulation_off();
+
+    V1.set_cmd( "P_FB", 0, 1 );       // Включаем проверку обратных связей.
+    V1.set_cmd( "P_ON_TIME", 0, 100 );// Задаем время проверки обратных связей.
+
+    // Промежуточное положение: битов крайнего положения нет.
+    V1.in_info.st = true;
+    V1.in_info.main = false;
+    V1.in_info.de_en = false;
+
+    V1.direct_off();
+    V1.on();
+    // Имитируем истечение P_ON_TIME с момента перехода команды.
+    V1.set_start_switch_time( get_millisec() - 101UL );
+
+    // Шаг операции циклически вызывает on(). Повторные вызовы при уже
+    // активной команде не должны перезапускать таймер переключения.
+    V1.on();
+    V1.on();
+
+    // P_ON_TIME истек без подтверждения крайнего положения - ошибка ОС.
+    EXPECT_EQ( valve::VALVE_STATE_EX::VX_OFF_FB_ERR, V1.get_state() );
+
+    G_PAC_INFO()->emulation_on();
+    }
+
+TEST( valve_iolink_mix_proof, cyclic_open_upper_seat_does_not_restart_switch_timer )
+    {
+    valve_iolink_mix_proof_testable V1( "V1" );
+    G_PAC_INFO()->emulation_off();
+
+    V1.set_cmd( "P_FB", 0, 1 );       // Включаем проверку обратных связей.
+    V1.set_cmd( "P_ON_TIME", 0, 100 );// Задаем время проверки обратных связей.
+
+    V1.in_info.st = true;
+
+    V1.open_upper_seat();
+    // Имитируем истечение P_ON_TIME с момента перехода команды.
+    V1.set_start_switch_time( get_millisec() - 101UL );
+
+    // Повторные вызовы с уже активной командой не должны перезапускать таймер.
+    V1.open_upper_seat();
+    V1.open_upper_seat();
+
+    // Команда верхнего седла активна, подтверждения usl нет - ошибка ОС.
+    EXPECT_EQ( valve::VALVE_STATE_EX::VX_OFF_FB_ERR, V1.get_state() );
+
+    G_PAC_INFO()->emulation_on();
+    }
 
 class valve_iolink_shut_off_thinktop_testable : public valve_iolink_shut_off_thinktop
     {
@@ -4088,6 +4205,11 @@ class valve_iolink_shut_off_thinktop_testable : public valve_iolink_shut_off_thi
         void set_err( uint16_t err )
             {
             in_info.err = err;
+            }
+
+        void set_start_switch_time( uint32_t time )
+            {
+            start_switch_time = time;
             }
     };
 
@@ -4164,6 +4286,34 @@ TEST( valve_iolink_shut_off_thinktop, get_fb_state )
 
     G_PAC_INFO()->emulation_off();
     EXPECT_FALSE( V1.get_fb_state() );
+
+    G_PAC_INFO()->emulation_on();
+    }
+
+TEST( valve_iolink_shut_off_thinktop, cyclic_on_does_not_restart_switch_timer )
+    {
+    valve_iolink_shut_off_thinktop_testable V1( "V1" );
+    G_PAC_INFO()->emulation_off();
+
+    V1.set_cmd( "P_FB", 0, 1 );       // Включаем проверку обратных связей.
+    V1.set_cmd( "P_ON_TIME", 0, 100 );// Задаем время проверки обратных связей.
+
+    // Промежуточное положение: битов крайнего положения нет.
+    V1.in_info.st = true;
+    V1.in_info.main = false;
+    V1.in_info.de_en = false;
+
+    V1.direct_off();
+    V1.on();
+    // Имитируем истечение P_ON_TIME с момента перехода команды.
+    V1.set_start_switch_time( get_millisec() - 101UL );
+
+    // Циклические повторные вызовы on() не должны перезапускать таймер.
+    V1.on();
+    V1.on();
+
+    // P_ON_TIME истек без подтверждения крайнего положения - ошибка ОС.
+    EXPECT_EQ( valve::VALVE_STATE_EX::VX_OFF_FB_ERR, V1.get_state() );
 
     G_PAC_INFO()->emulation_on();
     }
