@@ -9,6 +9,8 @@
 #include "PAC_err.h"
 
 #include "tcp_client.h"
+#include "log.h"
+
 //------------------------------------------------------------------------------
 unsigned int max_buffer_use = 0;
 
@@ -369,12 +371,11 @@ int tcp_communicator_win::evaluate()
                         closesocket( slave_socket );
                         continue;
                         }
-                    if ( G_DEBUG )
-                        {
-                        // Числовой IP не требует блокирующего DNS-запроса.
-                        printf( "Accepted connection on %d socket from %s.\n",
-                            slave_socket, inet_ntoa( ssin.sin_addr ) );
-                        }
+                    // Числовой IP не требует блокирующего DNS-запроса.
+                    G_LOG->info(
+                        "Network communication : accepted connection : "
+                        "s%d->\"%s\".",
+                        slave_socket, inet_ntoa( ssin.sin_addr ) );
 
 #ifdef MODBUS
                     if ( sst[ i ].socket != modbus_socket )

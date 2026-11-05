@@ -390,10 +390,10 @@ int tcp_communicator_linux::evaluate()
                         }
 
                     // Числовой IP не требует блокирующего DNS-запроса.
-                    sprintf( G_LOG->msg,
-                        "Network communication : accepted %s connection : s%d->\"%s\".",
+                    G_LOG->info(
+                        "Network communication : accepted %s connection : "
+                        "s%d->\"%s\".",
                         DESCR, slave_socket, inet_ntoa( ssin.sin_addr ) );
-                    G_LOG->write_log( i_log::P_INFO );
 
                     FD_SET( slave_socket, &rfds );
                     socket_state slave_socket_state;
