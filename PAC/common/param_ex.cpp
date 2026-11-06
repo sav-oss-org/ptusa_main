@@ -25,9 +25,13 @@ params_manager::params_manager(): par( 0 ), project_id( 0 )
     last_idx = 0;
 
 #ifdef PAC_PLCNEXT
-    CRC_mem = new SRAM( "/opt/main/nvram.bin",
+    // Прошивка начиная с версии 2025.0 предоставляет приложениям для
+    // записей постоянный каталог /opt/plcnext/custom - см. справку
+    // PLCnext Engineer, тему FILE_OPEN. Запись в /opt/main для логики
+    // недоступна, что проверено на контроллере AXC F 2152.
+    CRC_mem = new SRAM( "/opt/plcnext/custom/nvram.bin",
         static_cast<size_t>( CONSTANTS::C_SYS_MEM_SIZE ) );
-    params_mem = new SRAM( "/opt/main/eeprom.bin",
+    params_mem = new SRAM( "/opt/plcnext/custom/eeprom.bin",
         static_cast<size_t>( CONSTANTS::C_TOTAL_PARAMS_SIZE ) );
 #else
     CRC_mem = new SRAM( "./nvram.bin",
@@ -285,7 +289,7 @@ int params_manager::evaluate()
             // Проверка на наличие свободного места в файловой системе.
             std::error_code ec;
             if ( const auto AVAILABLE_SPACE = std::filesystem::space(
-                std::filesystem::current_path(), ec ).available,
+                params_mem->get_directory(), ec ).available,
                 SPACE_LIMIT = static_cast<uintmax_t>(
                     CONSTANTS::C_TOTAL_PARAMS_SIZE );
                 AVAILABLE_SPACE < SPACE_LIMIT )

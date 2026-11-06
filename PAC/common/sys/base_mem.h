@@ -37,6 +37,11 @@ class i_memory
         virtual void zero_fill() = 0;
 
         virtual std::byte* get_data() = 0;
+
+        /// @brief Каталог, в котором выполняется сохранение данных.
+        ///
+        /// @return путь к каталогу хранения файла данных.
+        virtual std::filesystem::path get_directory() const = 0;
     };
 //-----------------------------------------------------------------------------
 /// @brief Работа с энергонезависимой ОЗУ (Static Memory).
@@ -59,6 +64,8 @@ class SRAM : public i_memory
         void zero_fill() override;
 
         u_int get_size() const override;
+
+        std::filesystem::path get_directory() const override;
     private:
 
     SRAM( const SRAM& ) = delete;
