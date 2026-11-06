@@ -1579,29 +1579,49 @@ void counter_iolink::evaluate_io()
     if ( auto data = reinterpret_cast<std::byte*>( get_AI_data( 0 ) );
         !G_PAC_INFO()->is_emulator() && data )
         {
-        auto buff = reinterpret_cast<std::byte*>( &in_info );
-        const int SIZE = 8;
-        std::copy( data, data + SIZE, buff );
+        if ( n_article == ARTICLE::IFM_SMFx20 )
+            {
+            auto buff = reinterpret_cast<std::byte*>( &smfx20_in_info );
+            const int SIZE = sizeof( smfx20_in_info );
+            std::copy( data, data + SIZE, buff );
 
-        //Reverse byte order to get correct float.
-        std::swap( buff[ 3 ], buff[ 0 ] );
-        std::swap( buff[ 1 ], buff[ 2 ] );
-        //Reverse byte order to get correct int16.
-        std::swap( buff[ 4 ], buff[ 5 ] );
-        //Reverse byte order to get correct int16.
-        std::swap( buff[ 6 ], buff[ 7 ] );
+            //Reverse byte order to get correct float.
+            std::swap( buff[ 3 ], buff[ 0 ] );
+            std::swap( buff[ 1 ], buff[ 2 ] );
+            //Reverse byte order to get correct int16.
+            std::swap( buff[ 4 ], buff[ 5 ] );
+            //Reverse byte order to get correct int16.
+            std::swap( buff[ 6 ], buff[ 7 ] );
+            //Reverse byte order to get correct uint16.
+            std::swap( buff[ 8 ], buff[ 9 ] );
+            }
+        else
+            {
+            auto buff = reinterpret_cast<std::byte*>( &in_info );
+            const int SIZE = 8;
+            std::copy( data, data + SIZE, buff );
+
+            //Reverse byte order to get correct float.
+            std::swap( buff[ 3 ], buff[ 0 ] );
+            std::swap( buff[ 1 ], buff[ 2 ] );
+            //Reverse byte order to get correct int16.
+            std::swap( buff[ 4 ], buff[ 5 ] );
+            //Reverse byte order to get correct int16.
+            std::swap( buff[ 6 ], buff[ 7 ] );
 
 #ifdef DEBUG_FQT_IOLINK
-        sprintf( G_LOG->msg,
-            "Totalizer %.2f, flow %d, temperature %d, status2 %d, status1 %d",
-            in_info.totalizer, in_info.flow, in_info.temperature,
-            in_info.out2, in_info.out1 );
-        G_LOG->write_log( i_log::P_NOTICE );
-        sprintf( G_LOG->msg,
-            "get_quantity() %d, get_flow() %f, get_temperature() %f",
-            get_quantity(), get_flow(), get_temperature() );
-        G_LOG->write_log( i_log::P_NOTICE );
+            sprintf( G_LOG->msg,
+                "Totalizer %.2f, flow %d, temperature %d,"
+                " status2 %d, status1 %d",
+                in_info.totalizer, in_info.flow, in_info.temperature,
+                in_info.out2, in_info.out1 );
+            G_LOG->write_log( i_log::P_NOTICE );
+            sprintf( G_LOG->msg,
+                "get_quantity() %d, get_flow() %f, get_temperature() %f",
+                get_quantity(), get_flow(), get_temperature() );
+            G_LOG->write_log( i_log::P_NOTICE );
 #endif
+            }
         }
 
     base_counter::evaluate_io();
@@ -1609,7 +1629,16 @@ void counter_iolink::evaluate_io()
 //-----------------------------------------------------------------------------
 float counter_iolink::get_temperature() const
     {
+    if ( n_article == ARTICLE::IFM_SMFx20 )
+        {
+        return TE_GRADIENT * smfx20_in_info.temperature;
+        }
     return TE_GRADIENT * in_info.temperature;
+    }
+//-----------------------------------------------------------------------------
+float counter_iolink::get_conductivity() const
+    {
+    return CONDUCTIVITY_GRADIENT * smfx20_in_info.conductivity;
     }
 //-----------------------------------------------------------------------------
 int counter_iolink::get_state() const
@@ -1640,6 +1669,10 @@ float counter_iolink::get_min_flow() const
 //-----------------------------------------------------------------------------
 float counter_iolink::get_raw_value() const
     {
+    if ( n_article == ARTICLE::IFM_SMFx20 )
+        {
+        return smfx20_in_info.totalizer;
+        }
     return in_info.totalizer;
     };
 //-----------------------------------------------------------------------------
@@ -1650,6 +1683,11 @@ float counter_iolink::get_max_raw_value() const
 //-----------------------------------------------------------------------------
 float counter_iolink::get_flow() const
     {
+    if ( n_article == ARTICLE::IFM_SMFx20 )
+        {
+        return get_par( static_cast<u_int>( CONSTANTS::P_CZ ), 0 )
+            + smfx20_in_info.flow * get_flow_gradient();
+        }
     return get_par( static_cast<u_int>( CONSTANTS::P_CZ ), 0 )
         + in_info.flow * get_flow_gradient();
     }
@@ -1657,8 +1695,17 @@ float counter_iolink::get_flow() const
 int counter_iolink::save_device_ex( char* buff ) const
     {
     int res = base_counter::save_device_ex( buff );
-    res += fmt::format_to_n( buff + res, MAX_COPY_SIZE, "F={:.2f}, T={:.1f}, ",
-        get_flow(), get_temperature() ).size;
+    if ( n_article == ARTICLE::IFM_SMFx20 )
+        {
+        res += fmt::format_to_n( buff + res, MAX_COPY_SIZE,
+            "F={:.2f}, T={:.1f}, C={:.0f}, ",
+            get_flow(), get_temperature(), get_conductivity() ).size;
+        }
+    else
+        {
+        res += fmt::format_to_n( buff + res, MAX_COPY_SIZE, "F={:.2f}, T={:.1f}, ",
+            get_flow(), get_temperature() ).size;
+        }
 
     return res;
     }
@@ -1672,14 +1719,35 @@ int counter_iolink::set_cmd( const char* prop, u_int idx, double val )
             // Учитываем коэффициент, который переводит в мл.
             return base_counter::set_cmd( prop, idx, val / mL_in_L );
 
+        case 'C':
+            smfx20_in_info.conductivity = static_cast<uint16_t>(
+                round( val / CONDUCTIVITY_GRADIENT ) );
+            break;
+
         case 'F':
-            in_info.flow = static_cast<int16_t>(
-                round( val / get_flow_gradient() ) );
+            if ( n_article == ARTICLE::IFM_SMFx20 )
+                {
+                smfx20_in_info.flow = static_cast<int16_t>(
+                    round( val / get_flow_gradient() ) );
+                }
+            else
+                {
+                in_info.flow = static_cast<int16_t>(
+                    round( val / get_flow_gradient() ) );
+                }
             break;
 
         case 'T':
-            in_info.temperature = static_cast<int16_t>(
-                round( val / TE_GRADIENT ) );
+            if ( n_article == ARTICLE::IFM_SMFx20 )
+                {
+                smfx20_in_info.temperature = static_cast<int16_t>(
+                    round( val / TE_GRADIENT ) );
+                }
+            else
+                {
+                in_info.temperature = static_cast<int16_t>(
+                    round( val / TE_GRADIENT ) );
+                }
             break;
 
         default:
@@ -1731,6 +1799,12 @@ void counter_iolink::set_article( const char* new_article )
         n_article = ARTICLE::IFM_SM4000;
         return;
         }
+    if ( strcmp( new_article, "IFM.SMF420" ) == 0 ||
+         strcmp( new_article, "IFM.SMF320" ) == 0 )
+        {
+        n_article = ARTICLE::IFM_SMFx20;
+        return;
+        }
 
     G_LOG->warning( "%s unknown article \"%s\"",
         get_name(), new_article );
@@ -1745,6 +1819,9 @@ float counter_iolink::get_flow_gradient() const
 
         case ARTICLE::IFM_SM4000:
             return 0.001f;
+
+        case ARTICLE::IFM_SMFx20:
+            return 0.1f;
 
         case ARTICLE::DEFAULT:
         default:
@@ -2210,7 +2287,7 @@ void wages_eth::set_string_property( const char* field, const char* value )
         {
         int port = 1001;
         int id = 0;
-        weth = new iot_wages_eth( id, value, port );
+        weth = new iot_wages_eth( id, value, port, get_name() );
         }
     }
 
@@ -3802,9 +3879,10 @@ int concentration_e_ok::save_device_ex( char* buff ) const
 //-----------------------------------------------------------------------------
 concentration_e_iolink::concentration_e_iolink( const char* dev_name ) :
     analog_io_device( dev_name,
-    DT_QT, DST_QT_IOLINK, LAST_PARAM_IDX - 1 )
+    DT_QT, DST_QT_IOLINK, static_cast<int>( CONSTANTS::LAST_PARAM_IDX ) - 1 )
     {
-    set_par_name( P_ERR, 0, "P_ERR" );
+    set_par_name( static_cast<int>( CONSTANTS::P_ERR ), 0, "P_ERR" );
+    set_par_name( static_cast<int>( CONSTANTS::P_MAX_V ), 0, "P_MAX_V" );
     };
 //-----------------------------------------------------------------------------
 concentration_e_iolink::~concentration_e_iolink()
@@ -3832,13 +3910,20 @@ float concentration_e_iolink::get_value() const
     {
     if ( G_PAC_INFO()->is_emulator() ) return analog_io_device::get_value();
 
-    if ( get_AI_IOLINK_state( C_AI_INDEX ) != io_device::IOLINKSTATE::OK )
+    if ( get_AI_IOLINK_state( static_cast<int>( CONSTANTS::C_AI_INDEX ) ) !=
+        io_device::IOLINKSTATE::OK )
         {
-        return get_par( P_ERR, 0 );
+        return get_par( static_cast<int>( CONSTANTS::P_ERR ), 0 );
         }
     else
         {
-        return 0.001f * info->conductivity;
+        auto v = 0.001f * static_cast<float>( info->conductivity );
+        if ( auto max_v = get_par( static_cast<int>( CONSTANTS::P_MAX_V ), 0 );
+            max_v > 0 && v > max_v )
+            {
+            return max_v;
+            }
+        return v;
         }
     }
 //-----------------------------------------------------------------------------
@@ -3846,10 +3931,11 @@ int concentration_e_iolink::get_state() const
 	{
     if ( G_PAC_INFO()->is_emulator() ) return analog_io_device::get_state();
 
-    IOLINKSTATE res = get_AI_IOLINK_state( C_AI_INDEX );
+    IOLINKSTATE res = get_AI_IOLINK_state(
+        static_cast<int>( CONSTANTS::C_AI_INDEX ) );
     if ( res != io_device::IOLINKSTATE::OK )
         {
-        return -(int)res;
+        return -static_cast<int>( res );
         }
     else
         {
@@ -4192,12 +4278,13 @@ float analog_output::get_max_value() const
 //-----------------------------------------------------------------------------
 motor_altivar::motor_altivar( const char* dev_name,
     device::DEVICE_SUB_TYPE sub_type, u_int par_cnt ) :
-    i_motor( dev_name, sub_type, par_cnt + ADDITIONAL_PARAM_COUNT ),
-    io_device( dev_name )
+    i_motor( dev_name, sub_type,
+        par_cnt + static_cast<int>( CONSTANTS::ADDITIONAL_PARAM_COUNT ) - 1 ),
+        io_device( dev_name )
     {
-    set_par_name( P_ON_TIME, 0, "P_ON_TIME" );
+    set_par_name( static_cast<int>( CONSTANTS::P_ON_TIME ), 0, "P_ON_TIME" );
     }
-
+//-----------------------------------------------------------------------------
 int motor_altivar::save_device_ex(char * buff) const
     {
     int res = 0;
@@ -4217,14 +4304,14 @@ int motor_altivar::save_device_ex(char * buff) const
 
     return res;
     }
-
+//-----------------------------------------------------------------------------
 float motor_altivar::get_value() const
     {
     if ( G_PAC_INFO()->is_emulator() ) return freq;
 
     return atv->get_output_in_percent();
     }
-
+//-----------------------------------------------------------------------------
 void motor_altivar::direct_set_value(float value)
     {
     if ( G_PAC_INFO()->is_emulator() )
@@ -4235,7 +4322,7 @@ void motor_altivar::direct_set_value(float value)
 
     atv->set_output_in_percent( value );
     }
-
+//-----------------------------------------------------------------------------
 void motor_altivar::direct_set_state(int new_state)
     {
     if ( G_PAC_INFO()->is_emulator() )
@@ -4269,14 +4356,14 @@ void motor_altivar::direct_set_state(int new_state)
         direct_off();
         }
     }
-
+//-----------------------------------------------------------------------------
 int motor_altivar::get_state() const
     {
     if ( G_PAC_INFO()->is_emulator() ) return device::get_state();
 
     return atv->state;
     }
-
+//-----------------------------------------------------------------------------
 void motor_altivar::direct_on()
     {
     if ( G_PAC_INFO()->is_emulator() ) return device::direct_on();
@@ -4284,7 +4371,7 @@ void motor_altivar::direct_on()
     atv->cmd = 1;
     atv->reverse = 0;
     }
-
+//-----------------------------------------------------------------------------
 void motor_altivar::direct_off()
     {
     if ( G_PAC_INFO()->is_emulator() ) return device::direct_off();
@@ -4299,7 +4386,7 @@ void motor_altivar::direct_off()
         }
     atv->reverse = 0;
     }
-
+//-----------------------------------------------------------------------------
 void motor_altivar::set_string_property(const char * field, const char * value)
     {
     device::set_string_property( field, value );
@@ -4318,30 +4405,31 @@ void motor_altivar::set_string_property(const char * field, const char * value)
             atv = G_ALTIVAR_MANAGER()->get_node(nodeip.c_str());
             if (!atv)
                 {
-                G_ALTIVAR_MANAGER()->add_node(value, port, timeout, get_article() );
+                G_ALTIVAR_MANAGER()->add_node(value, port, timeout,
+                    get_article(), get_name() );
                 atv = G_ALTIVAR_MANAGER()->get_node(nodeip.c_str());
                 }
             }
         }
     }
-
+//-----------------------------------------------------------------------------
 void motor_altivar::print() const
     {
     device::print();
     }
-
+//-----------------------------------------------------------------------------
 int motor_altivar::get_params_count() const
     {
-    return ADDITIONAL_PARAM_COUNT;
+    return static_cast<int>( CONSTANTS::ADDITIONAL_PARAM_COUNT ) - 1;
     }
-
+//-----------------------------------------------------------------------------
 float motor_altivar::get_amperage() const
     {
     if ( G_PAC_INFO()->is_emulator() ) return amperage;
 
     return atv->amperage;
     }
-
+//-----------------------------------------------------------------------------
 int motor_altivar::set_cmd( const char* prop, u_int idx, double val )
     {
     if ( G_PAC_INFO()->is_emulator() )
@@ -4382,8 +4470,10 @@ int motor_altivar::set_cmd( const char* prop, u_int idx, double val )
 //-----------------------------------------------------------------------------
 float motor_altivar_linear::get_linear_speed() const
     {
-    float d = get_par( P_SHAFT_DIAMETER, start_param_idx );
-    float n = get_par( P_TRANSFER_RATIO, start_param_idx );
+    float d = get_par( static_cast<int>( CONSTANTS::P_SHAFT_DIAMETER ),
+        start_param_idx );
+    float n = get_par( static_cast<int>( CONSTANTS::P_TRANSFER_RATIO ),
+        start_param_idx );
     float v = .0f;
 
     if ( 0 != d && 0 != n )
@@ -4400,15 +4490,17 @@ float motor_altivar_linear::get_linear_speed() const
 
     return v;
     }
-
+//-----------------------------------------------------------------------------
 motor_altivar_linear::motor_altivar_linear( const char* dev_name ) :
-    motor_altivar( dev_name, device::M_ATV_LINEAR, ADDITIONAL_PARAM_COUNT )
+    motor_altivar( dev_name, device::M_ATV_LINEAR,
+        static_cast<int>( CONSTANTS::ADDITIONAL_PARAM_COUNT ) - 1 )
     {
     start_param_idx = motor_altivar::get_params_count();
-    set_par_name( P_SHAFT_DIAMETER, start_param_idx, "P_SHAFT_DIAMETER" );
-    set_par_name( P_TRANSFER_RATIO, start_param_idx, "P_TRANSFER_RATIO" );
+    set_par_name( static_cast<int>( CONSTANTS::P_SHAFT_DIAMETER ),
+        start_param_idx, "P_SHAFT_DIAMETER" );
+    set_par_name( static_cast<int>( CONSTANTS::P_TRANSFER_RATIO ),
+        start_param_idx, "P_TRANSFER_RATIO" );
     }
-
 //-----------------------------------------------------------------------------
 //-----------------------------------------------------------------------------
 converter_iolink_ao::converter_iolink_ao( const char* dev_name ) :

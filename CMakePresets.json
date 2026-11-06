@@ -7,16 +7,16 @@
     },
   "configurePresets": [
     {
-      "name": "windows-VS2022-default",
-      "displayName": "Visual Studio Community 2022 - x86 Release",
-      "description": "Using compilers for Visual Studio 17 2022 (x86 architecture)",
-      "generator": "Visual Studio 17 2022",
+      "name": "windows-VS2026-default",
+      "displayName": "Visual Studio Community 2026 - x86 Release",
+      "description": "Using compilers for Visual Studio 18 2026 (x86 architecture)",
+      "generator": "Visual Studio 18 2026",
       "toolset": "host=x86",
       "architecture": "win32",
       "binaryDir": "${sourceDir}/bin/build/${presetName}",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release",
-        "CMAKE_INSTALL_PREFIX": "${sourceDir}/bin/install/windows-default"
+        "CMAKE_INSTALL_PREFIX": "${sourceDir}/bin/install/windows-VS2026-default"
       },
       "condition": {
         "type": "equals",
@@ -25,10 +25,10 @@
       }
     },
     {
-      "name": "windows-VS2022-debug",
-      "displayName": "Visual Studio Community 2022 - x86 Debug",
-      "description": "Using compilers for Visual Studio 17 2022 (x86 architecture)",
-      "inherits": "windows-VS2022-default",
+      "name": "windows-VS2026-debug",
+      "displayName": "Visual Studio Community 2026 - x86 Debug",
+      "description": "Using compilers for Visual Studio 18 2026 (x86 architecture)",
+      "inherits": "windows-VS2026-default",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug"
       }
@@ -94,6 +94,20 @@
       "environment": {
         "ARP_DEVICE": "AXCF2152",
         "ARP_DEVICE_VERSION": "2026.0.5 LTS (26.0.5.124)",
+        "ARP_DEVICE_SHORT_VERSION": "2026.0",
+        "ARP_SDK_PACKAGE_NAME": "x86_64-w64-mingw32"
+      }
+    },
+
+
+    {
+      "name": "build-windows-AXCF2000-2026-LTS-Release",
+      "displayName": "Windows AXCF2000 2026 LTS Release",
+      "description": "Using Windows OS",
+      "inherits": "windows-AXCF-default",
+      "environment": {
+        "ARP_DEVICE": "AXCF2000EA",
+        "ARP_DEVICE_VERSION": "2026.0.4 LTS (26.0.4.13)",
         "ARP_DEVICE_SHORT_VERSION": "2026.0",
         "ARP_SDK_PACKAGE_NAME": "x86_64-w64-mingw32"
       }
@@ -174,6 +188,17 @@
         "ARP_SDK_PACKAGE_NAME": "x86_64-pokysdk-mingw32"
       }
     },
+    {
+      "name": "build-linux-AXCF2000-2026-LTS-Release",
+      "displayName": "Linux AXCF2000EA 2026.0 LTS Release",
+      "description": "Using Linux OS",
+      "inherits": "linux-AXCF-default",
+      "environment": {
+        "ARP_DEVICE": "AXCF2000EA",
+        "ARP_DEVICE_SHORT_VERSION": "2026.0",
+        "ARP_DEVICE_VERSION": "2026.0.4 LTS (26.0.4.13)"
+      }
+    },
 
 
     {
@@ -215,6 +240,7 @@
       "binaryDir": "${sourceDir}/bin/build/$env{ARP_DEVICE}_$env{ARP_DEVICE_SHORT_VERSION}",
       "cacheVariables": {
         "CMAKE_INSTALL_PREFIX": "${sourceDir}/bin/install",
+        "CMAKE_INTERPROCEDURAL_OPTIMIZATION": "ON",
         "CMAKE_TOOLCHAIN_FILE": {
           "value": "$env{PLCNEXT_SDK_ROOT}/toolchain.cmake",
           "type": "FILEPATH"
@@ -228,15 +254,15 @@
 
   "buildPresets": [
     {
-      "name": "build-windows-VS2022-release",
-      "displayName": " Windows VS2022 Release",
-      "configurePreset": "windows-VS2022-default",
+      "name": "build-windows-VS2026-release",
+      "displayName": " Windows VS2026 Release",
+      "configurePreset": "windows-VS2026-default",
       "configuration": "Release"
     },
     {
-      "name": "build-windows-VS2022-debug",
-      "displayName": " Windows VS2022 Debug",
-      "configurePreset": "windows-VS2022-debug",
+      "name": "build-windows-VS2026-debug",
+      "displayName": " Windows VS2026 Debug",
+      "configurePreset": "windows-VS2026-debug",
       "configuration": "Debug"
     },
 
@@ -250,6 +276,11 @@
       "displayName": "AXCF3152 2026 LTS",
       "configurePreset": "build-linux-AXCF3152-2026-LTS-Release"
     },
+    {
+      "name": "build-linux-AXCF2000-2026-LTS-Release",
+      "displayName": "AXCF2000 2026 LTS",
+      "configurePreset": "build-linux-AXCF2000-2026-LTS-Release"
+    },
 
 
     {
@@ -261,6 +292,13 @@
       "name": "build-windows-AXCF3152-2026-LTS-Release",
       "displayName": "AXCF3152 2026 LTS",
       "configurePreset": "build-windows-AXCF3152-2026-LTS-Release"
+    },
+
+
+    {
+      "name": "build-windows-AXCF2000-2026-LTS-Release",
+      "displayName": "AXCF2000 2026 LTS",
+      "configurePreset": "build-windows-AXCF2000-2026-LTS-Release"
     },
 
 

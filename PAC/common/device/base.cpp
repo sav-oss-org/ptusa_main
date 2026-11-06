@@ -94,7 +94,7 @@ void par_device::set_par( u_int idx, u_int offset, float value )
     {
     if ( par )
         {
-        par[ 0 ][ offset + idx ] = value;
+        ( *par )[ offset + idx ] = value;
         }
     }
 //-----------------------------------------------------------------------------

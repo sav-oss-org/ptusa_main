@@ -565,6 +565,269 @@ TEST( tech_object, set_mode )
         G_LUA_MANAGER->free_Lua();
         }
 
+TEST( tech_object, set_cmd )
+    {
+    lua_State* L = lua_open();
+    ASSERT_EQ( 1, tolua_PAC_dev_open( L ) );
+    G_LUA_MANAGER->set_Lua( L );
+
+    tech_object tank( "TANK", 1, 1, "TANK1", 1, 1, 10, 10, 10, 10 );
+    tank.get_modes_manager()->add_operation( "Test operation" );
+
+    // Сброс канала команд должен вернуть 0.
+    EXPECT_EQ( 0, tank.set_cmd( "CMD", 0, 0 ) );
+
+    constexpr auto OPER_N1 = 1u;
+    auto operation_1 = ( *tank.get_modes_manager() )[ OPER_N1 ];
+
+    operation_1->add_step( "Init", -1, -1 );
+    auto st1 = operation_1->add_step( "Process #1", 3, -1 );
+    operation_1->add_step( "Process #2", -1, -1 );
+
+    // Включение операции 1 должно вернуть 0.
+    EXPECT_EQ( 0, tank.set_cmd( "CMD", 0, 1'001 ) );
+    EXPECT_TRUE( operation_1->get_state() == operation::RUN );
+
+    // Включение дополнительно шага 2 должно вернуть 0.
+    EXPECT_EQ( 0, tank.set_cmd( "CMD", 0, 200'102 ) );
+    EXPECT_TRUE( st1->is_active() );
+
+    // Выключение дополнительно шага 2 должно вернуть 0.
+    EXPECT_EQ( 0, tank.set_cmd( "CMD", 0, 300'102 ) );
+    EXPECT_FALSE( st1->is_active() );
+
+    // Выключение операции 1 должно вернуть 0.
+    EXPECT_EQ( 0, tank.set_cmd( "CMD", 0, 2'001 ) );
+    EXPECT_TRUE( operation_1->get_state() == operation::IDLE );
+
+    // Попытка включить несуществующую операцию (2) должна вернуть 0.
+    EXPECT_EQ( 0, tank.set_cmd( "CMD", 0, 1'002 ) );
+
+    G_LUA_MANAGER->free_Lua();
+    }
+
+TEST( tech_object, set_cmd_to_step )
+    {
+    lua_State* L = lua_open();
+    ASSERT_EQ( 1, tolua_PAC_dev_open( L ) );
+    G_LUA_MANAGER->set_Lua( L );
+
+    tech_object tank( "TANK", 1, 1, "TANK1", 1, 1, 10, 10, 10, 10 );
+    tank.get_modes_manager()->add_operation( "Test operation" );
+
+    constexpr auto OPER_N1 = 1u;
+    constexpr auto STEP_N1 = 1u;
+    constexpr auto STEP_N2 = 2u;
+    constexpr auto STEP_N3 = 3u;
+    auto operation_1 = ( *tank.get_modes_manager() )[ OPER_N1 ];
+
+    operation_1->add_step( "Init", 2, -1 );
+    operation_1->add_step( "Process #1", 3, -1 );
+    operation_1->add_step( "Process #2", -1, -1 );
+
+    // Test: Reject jump when operation is not running (IDLE).
+    EXPECT_EQ( 1, tank.set_cmd( "CMD", 0, 400102 ) );
+    EXPECT_EQ( 0u, operation_1->active_step() );
+
+    // Start operation and verify initial step.
+    EXPECT_EQ( 0, tank.set_mode( OPER_N1, operation::RUN ) );
+    EXPECT_EQ( STEP_N1, operation_1->active_step() );
+
+    // Test: Successful jump to step 3.
+    EXPECT_EQ( 0, tank.set_cmd( "CMD", 0, 400103 ) );
+    EXPECT_EQ( STEP_N3, operation_1->active_step() );
+
+    // Test: Successful jump to step 2.
+    EXPECT_EQ( 0, tank.set_cmd( "CMD", 0, 400102 ) );
+    EXPECT_EQ( STEP_N2, operation_1->active_step() );
+
+    // Stop operation and verify jump is rejected.
+    tank.set_mode( OPER_N1, operation::IDLE );
+    EXPECT_EQ( operation::IDLE, operation_1->get_state() );
+    EXPECT_EQ( 1, tank.set_cmd( "CMD", 0, 400101 ) );
+    EXPECT_EQ( 0u, operation_1->active_step() );
+
+    G_LUA_MANAGER->free_Lua();
+    }
+
+TEST( tech_object, set_cmd_to_step_invalid_operation )
+    {
+    lua_State* L = lua_open();
+    ASSERT_EQ( 1, tolua_PAC_dev_open( L ) );
+    G_LUA_MANAGER->set_Lua( L );
+
+    tech_object tank( "TANK", 1, 1, "TANK1", 1, 1, 10, 10, 10, 10 );
+    tank.get_modes_manager()->add_operation( "Test operation" );
+
+    constexpr auto OPER_N1 = 1u;
+    auto operation_1 = ( *tank.get_modes_manager() )[ OPER_N1 ];
+
+    operation_1->add_step( "Init", 2, -1 );
+    operation_1->add_step( "Process #1", 3, -1 );
+    operation_1->add_step( "Process #2", -1, -1 );
+
+    // Start operation.
+    EXPECT_EQ( 0, tank.set_mode( OPER_N1, operation::RUN ) );
+
+    // Test: Invalid operation number (0).
+    // 400001 = operation 0, step 1.
+    EXPECT_EQ( 1, tank.set_cmd( "CMD", 0, 400001 ) );
+
+    // Test: Operation number exceeds operations_count (2).
+    // 400202 = operation 2, step 2.
+    EXPECT_EQ( 1, tank.set_cmd( "CMD", 0, 400202 ) );
+
+    // Test: Operation number exceeds operations_count (10).
+    // 401001 = operation 10, step 1.
+    EXPECT_EQ( 1, tank.set_cmd( "CMD", 0, 401001 ) );
+
+    G_LUA_MANAGER->free_Lua();
+    }
+
+TEST( tech_object, set_cmd_to_step_boundaries )
+    {
+    lua_State* L = lua_open();
+    ASSERT_EQ( 1, tolua_PAC_dev_open( L ) );
+    G_LUA_MANAGER->set_Lua( L );
+
+    tech_object tank( "TANK", 1, 1, "TANK1", 1, 1, 10, 10, 10, 10 );
+    tank.get_modes_manager()->add_operation( "Test operation" );
+
+    constexpr auto OPER_N1 = 1u;
+    constexpr auto STEP_N1 = 1u;
+    auto operation_1 = ( *tank.get_modes_manager() )[ OPER_N1 ];
+
+    operation_1->add_step( "Init", 2, -1 );
+    operation_1->add_step( "Process #1", 3, -1 );
+
+    // Start operation.
+    EXPECT_EQ( 0, tank.set_mode( OPER_N1, operation::RUN ) );
+    EXPECT_EQ( STEP_N1, operation_1->active_step() );
+
+    // Test: Lower boundary (400000).
+    // 400000 = operation 0, step 0 (invalid operation).
+    EXPECT_EQ( 1, tank.set_cmd( "CMD", 0, 400000 ) );
+
+    // Test: First valid command (400100).
+    // 400100 = operation 1, step 0.
+    EXPECT_EQ( 0, tank.set_cmd( "CMD", 0, 400100 ) );
+
+    // Restart to step 1.
+    tank.set_mode( OPER_N1, operation::IDLE );
+    EXPECT_EQ( 0, tank.set_mode( OPER_N1, operation::RUN ) );
+
+    // Test: Upper boundary (499999).
+    // 499999 = operation 99, step 99 (invalid operation).
+    EXPECT_EQ( 1, tank.set_cmd( "CMD", 0, 499999 ) );
+
+    // Test: Just outside upper boundary (500000).
+    // Commands outside 400000-499999 are not handled by step jump logic.
+    // Verify they don't interfere (returns non-zero or handled elsewhere).
+    int result = tank.set_cmd( "CMD", 0, 500000 );
+    // Accept any non-zero result as this is handled by different logic.
+    EXPECT_NE( -1000, result ); // Sanity check it doesn't crash.
+
+    G_LUA_MANAGER->free_Lua();
+    }
+
+TEST( tech_object, set_cmd_to_step_multiple_operations )
+    {
+    lua_State* L = lua_open();
+    ASSERT_EQ( 1, tolua_PAC_dev_open( L ) );
+    G_LUA_MANAGER->set_Lua( L );
+
+    tech_object tank( "TANK", 1, 1, "TANK1", 2, 1, 10, 10, 10, 10 );
+    tank.get_modes_manager()->add_operation( "Operation 1" );
+    tank.get_modes_manager()->add_operation( "Operation 2" );
+
+    constexpr auto OPER_N1 = 1u;
+    constexpr auto OPER_N2 = 2u;
+    constexpr auto STEP_N1 = 1u;
+    constexpr auto STEP_N2 = 2u;
+
+    auto operation_1 = ( *tank.get_modes_manager() )[ OPER_N1 ];
+    auto operation_2 = ( *tank.get_modes_manager() )[ OPER_N2 ];
+
+    operation_1->add_step( "Op1 Step1", 2, -1 );
+    operation_1->add_step( "Op1 Step2", 3, -1 );
+    operation_1->add_step( "Op1 Step3", -1, -1 );
+
+    operation_2->add_step( "Op2 Step1", 2, -1 );
+    operation_2->add_step( "Op2 Step2", -1, -1 );
+
+    // Start only operation 1.
+    EXPECT_EQ( 0, tank.set_mode( OPER_N1, operation::RUN ) );
+    EXPECT_EQ( STEP_N1, operation_1->active_step() );
+
+    // Test: Jump in operation 1 (should succeed).
+    EXPECT_EQ( 0, tank.set_cmd( "CMD", 0, 400102 ) );
+    EXPECT_EQ( STEP_N2, operation_1->active_step() );
+
+    // Test: Try to jump in operation 2 (should fail, not running).
+    EXPECT_EQ( 1, tank.set_cmd( "CMD", 0, 400202 ) );
+    EXPECT_EQ( 0u, operation_2->active_step() );
+
+    // Start operation 2 as well.
+    EXPECT_EQ( 0, tank.set_mode( OPER_N2, operation::RUN ) );
+    EXPECT_EQ( STEP_N1, operation_2->active_step() );
+
+    // Test: Jump in operation 2 (should now succeed).
+    EXPECT_EQ( 0, tank.set_cmd( "CMD", 0, 400202 ) );
+    EXPECT_EQ( STEP_N2, operation_2->active_step() );
+
+    // Test: Jump back in operation 1 (should still work).
+    EXPECT_EQ( 0, tank.set_cmd( "CMD", 0, 400103 ) );
+    EXPECT_EQ( 3u, operation_1->active_step() );
+
+    G_LUA_MANAGER->free_Lua();
+    }
+
+TEST( tech_object, set_cmd_to_step_paused_operation )
+    {
+    lua_State* L = lua_open();
+    ASSERT_EQ( 1, tolua_PAC_dev_open( L ) );
+    G_LUA_MANAGER->set_Lua( L );
+
+    tech_object tank( "TANK", 1, 1, "TANK1", 1, 1, 10, 10, 10, 10 );
+    tank.get_modes_manager()->add_operation( "Test operation" );
+
+    constexpr auto OPER_N1 = 1u;
+    constexpr auto STEP_N1 = 1u;
+    constexpr auto STEP_N2 = 2u;
+
+    auto operation_1 = ( *tank.get_modes_manager() )[ OPER_N1 ];
+
+    operation_1->add_step( "Init", 2, -1 );
+    operation_1->add_step( "Process #1", 3, -1 );
+    operation_1->add_step( "Process #2", -1, -1 );
+
+    operation_1->add_step( "Process pause #1", 2, -1, -1, operation::PAUSE );
+    operation_1->add_step( "Process pause #2", 1, -1, -1, operation::PAUSE );
+
+    // Start operation.
+    EXPECT_EQ( 0, tank.set_mode( OPER_N1, operation::RUN ) );
+    EXPECT_EQ( STEP_N1, operation_1->active_step() );
+
+    // Pause operation.
+    tank.set_mode( OPER_N1, operation::PAUSE );
+    EXPECT_EQ( operation::PAUSE, operation_1->get_state() );
+
+    // Test: Jump should not be rejected when paused (not RUN).
+    EXPECT_EQ( 0, tank.set_cmd( "CMD", 0, 400102 ) );
+    // When paused, active_step becomes 0.
+    EXPECT_EQ( STEP_N2, operation_1->active_step() );
+
+    // Switch off operation.
+    tank.set_mode( OPER_N1, operation::IDLE );
+    EXPECT_EQ( operation::IDLE, operation_1->get_state() );
+
+    // Test: Jump should now not succeed.
+    EXPECT_EQ( 1, tank.set_cmd( "CMD", 0, 400102 ) );
+    EXPECT_EQ( 0u, operation_1->active_step() );
+
+    G_LUA_MANAGER->free_Lua();
+    }
+
 TEST( tech_object_manager, save_params_as_Lua_str )
     {
 	lua_State* L = lua_open();

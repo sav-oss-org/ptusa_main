@@ -109,6 +109,8 @@ void PAC_info::reset_params()
     par[ P_STABLE_SAVE_DELAY_MS ] = 60'000;     // 1 minute.
     par[ P_MIN_SAVE_INTERVAL_MS ] = 3'600'000;  // 1 hour (60 * 60 * 1'000).
 
+    par[ P_POST_START_ERROR_PROCESSING_DELAY_MS ] = 5'000; // 5 seconds.
+
     par.save_all();
     }
 //-----------------------------------------------------------------------------
@@ -246,9 +248,8 @@ int PAC_info::set_cmd( const char* prop, u_int idx, double val )
                 {
                 G_LOG->notice( "Reload restrictions (remote monitor "
                     "client command)." );
-                const int SCRIPT_N = 7;
-                cmd = G_LUA_MANAGER->reload_script( SCRIPT_N, "restrictions",
-                    cmd_answer, sizeof( cmd_answer ) );
+                cmd = G_LUA_MANAGER->reload_script( RESTRICTIONS_SCRIPT_N,
+                    "restrictions", cmd_answer, sizeof( cmd_answer ) );
                 return cmd;
                 }
 
@@ -382,6 +383,16 @@ int PAC_info::set_cmd( const char* prop, u_int idx, double val )
                         false );
                     wn->is_err_mode_alarm_set = false;
                     wn->prev_status_register = 0;
+                    }
+                // Если была активна данная ошибка, удаляем её аналогично.
+                if ( wn->is_cfg_bus_error_alarm_set )
+                    {
+                    PAC_critical_errors_manager::get_instance()->reset_global_error(
+                        PAC_critical_errors_manager::AC_CFG_BUS_ERROR,
+                        PAC_critical_errors_manager::AS_IO_COUPLER, wn->number,
+                        false );
+                    wn->is_cfg_bus_error_alarm_set = false;
+                    wn->prev_diagnostic_status_register = 0;
                     }
 
                 // Устанавливаем ошибку о переходе узла в сервисный режим.

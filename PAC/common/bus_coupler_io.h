@@ -405,7 +405,12 @@ class io_manager
             /// Bit 4 of Status Register (7996) indicates PP mode.
             static constexpr u_int_2 STATUS_REG_PP_MODE_MASK = 0x0010;
 
-            ///< Cостояние работы с узлом.
+            /// Bits 2 and 8 of Diagnostic Status Register (7997)
+            /// indicate configuration/bus error conditions.
+            static constexpr u_int_2 DIAG_STATUS_REG_CFG_BUS_ERROR_MASK =
+                0x0104;
+
+            ///< Состояние работы с узлом.
             io_node::STATES state{ io_node::STATES::ST_NO_CONNECT };
 
 			TYPES   type;               ///< Тип.
@@ -465,8 +470,20 @@ class io_manager
             /// Previous status register value for detecting changes.
             u_int_2 prev_status_register{};
 
+            /// Diagnostic status register (7997) for Phoenix BK ETH nodes.
+            /// Bits 2 and 8 indicate configuration/bus errors.
+            u_int_2 diagnostic_status_register{};
+
+            /// Previous diagnostic register value for detecting changes.
+            u_int_2 prev_diagnostic_status_register{};
+
             /// Flag indicating PP mode alarm is currently active.
             bool is_err_mode_alarm_set = false;
+
+            /// Flag indicating configuration/bus error alarm is currently
+            /// active for diagnostic status register errors (bits 2 and 8
+            /// of register 7997).
+            bool is_cfg_bus_error_alarm_set = false;
 
             /// @brief Checks PP mode state of the node.
             /// @return true if PP mode is active (bit 4 set), else false.
@@ -478,7 +495,7 @@ class io_manager
             ///         or node without connection.
             ///         `DST_ERROR` when `state != ST_OK`.
             ///         `DST_WARNING` when warning/error conditions are
-            ///         present in the Phoenix status register (bits 0-5).
+            ///         present in Phoenix status/diagnostic registers.
             io_node::DISPLAY_STATES get_display_state() const;
 
             private:
@@ -547,4 +564,3 @@ class io_manager
 io_manager* G_IO_MANAGER();
 //-----------------------------------------------------------------------------
 #endif // IO_H
-

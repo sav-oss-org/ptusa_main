@@ -62,5 +62,10 @@ class tcp_client
         char* buff;
         tcp_client(const char* client_ip, unsigned int client_port, unsigned int client_id, unsigned char alarm_subclass, unsigned int exchange_buf_size = 256, uint32_t send_receive_timeout = 100);
         virtual ~tcp_client();
+
+#ifdef PTUSA_TEST
+        /// @brief Sets the connection state directly (for testing only).
+        void set_connected_state( int state ) { connectedstate = state; }
+#endif // PTUSA_TEST
     };
 #endif // tcp_client_h__

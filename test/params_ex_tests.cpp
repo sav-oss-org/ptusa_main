@@ -2,6 +2,14 @@
 
 using namespace ::testing;
 
+TEST( params_manager, was_successful_init )
+    {
+    auto pm = params_manager::get_instance();
+
+    // По умолчанию инициализация параметров считается неуспешной,
+    // так как не было вызова метода `init`.
+    EXPECT_FALSE( pm->was_successful_init() );
+    }
 
 TEST( params_manager, evaluate )
     {

@@ -6,7 +6,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(CMAKE_POLICY_DEFAULT_CMP0048 NEW)
 
-project(ptusa_main VERSION 2026.04.02.1)
+project(ptusa_main VERSION 2026.08.21.0)
 
 message(STATUS "CMake version: ${CMAKE_VERSION}")
 message(STATUS "CMake executable: ${CMAKE_COMMAND}")
@@ -164,14 +164,65 @@ if(LINUX)
            PAC_control_projects/main_control_prg/version.rc)
 
     if(ARP_DEVICE)
+        # plcncli resolves SDK types only for a project settings file with a valid target,
+        # so keep the CLI project settings in the build tree: the source folder holds only
+        # hand written component and program code. Include detection is skipped, otherwise
+        # plcncli generates its own CMakeLists.txt inside the PLCnext Engineer sources.
+        set(PLCNEXT_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/PAC/linux/PAC_PLCnext/PtusaPLCnextEngineer")
+        set(PLCNEXT_PROJECT_DIR "${CMAKE_BINARY_DIR}/PtusaPLCnextEngineer")
+
+        # Rewrite the settings file on every configure so that re-adding the target
+        # stays idempotent: plcncli rejects a duplicate target and appends a second
+        # <Target> when the full SDK version changes. The previously registered target
+        # is restored from the cached device version on standalone reconfigure.
+        file(WRITE "${PLCNEXT_PROJECT_DIR}/plcnext.proj"
+            "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n"
+            "<ProjectSettings xmlns=\"http://www.phoenixcontact.com/schema/cliproject\">\n"
+            "  <Type>project</Type>\n"
+            "  <Version>4.0</Version>\n"
+            "  <Name>PtusaPLCnextEngineer</Name>\n"
+            "  <GenerateDTArrayNameByType>true</GenerateDTArrayNameByType>\n"
+            "  <GenerateNamespaces>true</GenerateNamespaces>\n"
+            "</ProjectSettings>\n")
+
+        # The short SDK version comes from the preset environment, but a standalone
+        # re-configure has no preset environment, so fall back to the cached device version.
+        set(PLCNEXT_TARGET_VERSION "$ENV{ARP_DEVICE_SHORT_VERSION}")
+        if(NOT PLCNEXT_TARGET_VERSION AND ARP_DEVICE_VERSION MATCHES "^([0-9]+\.[0-9]+)")
+            set(PLCNEXT_TARGET_VERSION "${CMAKE_MATCH_1}")
+        endif()
+
+        if(PLCNEXT_TARGET_VERSION)
+            execute_process(COMMAND plcncli set target --add
+                -p "${PLCNEXT_PROJECT_DIR}"
+                -n "${ARP_DEVICE}"
+                -v "${PLCNEXT_TARGET_VERSION}"
+                --quiet
+                COMMAND_ECHO STDOUT )
+        else()
+            message(WARNING
+                "No short SDK version: plcncli will generate without a valid target.")
+        endif()
+
         execute_process(COMMAND plcncli
-            generate code -s . -o ${CMAKE_BINARY_DIR}/PtusaPLCnextEngineer/intermediate/code --verbose
-            WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/PAC/linux/PAC_PLCnext/PtusaPLCnextEngineer
-            COMMAND_ECHO STDOUT )
+            generate code -p "${PLCNEXT_PROJECT_DIR}" -s "${PLCNEXT_SOURCE_DIR}" -n -o "${PLCNEXT_PROJECT_DIR}/intermediate/code" --verbose
+            WORKING_DIRECTORY ${PLCNEXT_SOURCE_DIR}
+            COMMAND_ECHO STDOUT
+            RESULT_VARIABLE PLCNCLI_CODE_RESULT )
+        if(NOT PLCNCLI_CODE_RESULT EQUAL 0)
+            message(FATAL_ERROR
+                "plcncli generate code failed with exit code ${PLCNCLI_CODE_RESULT}.")
+        endif()
+
         execute_process(COMMAND plcncli
-            generate config -s . -o ${CMAKE_BINARY_DIR}/PtusaPLCnextEngineer/intermediate/config --verbose
-            WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/PAC/linux/PAC_PLCnext/PtusaPLCnextEngineer
-            COMMAND_ECHO STDOUT )
+            generate config -p "${PLCNEXT_PROJECT_DIR}" -s "${PLCNEXT_SOURCE_DIR}" -n -o "${PLCNEXT_PROJECT_DIR}/intermediate/config" --verbose
+            WORKING_DIRECTORY ${PLCNEXT_SOURCE_DIR}
+            COMMAND_ECHO STDOUT
+            RESULT_VARIABLE PLCNCLI_CONFIG_RESULT )
+        if(NOT PLCNCLI_CONFIG_RESULT EQUAL 0)
+            message(FATAL_ERROR
+                "plcncli generate config failed with exit code ${PLCNCLI_CONFIG_RESULT}.")
+        endif()
 
         file(GLOB PLCnext_engineer_src CONFIGURE_DEPENDS
             PAC/linux/PAC_PLCnext/PtusaPLCnextEngineer/*.cpp
@@ -211,14 +262,6 @@ elseif(WIN32)
         "${CMAKE_CURRENT_SOURCE_DIR}/PAC/common/PAC_dev_lua.cpp"
         PAC_dev
         "${CMAKE_CURRENT_SOURCE_DIR}/PAC/common/toloa++/pkg/PAC_dev.hh")
-    regenerate_tolua_file(
-        "${CMAKE_CURRENT_SOURCE_DIR}/PAC/IoT/IOT_dev_lua.cpp"
-        IOT_dev
-        "${CMAKE_CURRENT_SOURCE_DIR}/PAC/common/toloa++/pkg/IOT_dev.hh")
-    regenerate_tolua_file(
-        "${CMAKE_CURRENT_SOURCE_DIR}/PAC/common/OPCUA_tolua.cpp"
-        OPC_UA
-        "${CMAKE_CURRENT_SOURCE_DIR}/PAC/common/toloa++/pkg/OPC_UA.hh")
 endif()
 
 if(NOT ARP_DEVICE)
@@ -577,6 +620,7 @@ set(TCP_SOCKET_LOCKED_FILTER
 	"tcp_communicator.recvtimeout:"
     "device_communicator.write_devices_states_service:"
     "pp_mode_alarm.pp_mode_activation_deactivation:"
+	"pp_mode_alarm.cfg_bus_error_activation_deactivation:"
     "pp_mode_alarm.e_communicate:"
     "main_cycle.main_cycle:"
 	"PAC_info.set_cmd:"

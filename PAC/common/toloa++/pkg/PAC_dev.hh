@@ -688,6 +688,8 @@ i_AO_device* AO( const char *dev_name );
 i_counter* FQT( const char *dev_name );
 
 virtual_counter* virtual_FQT( const char *dev_name );
+
+counter_iolink* FQT_IOLINK( const char *dev_name );
 //-----------------------------------------------------------------------------
 /// @brief Получение температуры по имени.
 ///
@@ -988,6 +990,17 @@ class virtual_counter : public device
 
         void eval( unsigned int read_value, unsigned int abs_read_value,
             float read_flow );
+    };
+//-----------------------------------------------------------------------------
+/// @brief Счетчик IO-Link (IFM.SMFx20 и другие).
+class counter_iolink : public device
+    {
+    public:
+        /// @brief Получение значения температуры.
+        float get_temperature();
+
+        /// @brief Получение значения проводимости (мкСм/см).
+        float get_conductivity();
     };
 //-----------------------------------------------------------------------------
 //-----------------------------------------------------------------------------
@@ -1975,7 +1988,7 @@ class modbus_client
 
     public:
         modbus_client(unsigned int id, const char* ip, unsigned int port = 502,
-            unsigned long exchangetimeout = 50 );
+            unsigned long exchangetimeout = 50, const char* name = nullptr );
 
         // Реализация функций протокола modbus.
         int read_discrete_inputs(unsigned int start_address, unsigned int quantity);

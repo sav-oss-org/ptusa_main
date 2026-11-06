@@ -1412,8 +1412,11 @@ io_manager::io_node::DISPLAY_STATES io_manager::io_node::get_display_state() con
         return io_node::DISPLAY_STATES::DST_ERROR;
         }
 
-    // Check error/PP mode bits (0-5) in status register for Phoenix BK ETH nodes.
-    if ( type == PHOENIX_BK_ETH && ( status_register & STATUS_REG_ERROR_MASK ) )
+    // Check error/warning bits in Phoenix status registers.
+    if ( type == PHOENIX_BK_ETH &&
+        ( ( status_register & STATUS_REG_ERROR_MASK ) ||
+        ( diagnostic_status_register &
+            DIAG_STATUS_REG_CFG_BUS_ERROR_MASK ) ) )
         {
         return io_node::DISPLAY_STATES::DST_WARNING;
         }

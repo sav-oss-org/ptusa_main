@@ -10,22 +10,60 @@ class test_uni_io_manager_PP_mode : public uni_io_manager
     public:
         ~test_uni_io_manager_PP_mode() override = default;
 
+        void set_registers( u_int_2 status, u_int_2 diagnostic )
+            {
+            status_register_value = status;
+            diagnostic_status_register_value = diagnostic;
+            }
+
         void activate_error()
             {
-            buff[ 1 ] = 0x10; // PP mode is active.
+            set_registers( 0x0010, 0x0000 ); // PP mode is active.
             }
 
         void deactivate_error()
             {
-            buff[ 1 ] = 0x0; // PP mode is inactive.
+            set_registers( 0x0000, 0x0000 ); // PP mode is inactive.
+            }
+
+        void activate_cfg_bus_error()
+            {
+            set_registers( 0x0000, 0x0104 ); // Bits 2 and 8.
             }
 
         int read_input_registers( io_node* node, unsigned int address,
             unsigned int quantity, unsigned char station /*= 0*/ ) override
             {
+            (void)node;
+            (void)station;
+            if ( address == PHOENIX_STATUS_REGISTER_ADDRESS &&
+                quantity == 2 )
+                {
+                buff[ 0 ] = static_cast<u_char>( status_register_value >> 8 );
+                buff[ 1 ] = static_cast<u_char>( status_register_value & 0xFF );
+                buff[ 2 ] = static_cast<u_char>(
+                    diagnostic_status_register_value >> 8 );
+                buff[ 3 ] = static_cast<u_char>(
+                    diagnostic_status_register_value & 0xFF );
+                resultbuff = buff;
+                return 1;
+                }
+
+            auto register_value = status_register_value;
+            if ( address == PHOENIX_DIAGNOSTIC_STATUS_REGISTER_ADDRESS )
+                {
+                register_value = diagnostic_status_register_value;
+                }
+
+            buff[ 0 ] = static_cast<u_char>( register_value >> 8 );
+            buff[ 1 ] = static_cast<u_char>( register_value & 0xFF );
             resultbuff = buff;
             return 1;
             }
+
+    private:
+        u_int_2 status_register_value = 0;
+        u_int_2 diagnostic_status_register_value = 0;
     };
 
 // Test PP mode alarm activation.
@@ -76,7 +114,7 @@ TEST( pp_mode_alarm, pp_mode_activation_deactivation )
     auto res = mngr.e_communicate( node, 1, 1 );
     EXPECT_NE( res, 0 );
     auto REF_STR_NO_CONNECTION = R"s(	{
-	description = "1-1-1 : Нет связи с узлом I/O 'A100' ('127.0.0.1', 'Тест').",
+	description = "1-1-1 : Узел I/O 'A100' ('127.0.0.1', 'Тест') - нет связи",
 	type = AT_SPECIAL,
 	group = 'Авария',
 	priority = 100,
@@ -103,8 +141,9 @@ TEST( pp_mode_alarm, initialization )
 
     // Verify initial state.
     EXPECT_EQ( 0, node.status_register );
-    EXPECT_EQ( 0, node.prev_status_register );
+    EXPECT_EQ( 0, node.diagnostic_status_register );
     EXPECT_FALSE( node.is_err_mode_alarm_set );
+    EXPECT_FALSE( node.is_cfg_bus_error_alarm_set );
     }
 
 // Test PP mode detection with non-Phoenix nodes.
@@ -198,7 +237,7 @@ TEST( pp_mode_alarm, e_communicate )
     test_uni_io_manager_PP_mode mngr;
 
     // Устанавливаем бит перехода в PP mode.
-    mngr.buff[ 1 ] = io_manager::io_node::STATUS_REG_PP_MODE_MASK;
+    mngr.activate_error();
     mngr.read_phoenix_status_register( node );
     EXPECT_TRUE( err_mngr->is_any_error() ); // Ошибка наличия `PP mode`.
 
@@ -217,4 +256,47 @@ TEST( pp_mode_alarm, e_communicate )
     G_PAC_INFO()->reset_params();
     err_mngr->reset_all_error();
     tcp_communicator::clear_instance();
+    }
+
+// Test configuration/bus error alarm activation from register 7997.
+TEST( pp_mode_alarm, cfg_bus_error_activation_deactivation )
+    {
+    PAC_critical_errors_manager::get_instance()->reset_all_error();
+    EXPECT_FALSE( PAC_critical_errors_manager::get_instance()->is_any_error() );
+
+    tcp_communicator::init_instance( "Тест", "Test" );
+
+    G_IO_MANAGER()->init( 1 );
+    G_IO_MANAGER()->add_node( 0,
+        io_manager::io_node::TYPES::PHOENIX_BK_ETH, 1, "127.0.0.1", "A100",
+        0, 0, 0, 0, 0, 0 );
+    auto node = G_IO_MANAGER()->get_node( 0 );
+
+    test_uni_io_manager_PP_mode mngr;
+    mngr.activate_cfg_bus_error();
+    mngr.read_phoenix_status_register( node );
+
+    u_int_2 err_id = 0;
+    std::array<char, 300> lua_buff{};
+    PAC_critical_errors_manager::get_instance()->save_as_Lua_str(
+        lua_buff.data(), err_id );
+    auto REF_STR = R"s(	{
+	description = "7-1-1 : Узел I/O 'A100' ('127.0.0.1', 'Тест') - ошибка конфигурации/шины",
+	type = AT_SPECIAL,
+	group = 'Авария',
+	priority = 100,
+	state = AS_ALARM,
+	id_n = 1,
+	},
+)s";
+    EXPECT_STREQ( lua_buff.data(), REF_STR );
+
+    mngr.deactivate_error();
+    mngr.read_phoenix_status_register( node );
+    PAC_critical_errors_manager::get_instance()->save_as_Lua_str(
+        lua_buff.data(), err_id );
+    EXPECT_STREQ( lua_buff.data(), "" );
+
+    tcp_communicator::clear_instance();
+    PAC_critical_errors_manager::get_instance()->reset_all_error();
     }

@@ -36,7 +36,6 @@ TEST(lua_manager_test, get_instance)
 	LUA_API int lua_pcall (lua_State *L, int nargs, int nresults, int errfunc)
 	LUALIB_API int luaL_loadfile (lua_State *L, const char *filename)
 	TOLUA_API int tolua_PAC_dev_open (lua_State* tolua_S)
-	TOLUA_API int tolua_IOT_dev_open (lua_State* tolua_S)
     LUA_API void lua_close (lua_State *L)
     LUA_API const char *lua_tolstring (lua_State *L, int idx, size_t *len)
     LUA_API void lua_settop (lua_State *L, int idx)
@@ -670,6 +669,22 @@ TEST_F(LuaManagerTest, reload_script_exceeded_script_number_failure)
     char ans[100];
     EXPECT_EQ(1, G_LUA_MANAGER->reload_script(INT_MAX, "test_lua_func_str", ans, sizeof(ans)));
 }
+
+TEST( lua_manager, reload_script_negative_script_number_failure )
+    {
+    auto L = lua_open();
+    G_LUA_MANAGER->set_Lua( L );
+    char ans[ 100 ] = {};
+    EXPECT_EQ( 1, G_LUA_MANAGER->reload_script( -1, "test_lua_func_str",
+        ans, sizeof( ans ) ) );
+    G_LUA_MANAGER->free_Lua();
+    }
+
+TEST( lua_manager, restrictions_script_is_last_file )
+    {
+    EXPECT_EQ( RESTRICTIONS_SCRIPT_N, FILE_CNT - 1 );
+    EXPECT_STREQ( FILES[ RESTRICTIONS_SCRIPT_N ], "main.restrictions.lua" );
+    }
 
 TEST_F(LuaManagerTest, reload_script_check_file_failure)
 {
