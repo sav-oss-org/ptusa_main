@@ -1089,7 +1089,7 @@ void cipline_tech_object::initline()
         if ( !is_function )
             {
             lua_State* L = lua_manager::get_instance()->get_Lua();
-            lua_getfield( L, LUA_GLOBALSINDEX, this->name_Lua );
+            lua_getglobal( L, this->name_Lua );
             if ( lua_istable( L, -1 ) )
                 {
                 lua_getfield( L, -1, function_name );

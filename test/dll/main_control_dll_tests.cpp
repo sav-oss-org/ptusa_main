@@ -25,7 +25,7 @@ extern int lua_init( lua_State* L );
 
 TEST( dll, luaopen_ptusa_main )
     {
-    auto L = lua_open();
+    auto L = luaL_newstate();
     auto res = luaopen_ptusa_main( L );
     EXPECT_EQ( 1, res );
 
@@ -62,7 +62,7 @@ TEST( dll, switch_off_verbose )
 
 TEST( dll, lua_init )
     {
-    auto L = lua_open();
+    auto L = luaL_newstate();
 
     auto res = lua_init( L );
     luaL_openlibs( L );

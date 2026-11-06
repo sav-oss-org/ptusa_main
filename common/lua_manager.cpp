@@ -136,15 +136,30 @@ int lua_manager::init( lua_State* lua_state, const char* script_name,
     if ( !dir_str.empty() || !sys_dir_str.empty() || !extra_dirs_str.empty() )
         {
         G_LOG->notice( "path = \"%s\", sys_path = \"%s\", extra_paths = \"%s\"",
-            std::filesystem::path( dir ).make_preferred().u8string().c_str(),
-            std::filesystem::path( sys_dir ).make_preferred().u8string().c_str(),
-            std::filesystem::path( extra_dirs ).make_preferred().u8string().c_str() );
+            std::filesystem::path( dir_str ).make_preferred().u8string().c_str(),
+            std::filesystem::path( sys_dir_str ).make_preferred().u8string().c_str(),
+            std::filesystem::path( extra_dirs_str ).make_preferred().u8string().c_str() );
+        }
+
+    if ( !dir_str.empty() && dir_str.back() != '\\' && dir_str.back() != '/' )
+        {
+        dir_str += '/';
+        }
+    if ( !sys_dir_str.empty() &&
+        sys_dir_str.back() != '\\' && sys_dir_str.back() != '/' )
+        {
+        sys_dir_str += '/';
+        }
+    if ( !extra_dirs_str.empty() &&
+        extra_dirs_str.back() != '\\' && extra_dirs_str.back() != '/' )
+        {
+        extra_dirs_str += '/';
         }
 
     if ( 0 == lua_state )
         {
         //Инициализация Lua.
-        L = lua_open();   // Create Lua context.
+        L = luaL_newstate();   // Create Lua context.
 
         if ( NULL == L )
             {
@@ -381,7 +396,7 @@ bool lua_manager::is_exist_lua_function( const char* object_name,
     const char* function_name ) const
     {
     auto res = false;
-    lua_getfield( L, LUA_GLOBALSINDEX, object_name );
+    lua_getglobal( L, object_name );
     if ( !lua_isnil( L, -1 ) )
         {
         lua_getfield( L, -1, function_name );
@@ -471,7 +486,7 @@ int lua_manager::exec_lua_method_var( const char* object_name,
 
     if ( object_name && strcmp( object_name, "" ) != 0 )
         {
-        lua_getfield( L, LUA_GLOBALSINDEX, object_name );
+        lua_getglobal( L, object_name );
         if ( lua_type( L, -1 ) == LUA_TNIL )
             {
             lua_pop( L, 1 ); //Удаляем функцию error_trace.
@@ -487,13 +502,13 @@ int lua_manager::exec_lua_method_var( const char* object_name,
             }
 
         lua_remove( L, -2 );
-        lua_getfield( L, LUA_GLOBALSINDEX, object_name );
+        lua_getglobal( L, object_name );
 
         param_count++;
         }
     else
         {
-        lua_getfield( L, LUA_GLOBALSINDEX, function_name );
+        lua_getglobal( L, function_name );
         }
 
     va_list param;

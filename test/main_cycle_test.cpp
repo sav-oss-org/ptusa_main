@@ -12,7 +12,7 @@ extern bool G_READ_ONLY_IO_NODES;
 
 TEST( main_cycle, main_cycle )
     {
-    auto L = lua_open();
+    auto L = luaL_newstate();
     G_LUA_MANAGER->set_Lua( L );
     tcp_communicator::init_instance( "Тест", "Test" );
 
