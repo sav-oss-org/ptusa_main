@@ -25,10 +25,20 @@
 //-----------------------------------------------------------------------------
 //-----------------------------------------------------------------------------
 SRAM::SRAM( const std::filesystem::path& file_name, u_int size ) :
-    file_path( file_name ),
-    tmp_path( file_name.string() + ".tmp" ),
     total_size( size )
     {
+    // Путь сохраняется в абсолютном виде, чтобы сообщения об ошибках были
+    // однозначными и не зависели от текущего каталога процесса.
+    std::error_code ec;
+    auto resolved = std::filesystem::absolute( file_name, ec );
+    if ( ec )
+        {
+        resolved = file_name;
+        }
+
+    file_path = resolved.lexically_normal();
+    tmp_path = file_path.string() + ".tmp";
+
     params_data = new std::byte[ total_size ];
     memset( params_data, 0, total_size );
     }
@@ -110,13 +120,25 @@ int SRAM::safe_save()
 
     if ( FILE* temp = fopen( tmp_path.string().c_str(), "w+b" ); !temp )
         {
-        G_LOG->error( "SRAM() - ERROR: Can't open file (%s) : %s.\n",
-            tmp_path.string().c_str(), strerror( errno ) );
+        if ( !error_logged )
+            {
+            // errno нужно сохранить до обращения к другим функциям, иначе он
+            // может быть перезаписан.
+            const int err = errno;
+
+            G_LOG->error( "SRAM() - ERROR: Can't open file (%s) : %s.\n",
+                tmp_path.string().c_str(), strerror( err ) );
+            error_logged = true;
+            }
 
         return 1;
         }
     else
         {
+        // После успешного создания файла ошибка может появиться снова, поэтому
+        // сообщение разрешается повторить.
+        error_logged = false;
+
         if ( auto res =
             fwrite( get_data(), sizeof( std::byte ), get_size(), temp );
             res != get_size() )
@@ -210,6 +232,11 @@ void SRAM::zero_fill()
 u_int SRAM::get_size() const
     {
     return total_size;
+    }
+//-----------------------------------------------------------------------------
+std::filesystem::path SRAM::get_directory() const
+    {
+    return file_path.parent_path();
     }
 //-----------------------------------------------------------------------------
 //-----------------------------------------------------------------------------

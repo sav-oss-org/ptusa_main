@@ -1,5 +1,7 @@
 #include "params_ex_tests.h"
 
+#include "PAC_info.h"
+
 using namespace ::testing;
 
 TEST( params_manager, was_successful_init )
@@ -20,6 +22,30 @@ TEST( params_manager, evaluate )
 
     pm->save();
     pm->evaluate();
+    }
+
+TEST( params_manager, evaluate_saves_after_intervals )
+    {
+    auto pm = params_manager::get_instance();
+    pm->init( 0x12345678 );
+
+    // Интервалы сохранения обнуляются, чтобы evaluate() сразу доходил до
+    // проверки свободного места и сохранения параметров.
+    auto* info = G_PAC_INFO();
+    const auto stable_delay = info->par[ PAC_info::P_STABLE_SAVE_DELAY_MS ];
+    const auto min_interval = info->par[ PAC_info::P_MIN_SAVE_INTERVAL_MS ];
+    info->par[ PAC_info::P_STABLE_SAVE_DELAY_MS ] = 0;
+    info->par[ PAC_info::P_MIN_SAVE_INTERVAL_MS ] = 0;
+
+    pm->save();
+    EXPECT_EQ( 0, pm->evaluate() );
+
+    info->par[ PAC_info::P_STABLE_SAVE_DELAY_MS ] = stable_delay;
+    info->par[ PAC_info::P_MIN_SAVE_INTERVAL_MS ] = min_interval;
+
+    // Сохранённые файлы убираются, чтобы не влиять на последующие тесты.
+    std::filesystem::remove( std::filesystem::current_path() / "nvram.bin" );
+    std::filesystem::remove( std::filesystem::current_path() / "eeprom.bin" );
     }
 
 TEST( params_manager, reserve_params_region )
@@ -117,4 +143,51 @@ TEST( SRAM, safe_save )
 
     subhook_remove( fopen_hook );
     subhook_free( fopen_hook );
+    }
+
+TEST( SRAM, safe_save_create_error_logged_once )
+    {
+    SRAM good_sram( "test_sram4.bin", DATA_SIZE );
+
+    auto fopen_hook = subhook_new( reinterpret_cast<void*>( &fopen ),
+        reinterpret_cast<void*>( &bad_fopen ), SUBHOOK_64BIT_OFFSET );
+    subhook_install( fopen_hook );
+
+    testing::internal::CaptureStdout();
+
+    // Сохранение выполняется циклически, поэтому второе обращение к закрытому
+    // каталогу не должно приводить к повторному сообщению.
+    EXPECT_EQ( 1, good_sram.safe_save() );
+    EXPECT_EQ( 1, good_sram.safe_save() );
+
+    subhook_remove( fopen_hook );
+    subhook_free( fopen_hook );
+
+    auto output = testing::internal::GetCapturedStdout();
+
+    const std::string marker = "Can't open file";
+    size_t count = 0;
+    for ( auto pos = output.find( marker );
+        pos != std::string::npos; pos = output.find( marker, pos + 1 ) )
+        {
+        count++;
+        }
+
+    EXPECT_EQ( 1u, count );
+
+    // Путь в сообщении должен быть абсолютным, иначе невозможно понять,
+    // в каком каталоге запрещена запись.
+    auto expected = ( std::filesystem::current_path()
+        / "test_sram4.bin.tmp" ).lexically_normal().string();
+    EXPECT_NE( std::string::npos, output.find( expected ) );
+    }
+
+TEST( SRAM, get_directory )
+    {
+    SRAM sram( "subdir/test_sram5.bin", DATA_SIZE );
+
+    // Путь хранится в абсолютном виде, поэтому каталог хранения файла данных
+    // не зависит от текущего каталога процесса.
+    EXPECT_EQ( std::filesystem::current_path() / "subdir",
+        sram.get_directory() );
     }

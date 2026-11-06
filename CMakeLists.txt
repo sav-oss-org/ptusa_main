@@ -609,6 +609,8 @@ set(STDOUT_CAPTURE_LOCKED_FILTER
 
 	"uni_io_manager.write_outputs:"
 
+	"SRAM.safe_save_create_error_logged_once:"
+
 	"tech_object.set_mode:"
 
     "project_manager.proc_main_params:"
