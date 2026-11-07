@@ -1,4 +1,5 @@
 #include "../includes.h"
+#include "lua_manager.h"
 
 #ifdef  __cplusplus
 extern "C" {
@@ -17,6 +18,7 @@ using namespace ::testing;
 extern int G_DEBUG;
 extern "C" int luaopen_ptusa_main( lua_State* L );
 extern int no_print_stack_traceback( lua_State* L );
+extern int get_lua_error_count( lua_State* L );
 extern int use_print_stack_traceback( lua_State* L );
 extern int switch_on_verbose( lua_State* L );
 extern int switch_off_verbose( lua_State* L );
@@ -38,6 +40,16 @@ TEST( dll, luaopen_ptusa_main )
 TEST( dll, no_print_stack_traceback )
     {
     EXPECT_EQ( 0, no_print_stack_traceback( nullptr ) );
+    }
+
+TEST( dll, get_lua_error_count )
+    {
+    lua_manager::reset_lua_error_count();
+    auto L = lua_open();
+    EXPECT_EQ( 1, get_lua_error_count( L ) );
+    EXPECT_EQ( LUA_TNUMBER, lua_type( L, -1 ) );
+    EXPECT_EQ( 0, static_cast<int>( lua_tonumber( L, -1 ) ) );
+    lua_close( L );
     }
 
 TEST( dll, use_print_stack_traceback )

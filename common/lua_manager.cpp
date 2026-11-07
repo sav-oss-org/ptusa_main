@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <filesystem>
+#include <limits>
 
 #include "fmt/format.h"
 
@@ -19,6 +20,7 @@
 //-----------------------------------------------------------------------------
 auto_smart_ptr< lua_manager > lua_manager::instance;
 bool lua_manager::is_print_stack_traceback = true;
+int lua_manager::lua_error_count = 0;
 //-----------------------------------------------------------------------------
 #ifdef PTUSA_TEST
 void lua_manager::set_Lua( lua_State* l )
@@ -464,8 +466,9 @@ int lua_manager::exec_lua_method_var( const char* object_name,
     //    u_long start_time;
     //    start_time = get_millisec();
 
-    lua_pushcclosure( lua_manager::L, error_trace, 0 );
-    instance->err_func = lua_gettop( L );
+    const int initial_stack_top = lua_gettop( L );
+    lua_pushcclosure( L, error_trace, 0 );
+    const int error_function_index = lua_gettop( L );
 
     int param_count = 0;
 
@@ -474,15 +477,14 @@ int lua_manager::exec_lua_method_var( const char* object_name,
         lua_getfield( L, LUA_GLOBALSINDEX, object_name );
         if ( lua_type( L, -1 ) == LUA_TNIL )
             {
-            lua_pop( L, 1 ); //Удаляем функцию error_trace.
+            lua_settop( L, initial_stack_top );
             return 1;
             }
 
         lua_getfield( L, -1, function_name );
         if ( lua_type( L, -1 ) == LUA_TNIL )
             {
-            lua_pop( L, 1 ); //Удаляем object_name.
-            lua_pop( L, 1 ); //Удаляем функцию error_trace.
+            lua_settop( L, initial_stack_top );
             return 1;
             }
 
@@ -508,9 +510,17 @@ int lua_manager::exec_lua_method_var( const char* object_name,
     va_end( param );
 
     int results_count = is_use_lua_return_value == 1 ? 1 : 0;
-    int res = lua_pcall( L, param_count, results_count, err_func );
+    int res = lua_pcall(
+        L, param_count, results_count, error_function_index );
 
-    lua_remove( L, -results_count - 1 ); //Удаляем функцию error_trace.
+    if ( res )
+        {
+        lua_settop( L, initial_stack_top );
+        }
+    else
+        {
+        lua_remove( L, error_function_index ); //Удаляем функцию error_trace.
+        }
 
     //LARGE_INTEGER finish_time;
     //QueryPerformanceCounter( &finish_time );
@@ -535,6 +545,11 @@ int lua_manager::error_trace( lua_State * L )
 
     std::string err_str = lua_tostring( L, -1 );
     lua_pop( L, 1 );
+
+    if ( lua_error_count < ( std::numeric_limits< int >::max )() )
+        {
+        lua_error_count++;
+        }
 
     if ( std::binary_search( errors.begin(), errors.end(), err_str ) != true )
         {

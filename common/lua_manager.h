@@ -51,6 +51,16 @@ class lua_manager
             is_print_stack_traceback = true;
             }
 
+        static int get_lua_error_count()
+            {
+            return lua_error_count;
+            }
+
+        static void reset_lua_error_count()
+            {
+            lua_error_count = 0;
+            }
+
         static lua_manager* get_instance();
 
         int init( lua_State* L, const char* script_name, const char* dir = "",
@@ -100,7 +110,7 @@ class lua_manager
 #endif
 
     private:
-        lua_manager() : L( 0 ), err_func( 0 ), is_free_lua( 0 )
+        lua_manager() : L( 0 ), is_free_lua( 0 )
             {
             }
 
@@ -116,8 +126,8 @@ class lua_manager
             int is_use_lua_return_value = 0, int cnt = 0, ... ) const;
 
         static bool is_print_stack_traceback;
+        static int lua_error_count;
 
-        int err_func;
         lua_State * L;
 
         int is_free_lua;
