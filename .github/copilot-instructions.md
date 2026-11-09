@@ -353,6 +353,26 @@ changes
 - Put useful follow-up ideas into separate pull requests.
 - Follow `docs/CONTRIBUTING.md` for the contribution process.
 
+## AI Commit Attribution
+
+- Commits whose substantive content was produced with AI assistance must
+  carry provenance trailers in the final paragraph of the commit message,
+  with no blank line between them:
+
+  ```
+  Co-authored-by: Zed AI Agent <253101093+zed-agent@users.noreply.github.com>
+  AI-assisted: Zed agent (model: <model-name>, local)
+  ```
+
+- Use the model name reported by the agent at commit time verbatim; do
+  not invent or normalize it.
+- Never line-wrap or reflow trailer lines, even when they exceed the
+  usual 72-character body limit.
+- Human-only commits need no trailers.
+- Start the body of AI-created issues and pull requests with
+  `🤖 Generated with AI assistance`.
+- Follow `AGENTS.md` for the full attribution rule.
+
 ## Advanced Usage
 
 ### Cross-Compilation (PLCnext)
