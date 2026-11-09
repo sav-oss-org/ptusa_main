@@ -8,13 +8,7 @@
 #include "log.h"
 #include "PAC_info.h"
 
-#ifdef WIN_OS
-#include "w_tcp_cmctr.h"
-#endif // WIN_OS
-
-#ifdef LINUX_OS
-#include "l_tcp_cmctr.h"
-#endif
+#include "cmn_tcp_cmctr.h"
 
 auto_smart_ptr < tcp_communicator > tcp_communicator::instance = 0;
 int tcp_communicator::master_socket = 0;
@@ -286,11 +280,11 @@ void tcp_communicator::init_instance( const char *name_rus, const char *name_eng
        is_init = true;
 #endif //PTUSA_TEST
 #ifdef WIN_OS
-	    instance = new tcp_communicator_win( name_rus, name_eng );
+	    instance = new tcp_communicator_impl( name_rus, name_eng );
 #endif // WIN_OS
 
 #ifdef LINUX_OS
-	    instance = new tcp_communicator_linux( name_rus, name_eng );
+	    instance = new tcp_communicator_impl( name_rus, name_eng );
 #endif
 #ifdef PTUSA_TEST
         }
@@ -323,5 +317,148 @@ int tcp_communicator::remove_async_client( tcp_client* client )
         clients->erase(it);
         }
     return 0;
+    }
+//------------------------------------------------------------------------------
+int tcp_communicator::sendall( int sockfd, u_char* buf, int len,
+    int sec, int usec, const char* IP, const char* name,
+    stat_time* stat )
+    {
+    // Network performance info.
+    if ( stat )
+        {
+        auto timeInfo_ = get_time();
+
+        // Once per hour writes performance info.
+        if ( stat->print_cycle_last_h != timeInfo_.tm_hour )
+            {
+            u_int t =
+                G_PAC_INFO()->par[
+                    PAC_info::P_WAGO_TCP_NODE_WARN_ANSWER_AVG_TIME ];
+
+            stat->print_cycle_last_h = timeInfo_.tm_hour;
+
+            u_long avg_time = stat->all_time / stat->cycles_cnt;
+            G_LOG->debug(
+                R"(Network performance : send : s%d->"%s":"%s" )"
+                "avg = %lu, min = %lu, max = %lu, tresh = %u (ms).",
+                sockfd, name, IP, avg_time,
+                stat->min_iteration_cycle_time,
+                stat->max_iteration_cycle_time, t );
+
+            if ( t < avg_time )
+                {
+                G_LOG->alert(
+                    R"(Network performance : send : s%d->"%s":"%s" )"
+                    "avg %lu > tresh %u (ms).",
+                    sockfd, name, IP, avg_time, t );
+                }
+
+            stat->clear();
+            }
+        }
+
+    u_char *p = buf;
+
+    // Настраиваем file descriptor set.
+    fd_set fds;
+    FD_ZERO( &fds );
+    FD_SET( sockfd, &fds );
+
+    // Настраиваем время на таймаут.
+    timeval rec_tv;
+    rec_tv.tv_sec  = sec;
+    rec_tv.tv_usec = usec;
+
+    // Network performance info.
+    uint32_t st_time = get_millisec();
+
+    int res = 0;
+
+    for ( int i = len; i > 0; )
+        {
+        // Ждем таймаута или возможности отсылки данных.
+        res = select( sockfd + 1, NULL, &fds, NULL, &rec_tv );
+
+        if ( 0 == res )
+            {
+            G_LOG->error(
+                R"(Network device : s%d->"%s":"%s")"
+                " disconnected on select write try : timeout (%d ms).",
+                sockfd, name, IP, sec * 1000 + usec / 1000 );
+            return -2; // timeout!
+            }
+
+        if ( -1 == res )
+            {
+            G_LOG->error(
+                R"(Network device : s%d->"%s":"%s")"
+                " disconnected on select write try : %s"
+#ifndef WIN_OS
+                "."
+#endif
+                ,
+                sockfd, name, IP,
+#ifdef WIN_OS
+                WSA_Last_Err_Decode()
+#else
+                strerror( errno )
+#endif // WIN_OS
+                );
+            return -1; // error
+            }
+
+        int n = static_cast<int>( send( sockfd,
+            reinterpret_cast<char*>( p ), i,
+#ifdef WIN_OS
+            0 ) );
+#else
+            MSG_NOSIGNAL ) );
+#endif
+
+        if ( n < 0 )
+            {
+            G_LOG->error(
+                R"(Network device : s%d->"%s":"%s")"
+                " disconnected on write try : %s"
+#ifndef WIN_OS
+                "."
+#endif
+                ,
+                sockfd, name, IP,
+#ifdef WIN_OS
+                WSA_Last_Err_Decode()
+#else
+                strerror( errno )
+#endif // WIN_OS
+                );
+            res = -3; // send error
+            break;
+            }
+
+#ifndef WIN_OS
+        usleep( 1 );
+#endif
+        i -= n;
+        p += n;
+        }
+
+    uint32_t select_wait_time = get_delta_millisec( st_time );
+
+    if ( stat )
+        {
+        stat->cycles_cnt++;
+        stat->all_time += select_wait_time;
+
+        if ( select_wait_time > stat->max_iteration_cycle_time )
+            {
+            stat->max_iteration_cycle_time = select_wait_time;
+            }
+        if ( select_wait_time < stat->min_iteration_cycle_time )
+            {
+            stat->min_iteration_cycle_time = select_wait_time;
+            }
+        }
+
+    return res;
     }
 //------------------------------------------------------------------------------

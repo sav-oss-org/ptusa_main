@@ -18,14 +18,14 @@ int linux_tcp_client::Communicate(unsigned int bytestosend)
             }
         }
 
-    if (tcp_communicator_linux::sendall(socket_number, (unsigned char*) buff,
+    if (tcp_communicator::sendall(socket_number, (unsigned char*) buff,
         bytestosend, 0, timeout * 1000, ip, "tcp client", 0) < 0)
         {
         Disconnect();
         return 0;
         }
 
-    int res = tcp_communicator_linux::recvtimeout(socket_number,
+    int res = tcp_communicator::recvtimeout(socket_number,
         (unsigned char*) buff, buff_size, 0, timeout * 1000, ip, "tcp client",
         0);
 
@@ -272,8 +272,7 @@ int linux_tcp_client::AsyncSend(unsigned int bytestosend)
 
     if ( !checkConnection() ) return 0;
 
-    int res = tcp_communicator_linux::sendall( socket_number, ( unsigned char* ) buff, bytestosend, 0, timeout * 10, ip, "async tcp client", 0 );
-
+    int res = tcp_communicator::sendall( socket_number, ( unsigned char* ) buff, bytestosend, 0, timeout * 10, ip, "async tcp client", 0 );
 
     if (res < 0)
         {
@@ -295,7 +294,7 @@ int linux_tcp_client::AsyncReceive()
 
     if ( !checkConnection() ) return 0;
 
-    if ( tcp_communicator_linux::checkBuff( socket_number ) && !newDataIsAvailable )
+    if ( tcp_communicator::checkBuff( socket_number ) && !newDataIsAvailable )
         {
         asyncReceiveTime = get_millisec();
         newDataIsAvailable = true;
@@ -306,7 +305,7 @@ int linux_tcp_client::AsyncReceive()
     if ( get_delta_millisec( asyncReceiveTime ) >= async_timeout && newDataIsAvailable )
         {
         newDataIsAvailable = false;
-        res = tcp_communicator_linux::recvtimeout( socket_number, reinterpret_cast<unsigned char*>( buff ),
+        res = tcp_communicator::recvtimeout( socket_number, reinterpret_cast<unsigned char*>( buff ),
             buff_size, 0, 0, ip, "tcp client", nullptr );
         }
 
