@@ -16,6 +16,17 @@ Please note we have a code of conduct, please follow it in all your interactions
 4. You may merge the Pull Request in once you have the sign-off of two other developers, or if you 
    do not have permission to do that, you may request the second reviewer to merge it for you.
 
+## Pull Request Scope and Titles
+
+- Keep each pull request focused on one concrete change.
+- Put unrelated improvements into separate pull requests.
+- Use concise pull request titles.
+- Use Markdown backticks to highlight technical words when useful, for
+  example:
+  ``Removes `DNS` reverse lookup from `TCP` logging``.
+- Explain why the change is needed, what changed, expected risk and validation
+  in the pull request description.
+
 ## Code of Conduct
 
 ### Our Pledge
