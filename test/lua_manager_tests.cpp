@@ -799,6 +799,53 @@ TEST( lua_manager, get_lua_error_count )
     G_LUA_MANAGER->free_Lua();
     }
 
+TEST( lua_manager, exec_lua_method_preserves_caller_stack )
+    {
+    auto L = lua_open();
+    G_LUA_MANAGER->set_Lua( L );
+
+    EXPECT_EQ( 0, luaL_dostring( L,
+        "t = {} function t.ret7() return 7 end"
+        " function t.fail( s ) return s.absent.deep end" ) );
+    EXPECT_EQ( 0, lua_gettop( L ) );
+
+    // Сентинел принадлежит вызывающему коду и должен пережить
+    // как успешный вызов, так и ошибку.
+    const char* sentinel = "sentinel";
+    lua_pushstring( L, sentinel );
+    const int sentinel_index = 1;
+
+    lua_manager::reset_lua_error_count();
+
+    // Вызов с возвращаемым значением забирает результат со стека,
+    // но не затрагивает значение вызывающего кода.
+    EXPECT_EQ( 7, G_LUA_MANAGER->int_no_param_exec_lua_method(
+        "t", "ret7", "exec_lua_method_preserves_caller_stack" ) );
+    EXPECT_EQ( sentinel_index, lua_gettop( L ) );
+    EXPECT_EQ( LUA_TSTRING, lua_type( L, sentinel_index ) );
+    EXPECT_STREQ( sentinel, lua_tostring( L, sentinel_index ) );
+    EXPECT_EQ( 0, lua_manager::get_lua_error_count() );
+
+    // Ошибка выполнения не должна оставлять на стеке обработчик,
+    // функцию, объект и сообщение об ошибке.
+    EXPECT_EQ( 1, G_LUA_MANAGER->int_no_param_exec_lua_method(
+        "t", "fail", "exec_lua_method_preserves_caller_stack" ) );
+    EXPECT_EQ( sentinel_index, lua_gettop( L ) );
+    EXPECT_EQ( LUA_TSTRING, lua_type( L, sentinel_index ) );
+    EXPECT_STREQ( sentinel, lua_tostring( L, sentinel_index ) );
+    EXPECT_EQ( 1, lua_manager::get_lua_error_count() );
+
+    // Отсутствие функции тоже восстанавливает стек вызывающего кода.
+    EXPECT_EQ( 1, G_LUA_MANAGER->int_no_param_exec_lua_method(
+        "t", "missing", "exec_lua_method_preserves_caller_stack" ) );
+    EXPECT_EQ( sentinel_index, lua_gettop( L ) );
+    EXPECT_STREQ( sentinel, lua_tostring( L, sentinel_index ) );
+    EXPECT_EQ( 1, lua_manager::get_lua_error_count() );
+
+    lua_manager::reset_lua_error_count();
+    G_LUA_MANAGER->free_Lua();
+    }
+
 TEST( lua_manager, check_file )
     {
     auto FILE_VERSION = 10;
