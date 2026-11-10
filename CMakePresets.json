@@ -225,7 +225,8 @@
         "PLCNEXT_SDK_ROOT": "c:/CLI/sdks/$env{ARP_DEVICE}/$env{ARP_DEVICE_SHORT_VERSION}"
       },
       "cacheVariables": {
-        "CMAKE_MAKE_PROGRAM": "c:/CLI/sdks/$env{ARP_DEVICE}/$env{ARP_DEVICE_SHORT_VERSION}/sysroots/$env{ARP_SDK_PACKAGE_NAME}/usr/bin/make.exe"
+        "CMAKE_MAKE_PROGRAM": "c:/CLI/sdks/$env{ARP_DEVICE}/$env{ARP_DEVICE_SHORT_VERSION}/sysroots/$env{ARP_SDK_PACKAGE_NAME}/usr/bin/make.exe",
+        "CMAKE_INTERPROCEDURAL_OPTIMIZATION": "OFF"
       },
       "condition": {
         "type": "equals",

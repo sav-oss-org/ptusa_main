@@ -9,6 +9,8 @@
 #include "PAC_err.h"
 
 #include "tcp_client.h"
+#include "log.h"
+
 //------------------------------------------------------------------------------
 unsigned int max_buffer_use = 0;
 
@@ -369,29 +371,11 @@ int tcp_communicator_win::evaluate()
                         closesocket( slave_socket );
                         continue;
                         }
-                    if ( G_DEBUG )
-                        {
-#ifndef MODBUS
-                        // Определение имени клиента.
-                        hostent *client = gethostbyaddr( ( char* ) &ssin.sin_addr, 4, AF_INET );
-
-                        if ( client )
-                            {
-                            printf( "Accepted connection on %d socket from %s [ %s ].\n",
-                                slave_socket, inet_ntoa( ssin.sin_addr ), client->h_name  );
-                            }
-
-                        else
-                            {
-                            printf( "Error getting client name. " );
-                            printf( "Accepted connection on %d socket from %s.\n",
-                                slave_socket, inet_ntoa( ssin.sin_addr ) );
-                            }
-#else
-                        printf( "Accepted connection on %d socket from %s.\n",
-                            slave_socket, inet_ntoa( ssin.sin_addr ) );
-#endif //  MODBUS
-                        }
+                    // Числовой IP не требует блокирующего DNS-запроса.
+                    G_LOG->info(
+                        "Network communication : accepted connection : "
+                        "s%d->\"%s\".",
+                        slave_socket, inet_ntoa( ssin.sin_addr ) );
 
 #ifdef MODBUS
                     if ( sst[ i ].socket != modbus_socket )

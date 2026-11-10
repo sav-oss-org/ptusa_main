@@ -21,13 +21,13 @@
 	url = https://github.com/madler/zlib.git
 [submodule "subhook"]
 	path = deps/subhook/subhook
-	url = https://github.com/savushkin-r-d/subhook
+	url = https://github.com/sav-oss-org/subhook
 [submodule "lua"]
 	path = deps/lua/lua
 	url = https://github.com/lua/lua.git
 [submodule "toluapp"]
 	path = deps/toluapp/toluapp
-	url = https://github.com/savushkin-r-d/toluapp.git
+	url = https://github.com/sav-oss-org/toluapp.git
 [submodule "deps/lunarmodules/busted"]
 	path = deps/lunarmodules/busted
 	url = https://github.com/lunarmodules/busted.git

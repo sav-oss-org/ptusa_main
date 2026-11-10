@@ -312,6 +312,16 @@ changes
 - Use RAII and modern C++ practices
 - Prefer standard library over custom implementations
 
+### C++ Initialization
+
+- Prefer brace initialization for new variables and class members:
+  `bool error_logged{ false };`, `int count{ 0 };`.
+- Value-initialize pointers with braces: `std::byte* params_data{};`.
+- Keep `auto x = expr;` when the value is the result of an expression.
+- Apply the rule to touched code; do not reformat untouched lines only for
+  brace initialization.
+- Follow `docs/style.md` for detailed project style.
+
 ### CMake Standards
 
 - Minimum version 3.13
@@ -329,6 +339,50 @@ changes
 
 - Limit line length to 80 characters
 - Write comments as complete sentences and end them with a period
+
+## Pull Request Rules
+
+- Keep each pull request focused on one concrete change.
+- Do not mix unrelated refactoring, formatting, test infrastructure,
+  dependency updates, and behavior changes unless they are required for the
+  same result.
+- Use concise pull request titles.
+- Use Markdown backticks to highlight technical words when useful, for
+  example:
+  ``Removes `DNS` reverse lookup from `TCP` logging``.
+- Put useful follow-up ideas into separate pull requests.
+- Follow `docs/CONTRIBUTING.md` for the contribution process.
+
+## AI Commit Attribution
+
+- Commits whose substantive content was produced with AI assistance must
+  carry provenance trailers in the final paragraph of the commit message,
+  with no blank line between them:
+
+  ```
+  Co-authored-by: <agent-name> <agent-noreply-email>
+  AI-assisted: <agent-name> (model: <model-name>, <execution-mode>)
+  ```
+
+- Take `<agent-name>` and `<agent-noreply-email>` from the assistant
+  that produced the change; never credit an unrelated agent.
+- Use the model name reported by the agent at commit time verbatim; do
+  not invent or normalize it.
+- Document the execution mode: `local` for local models, the hosted
+  provider otherwise.
+- For the Zed agent running a local model the trailers are:
+
+  ```
+  Co-authored-by: Zed AI Agent <253101093+zed-agent@users.noreply.github.com>
+  AI-assisted: Zed agent (model: <model-name>, local)
+  ```
+
+- Never line-wrap or reflow trailer lines, even when they exceed the
+  usual 72-character body limit.
+- Human-only commits need no trailers.
+- Start the body of AI-created issues and pull requests with
+  `🤖 Generated with AI assistance`.
+- Follow `AGENTS.md` for the full attribution rule.
 
 ## Advanced Usage
 

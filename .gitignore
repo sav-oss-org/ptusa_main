@@ -1,4 +1,6 @@
 .*
+!/.agents/
+!/.agents/skills/
 *.user
 *.aps
 intermediate
