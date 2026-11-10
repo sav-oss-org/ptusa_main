@@ -155,7 +155,7 @@ jobs:
           }
     steps:
     - name: Harden the runner (Audit all outbound calls)
-      uses: step-security/harden-runner@46b06cea07f9e64621fdf066ba77ac6915163d43 # v2.22.3
+      uses: step-security/harden-runner@1d88384fd173af6ecb012dfd0264a306b711241a # v2.22.4
       with:
         egress-policy: audit
 
@@ -558,7 +558,7 @@ jobs:
       if: runner.os == 'Linux' && !matrix.config.preset
       shell: bash
       run: |
-        lcov --capture --directory . --ignore-errors mismatch --output-file coverage.info
+        lcov --capture --directory . --ignore-errors mismatch,inconsistent --output-file coverage.info
         lcov --remove coverage.info '/usr/*' --remove coverage.info '*/test/*' --remove coverage.info '*/googletest/*' --output-file coverage.info # filter system-files
         lcov --list coverage.info # debug info
 
@@ -610,7 +610,7 @@ jobs:
 
     steps:
     - name: Harden the runner (Audit all outbound calls)
-      uses: step-security/harden-runner@46b06cea07f9e64621fdf066ba77ac6915163d43 # v2.22.3
+      uses: step-security/harden-runner@1d88384fd173af6ecb012dfd0264a306b711241a # v2.22.4
       with:
         egress-policy: audit
 
@@ -660,7 +660,7 @@ jobs:
 
     steps:
     - name: Harden the runner (Audit all outbound calls)
-      uses: step-security/harden-runner@46b06cea07f9e64621fdf066ba77ac6915163d43 # v2.22.3
+      uses: step-security/harden-runner@1d88384fd173af6ecb012dfd0264a306b711241a # v2.22.4
       with:
         egress-policy: audit
 
