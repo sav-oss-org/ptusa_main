@@ -1506,7 +1506,7 @@ TEST( cipline_tech_object, signal_supply_pump_running )
     dm->add_io_device( device::DEVICE_TYPE::DT_DO, device::DEVICE_SUB_TYPE::DST_DO_VIRT, "LINE1DO101", "", "" );
 
     cipline_tech_object cip1( "CIP1", 1, 1, "CIP1", 1, 1, 200, 200, 200, 200 );
-    lua_manager::get_instance()->set_Lua( lua_open() );
+    lua_manager::get_instance()->set_Lua( luaL_newstate() );
 
     cip1.initline();
     InitStationParams();
