@@ -110,7 +110,7 @@ class lua_manager
 #endif
 
     private:
-        lua_manager() : L( 0 ), is_free_lua( 0 )
+        lua_manager() : L{ 0 }, is_free_lua{ 0 }
             {
             }
 

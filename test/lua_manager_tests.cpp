@@ -811,9 +811,9 @@ TEST( lua_manager, exec_lua_method_preserves_caller_stack )
 
     // Сентинел принадлежит вызывающему коду и должен пережить
     // как успешный вызов, так и ошибку.
-    const char* sentinel = "sentinel";
+    const char* sentinel{ "sentinel" };
     lua_pushstring( L, sentinel );
-    const int sentinel_index = 1;
+    const int sentinel_index{ 1 };
 
     lua_manager::reset_lua_error_count();
 
