@@ -515,6 +515,13 @@ int lua_manager::exec_lua_method_var( const char* object_name,
 
     if ( res )
         {
+        // Учитывается любой неудачный вызов, а не только вызов
+        // обработчика ошибок: Lua 5.1 не вызывает его при нехватке памяти.
+        if ( lua_error_count < ( std::numeric_limits< int >::max )() )
+            {
+            lua_error_count++;
+            }
+
         lua_settop( L, initial_stack_top );
         }
     else
@@ -545,11 +552,6 @@ int lua_manager::error_trace( lua_State * L )
 
     std::string err_str = lua_tostring( L, -1 );
     lua_pop( L, 1 );
-
-    if ( lua_error_count < ( std::numeric_limits< int >::max )() )
-        {
-        lua_error_count++;
-        }
 
     if ( std::binary_search( errors.begin(), errors.end(), err_str ) != true )
         {
