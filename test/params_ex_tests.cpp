@@ -2,6 +2,11 @@
 
 #include "PAC_info.h"
 
+#ifdef LINUX_OS
+#include <cerrno>
+#include <unistd.h>
+#endif
+
 using namespace ::testing;
 
 TEST( params_manager, was_successful_init )
@@ -76,6 +81,15 @@ namespace
         {
         return 0;
         }
+
+#ifdef LINUX_OS
+    int bad_access( [[maybe_unused]] const char* pathname,
+        [[maybe_unused]] int mode )
+        {
+        errno = EACCES;
+        return -1;
+        }
+#endif
 
     const auto DATA_SIZE = 1024;
     }
@@ -214,4 +228,62 @@ TEST( SRAM, storage_directory_created )
         std::filesystem::exists( directory / "test_sram6.bin" ) );
 
     std::filesystem::remove_all( "test_storage_dir" );
+    }
+
+TEST( SRAM, storage_directory_create_error_logged )
+    {
+    // Обычный файл на пути к каталогу хранения приводит к ошибке его
+    // создания, о которой конструктор должен сообщить в журнал.
+    const char* blocker = "test_sram7.bin";
+
+    auto file = fopen( blocker, "wb" );
+    fclose( file );
+
+    testing::internal::CaptureStdout();
+
+    SRAM sram( std::filesystem::path( blocker ) / "nested/test.bin",
+        DATA_SIZE );
+
+    auto output = testing::internal::GetCapturedStdout();
+
+    std::filesystem::remove( blocker );
+
+    EXPECT_NE( std::string::npos,
+        output.find( "Can't create storage directory" ) );
+
+    // Сообщение должно содержать абсолютный путь каталога, иначе причину
+    // отказа невозможно найти в файловой системе контроллера.
+    auto expected = ( std::filesystem::current_path() / blocker / "nested" )
+        .lexically_normal().string();
+    EXPECT_NE( std::string::npos, output.find( expected ) );
+    }
+
+TEST( SRAM, storage_directory_write_error_logged )
+    {
+#ifdef LINUX_OS
+    auto access_hook = subhook_new( reinterpret_cast<void*>( &access ),
+        reinterpret_cast<void*>( &bad_access ), SUBHOOK_64BIT_OFFSET );
+    subhook_install( access_hook );
+
+    testing::internal::CaptureStdout();
+
+    // Права на запись проверяются до создания файлов, поэтому об отказе
+    // конструктор сообщает сразу при создании объекта.
+    SRAM sram( "test_sram8.bin", DATA_SIZE );
+
+    auto output = testing::internal::GetCapturedStdout();
+
+    subhook_remove( access_hook );
+    subhook_free( access_hook );
+
+    EXPECT_NE( std::string::npos,
+        output.find( "Can't write to storage directory" ) );
+
+    // Причина отказа и пользователь, под которым запущен процесс, позволяют
+    // отличить случай «каталог создан от root» от других отказов.
+    EXPECT_NE( std::string::npos, output.find( "Permission denied" ) );
+    EXPECT_NE( std::string::npos, output.find( "(uid=" ) );
+#else
+    GTEST_SKIP() << "Checking uses hooking of access() on POSIX only.";
+#endif // LINUX_OS
     }
