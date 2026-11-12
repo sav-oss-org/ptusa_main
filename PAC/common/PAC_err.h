@@ -45,12 +45,12 @@
 class PAC_critical_errors_manager
     {
     public:
-        enum ALARM_CLASS          ///< Класс тревоги.
+        enum ALARM_CLASS  ///< Класс тревоги.
             {
-            AC_NO_CONNECTION = 1, ///< Ошибка связи.
+            AC_NO_CONNECTION = 1,  ///< Ошибка связи.
 
-            AC_NET = 4,           ///< Ошибки сетевой работы.
-            AC_SERVICE = 5,	      ///< Сервисное обслуживание устройства.
+            AC_NET = 4,  ///< Ошибки сетевой работы.
+            AC_SERVICE = 5,  ///< Сервисное обслуживание устройства.
 
             /// Режим конфигурирования устройства (PP mode).
             AC_PP_MODE = 6,
@@ -59,14 +59,14 @@ class PAC_critical_errors_manager
             AC_CFG_BUS_ERROR = 7,
             };
 
-        enum ALARM_SUBCLASS         ///< Подкласс тревоги.
+        enum ALARM_SUBCLASS  ///< Подкласс тревоги.
             {
-            AS_IO_COUPLER = 1,      ///< Ошибки модулей I/O.
-            AS_EASYSERVER = 5,      ///< Ошибки EasyServer.
+            AS_IO_COUPLER = 1,  ///< Ошибки модулей I/O.
+            AS_EASYSERVER = 5,  ///< Ошибки EasyServer.
 
             //AC_NET,               ///< Ошибки сетевой работы.
-            AS_SOCKET_F = 1,        ///< Функция socket.
-            AS_BIND_F = 2,          ///< Функция bind.
+            AS_SOCKET_F = 1,  ///< Функция socket.
+            AS_BIND_F = 2,  ///< Функция bind.
             AS_SETSOCKOPT_F = 3,
             AS_LISTEN_F = 4,
             };
@@ -74,14 +74,14 @@ class PAC_critical_errors_manager
     public:
         enum GE_CONST
             {
-            GE_ERROR_SIZE = 3,      ///< Размер одной ошибки, байт.
+            GE_ERROR_SIZE = 3,  ///< Размер одной ошибки, байт.
             };
 
         ~PAC_critical_errors_manager();
 
         void show_errors() const;
-        void set_global_error( ALARM_CLASS eclass, ALARM_SUBCLASS p1,
-            unsigned int param );
+        void set_global_error(
+            ALARM_CLASS eclass, ALARM_SUBCLASS p1, unsigned int param );
         void reset_global_error( ALARM_CLASS eclass, ALARM_SUBCLASS p1,
             unsigned int param, bool is_print_msg = true );
 
@@ -113,26 +113,26 @@ class PAC_critical_errors_manager
             ALARM_SUBCLASS err_sub_class, unsigned int par, bool is_set );
 
 
-        static auto_smart_ptr < PAC_critical_errors_manager > instance;
+        static auto_smart_ptr< PAC_critical_errors_manager > instance;
 
         struct critical_error
             {
-            int             err_class;           ///< Класс ошибки.
-            unsigned int    err_sub_class;       ///< Подкласс ошибки.
-            unsigned int    param;               ///< Параметр ошибки.
-            int             priority;            ///< Приоритет ошибки.
+                int err_class;  ///< Класс ошибки.
+                unsigned int err_sub_class;  ///< Подкласс ошибки.
+                unsigned int param;  ///< Параметр ошибки.
+                int priority;  ///< Приоритет ошибки.
 
-            critical_error( int err_class = 0, u_int err_sub_class = 0,
-                u_int param = 0,
-                int priority = ALARM_CLASS_PRIORITY::P_ERR_CONNECTION );
+                critical_error( int err_class = 0, u_int err_sub_class = 0,
+                    u_int param = 0,
+                    int priority = ALARM_CLASS_PRIORITY::P_ERR_CONNECTION );
             };
 
-        PAC_critical_errors_manager&
-            operator=( PAC_critical_errors_manager&& ) = delete;
+        PAC_critical_errors_manager& operator=(
+            PAC_critical_errors_manager&& ) = delete;
 
-        std::vector< critical_error >  errors;
+        std::vector< critical_error > errors;
 
         u_int_2 errors_id{};
     };
 //-----------------------------------------------------------------------------
-#endif // PAC_ERRORS_H
+#endif  // PAC_ERRORS_H

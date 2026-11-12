@@ -61,35 +61,38 @@ void sleep_ms( u_int ms );
 extern struct tm get_time();
 //-----------------------------------------------------------------------------
 #ifdef WIN_OS
-#pragma warning(disable : 4996) // localtime to localtime_s
+#pragma warning( disable : 4996 ) // localtime to localtime_s
 #endif // WIN
 
 struct stat_time
     {
-    uint32_t all_time;
-    uint32_t cycles_cnt;
+        uint32_t all_time;
+        uint32_t cycles_cnt;
 
-    uint32_t  max_iteration_cycle_time;
-    uint32_t  min_iteration_cycle_time;
+        uint32_t max_iteration_cycle_time;
+        uint32_t min_iteration_cycle_time;
 
-    int print_cycle_last_h;
+        int print_cycle_last_h;
 
-    stat_time() : all_time( 0 ), cycles_cnt( 1 ), max_iteration_cycle_time( 0 ),
-        min_iteration_cycle_time( 10000 )
-        {
-        time_t t_ = time( 0 );
-        struct tm* timeInfo_ = localtime( &t_ );
+        stat_time() :
+            all_time( 0 ),
+            cycles_cnt( 1 ),
+            max_iteration_cycle_time( 0 ),
+            min_iteration_cycle_time( 10000 )
+            {
+            time_t t_ = time( 0 );
+            struct tm* timeInfo_ = localtime( &t_ );
 
-        print_cycle_last_h = timeInfo_->tm_hour;
-        }
+            print_cycle_last_h = timeInfo_->tm_hour;
+            }
 
-    void clear()
-        {
-        all_time = 0;
-        cycles_cnt = 1;
-        max_iteration_cycle_time = 0;
-        min_iteration_cycle_time = 10000;
-        }
+        void clear()
+            {
+            all_time = 0;
+            cycles_cnt = 1;
+            max_iteration_cycle_time = 0;
+            min_iteration_cycle_time = 10000;
+            }
     };
 
 #ifdef PTUSA_TEST

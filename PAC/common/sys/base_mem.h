@@ -59,18 +59,18 @@ class SRAM : public i_memory
         void zero_fill() override;
 
         u_int get_size() const override;
+
     private:
+        SRAM( const SRAM& ) = delete;
+        SRAM( SRAM&& ) = delete;
+        SRAM& operator=( const SRAM& ) = delete;
+        SRAM& operator=( SRAM&& ) = delete;
 
-    SRAM( const SRAM& ) = delete;
-    SRAM( SRAM&& ) = delete;
-    SRAM& operator=( const SRAM& ) = delete;
-    SRAM& operator=( SRAM&& ) = delete;
+        std::filesystem::path file_path;
+        std::filesystem::path tmp_path;
 
-    std::filesystem::path file_path;
-    std::filesystem::path tmp_path;
+        u_int total_size;
 
-    u_int total_size;
-
-    /// Рабочий массив параметров.
-    std::byte* params_data{};
+        /// Рабочий массив параметров.
+        std::byte* params_data{};
     };

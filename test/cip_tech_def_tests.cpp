@@ -48,48 +48,81 @@ void InitCipDevices()
     {
     auto dm = device_manager::get_instance();
     dm->clear_io_devices();
-    dm->add_io_device( device::DEVICE_TYPE::DT_V, device::DEVICE_SUB_TYPE::DST_V_VIRT, "LINE1V0", "", "" );
-    dm->add_io_device( device::DEVICE_TYPE::DT_V, device::DEVICE_SUB_TYPE::DST_V_VIRT, "LINE1V1", "", "" );
-    dm->add_io_device( device::DEVICE_TYPE::DT_V, device::DEVICE_SUB_TYPE::DST_V_VIRT, "LINE1V10", "", "" );
-    dm->add_io_device( device::DEVICE_TYPE::DT_V, device::DEVICE_SUB_TYPE::DST_V_VIRT, "LINE1V11", "", "" );
-    dm->add_io_device( device::DEVICE_TYPE::DT_V, device::DEVICE_SUB_TYPE::DST_V_VIRT, "LINE1V12", "", "" );
-    dm->add_io_device( device::DEVICE_TYPE::DT_V, device::DEVICE_SUB_TYPE::DST_V_VIRT, "LINE1V13", "", "" );
-    dm->add_io_device( device::DEVICE_TYPE::DT_V, device::DEVICE_SUB_TYPE::DST_V_VIRT, "LINE1V2", "", "" );
-    dm->add_io_device( device::DEVICE_TYPE::DT_V, device::DEVICE_SUB_TYPE::DST_V_VIRT, "LINE1V3", "", "" );
-    dm->add_io_device( device::DEVICE_TYPE::DT_V, device::DEVICE_SUB_TYPE::DST_V_VIRT, "LINE1V4", "", "" );
-    dm->add_io_device( device::DEVICE_TYPE::DT_V, device::DEVICE_SUB_TYPE::DST_V_VIRT, "LINE1V5", "", "" );
-    dm->add_io_device( device::DEVICE_TYPE::DT_V, device::DEVICE_SUB_TYPE::DST_V_VIRT, "LINE1V6", "", "" );
-    dm->add_io_device( device::DEVICE_TYPE::DT_V, device::DEVICE_SUB_TYPE::DST_V_VIRT, "LINE1V7", "", "" );
-    dm->add_io_device( device::DEVICE_TYPE::DT_V, device::DEVICE_SUB_TYPE::DST_V_VIRT, "LINE1V8", "", "" );
-    dm->add_io_device( device::DEVICE_TYPE::DT_V, device::DEVICE_SUB_TYPE::DST_V_VIRT, "LINE1V9", "", "" );
-    dm->add_io_device( device::DEVICE_TYPE::DT_V, device::DEVICE_SUB_TYPE::DST_V_VIRT, "V101", "", "" );
-    dm->add_io_device( device::DEVICE_TYPE::DT_V, device::DEVICE_SUB_TYPE::DST_V_VIRT, "V102", "", "" );
+    dm->add_io_device( device::DEVICE_TYPE::DT_V,
+        device::DEVICE_SUB_TYPE::DST_V_VIRT, "LINE1V0", "", "" );
+    dm->add_io_device( device::DEVICE_TYPE::DT_V,
+        device::DEVICE_SUB_TYPE::DST_V_VIRT, "LINE1V1", "", "" );
+    dm->add_io_device( device::DEVICE_TYPE::DT_V,
+        device::DEVICE_SUB_TYPE::DST_V_VIRT, "LINE1V10", "", "" );
+    dm->add_io_device( device::DEVICE_TYPE::DT_V,
+        device::DEVICE_SUB_TYPE::DST_V_VIRT, "LINE1V11", "", "" );
+    dm->add_io_device( device::DEVICE_TYPE::DT_V,
+        device::DEVICE_SUB_TYPE::DST_V_VIRT, "LINE1V12", "", "" );
+    dm->add_io_device( device::DEVICE_TYPE::DT_V,
+        device::DEVICE_SUB_TYPE::DST_V_VIRT, "LINE1V13", "", "" );
+    dm->add_io_device( device::DEVICE_TYPE::DT_V,
+        device::DEVICE_SUB_TYPE::DST_V_VIRT, "LINE1V2", "", "" );
+    dm->add_io_device( device::DEVICE_TYPE::DT_V,
+        device::DEVICE_SUB_TYPE::DST_V_VIRT, "LINE1V3", "", "" );
+    dm->add_io_device( device::DEVICE_TYPE::DT_V,
+        device::DEVICE_SUB_TYPE::DST_V_VIRT, "LINE1V4", "", "" );
+    dm->add_io_device( device::DEVICE_TYPE::DT_V,
+        device::DEVICE_SUB_TYPE::DST_V_VIRT, "LINE1V5", "", "" );
+    dm->add_io_device( device::DEVICE_TYPE::DT_V,
+        device::DEVICE_SUB_TYPE::DST_V_VIRT, "LINE1V6", "", "" );
+    dm->add_io_device( device::DEVICE_TYPE::DT_V,
+        device::DEVICE_SUB_TYPE::DST_V_VIRT, "LINE1V7", "", "" );
+    dm->add_io_device( device::DEVICE_TYPE::DT_V,
+        device::DEVICE_SUB_TYPE::DST_V_VIRT, "LINE1V8", "", "" );
+    dm->add_io_device( device::DEVICE_TYPE::DT_V,
+        device::DEVICE_SUB_TYPE::DST_V_VIRT, "LINE1V9", "", "" );
+    dm->add_io_device( device::DEVICE_TYPE::DT_V,
+        device::DEVICE_SUB_TYPE::DST_V_VIRT, "V101", "", "" );
+    dm->add_io_device( device::DEVICE_TYPE::DT_V,
+        device::DEVICE_SUB_TYPE::DST_V_VIRT, "V102", "", "" );
 
-    dm->add_io_device( device::DEVICE_TYPE::DT_VC, device::DEVICE_SUB_TYPE::DST_VC_VIRT, "LINE1VC14", "", "" );
+    dm->add_io_device( device::DEVICE_TYPE::DT_VC,
+        device::DEVICE_SUB_TYPE::DST_VC_VIRT, "LINE1VC14", "", "" );
 
-    dm->add_io_device( device::DEVICE_TYPE::DT_M, device::DEVICE_SUB_TYPE::DST_M_VIRT, "LINE1M1", "", "" );
+    dm->add_io_device( device::DEVICE_TYPE::DT_M,
+        device::DEVICE_SUB_TYPE::DST_M_VIRT, "LINE1M1", "", "" );
 
-    dm->add_io_device( device::DEVICE_TYPE::DT_LS, device::DEVICE_SUB_TYPE::DST_LS_VIRT, "LINE1LS1", "", "" );
-    dm->add_io_device( device::DEVICE_TYPE::DT_LS, device::DEVICE_SUB_TYPE::DST_LS_VIRT, "LINE1LS2", "", "" );
-    dm->add_io_device( device::DEVICE_TYPE::DT_LS, device::DEVICE_SUB_TYPE::DST_LS_VIRT, "LINE1LS3", "", "" );
-    dm->add_io_device( device::DEVICE_TYPE::DT_LS, device::DEVICE_SUB_TYPE::DST_LS_VIRT, "LS4", "", "" );
-    dm->add_io_device( device::DEVICE_TYPE::DT_LS, device::DEVICE_SUB_TYPE::DST_LS_VIRT, "LS5", "", "" );
-    dm->add_io_device( device::DEVICE_TYPE::DT_LS, device::DEVICE_SUB_TYPE::DST_LS_VIRT, "LS6", "", "" );
-    dm->add_io_device( device::DEVICE_TYPE::DT_LS, device::DEVICE_SUB_TYPE::DST_LS_VIRT, "LS7", "", "" );
-    dm->add_io_device( device::DEVICE_TYPE::DT_LS, device::DEVICE_SUB_TYPE::DST_LS_VIRT, "LS8", "", "" );
-    dm->add_io_device( device::DEVICE_TYPE::DT_LS, device::DEVICE_SUB_TYPE::DST_LS_VIRT, "LS9", "", "" );
+    dm->add_io_device( device::DEVICE_TYPE::DT_LS,
+        device::DEVICE_SUB_TYPE::DST_LS_VIRT, "LINE1LS1", "", "" );
+    dm->add_io_device( device::DEVICE_TYPE::DT_LS,
+        device::DEVICE_SUB_TYPE::DST_LS_VIRT, "LINE1LS2", "", "" );
+    dm->add_io_device( device::DEVICE_TYPE::DT_LS,
+        device::DEVICE_SUB_TYPE::DST_LS_VIRT, "LINE1LS3", "", "" );
+    dm->add_io_device( device::DEVICE_TYPE::DT_LS,
+        device::DEVICE_SUB_TYPE::DST_LS_VIRT, "LS4", "", "" );
+    dm->add_io_device( device::DEVICE_TYPE::DT_LS,
+        device::DEVICE_SUB_TYPE::DST_LS_VIRT, "LS5", "", "" );
+    dm->add_io_device( device::DEVICE_TYPE::DT_LS,
+        device::DEVICE_SUB_TYPE::DST_LS_VIRT, "LS6", "", "" );
+    dm->add_io_device( device::DEVICE_TYPE::DT_LS,
+        device::DEVICE_SUB_TYPE::DST_LS_VIRT, "LS7", "", "" );
+    dm->add_io_device( device::DEVICE_TYPE::DT_LS,
+        device::DEVICE_SUB_TYPE::DST_LS_VIRT, "LS8", "", "" );
+    dm->add_io_device( device::DEVICE_TYPE::DT_LS,
+        device::DEVICE_SUB_TYPE::DST_LS_VIRT, "LS9", "", "" );
 
-    dm->add_io_device( device::DEVICE_TYPE::DT_TE, device::DEVICE_SUB_TYPE::DST_TE_VIRT, "LINE1TE1", "", "" );
-    dm->add_io_device( device::DEVICE_TYPE::DT_TE, device::DEVICE_SUB_TYPE::DST_TE_VIRT, "LINE1TE2", "", "" );
+    dm->add_io_device( device::DEVICE_TYPE::DT_TE,
+        device::DEVICE_SUB_TYPE::DST_TE_VIRT, "LINE1TE1", "", "" );
+    dm->add_io_device( device::DEVICE_TYPE::DT_TE,
+        device::DEVICE_SUB_TYPE::DST_TE_VIRT, "LINE1TE2", "", "" );
 
-    dm->add_io_device( device::DEVICE_TYPE::DT_FS, device::DEVICE_SUB_TYPE::DST_FS_VIRT, "LINE1FS1", "", "" );
+    dm->add_io_device( device::DEVICE_TYPE::DT_FS,
+        device::DEVICE_SUB_TYPE::DST_FS_VIRT, "LINE1FS1", "", "" );
 
-    dm->add_io_device( device::DEVICE_TYPE::DT_FQT, device::DEVICE_SUB_TYPE::DST_FQT_VIRT, "LINE1FQT1", "", "" );
+    dm->add_io_device( device::DEVICE_TYPE::DT_FQT,
+        device::DEVICE_SUB_TYPE::DST_FQT_VIRT, "LINE1FQT1", "", "" );
 
-    dm->add_io_device( device::DEVICE_TYPE::DT_QT, device::DEVICE_SUB_TYPE::DST_QT_VIRT, "LINE1QT1", "", "" );
+    dm->add_io_device( device::DEVICE_TYPE::DT_QT,
+        device::DEVICE_SUB_TYPE::DST_QT_VIRT, "LINE1QT1", "", "" );
 
     //Watchdog device.
-    dm->add_io_device( device::DEVICE_TYPE::DT_WATCHDOG, device::DEVICE_SUB_TYPE::DST_WATCHDOG, "LINE1WATCHDOG1", "", "" );
+    dm->add_io_device( device::DEVICE_TYPE::DT_WATCHDOG,
+        device::DEVICE_SUB_TYPE::DST_WATCHDOG, "LINE1WATCHDOG1", "", "" );
     }
 
 void ClearCipDevices()
@@ -134,9 +167,12 @@ TEST( cipline_tech_object, _CheckErr )
     lua_manager::get_instance()->set_Lua( lua_open() );
 
     cip1.initline();
-    virtual_device temp_sensor_supply( "LINE1TE1", device::DT_TE, device::DST_TE_VIRT );
-    virtual_device temp_sensor_return( "LINE1TE2", device::DT_TE, device::DST_TE_VIRT );
-    virtual_device conductivity_sensor( "LINE1QT1", device::DT_QT, device::DST_QT_VIRT );
+    virtual_device temp_sensor_supply(
+        "LINE1TE1", device::DT_TE, device::DST_TE_VIRT );
+    virtual_device temp_sensor_return(
+        "LINE1TE2", device::DT_TE, device::DST_TE_VIRT );
+    virtual_device conductivity_sensor(
+        "LINE1QT1", device::DT_QT, device::DST_QT_VIRT );
     cip1.TP = reinterpret_cast<i_AI_device*>( &temp_sensor_supply );
     cip1.TR = reinterpret_cast<i_AI_device*>( &temp_sensor_return );
     cip1.Q = reinterpret_cast<i_AI_device*>( &conductivity_sensor );
@@ -152,7 +188,8 @@ TEST( cipline_tech_object, _CheckErr )
     for ( int step = 0; step < 100; step++ )
         {
         cip1.curstep = step;
-        if ( cipline_tech_object::steps_caustic.count( step ) || cipline_tech_object::steps_acid.count( step ) )
+        if ( cipline_tech_object::steps_caustic.count( step ) ||
+             cipline_tech_object::steps_acid.count( step ) )
             {
             EXPECT_EQ( ERR_CONCENTRATION_SENSOR, cip1._CheckErr() );
             }
@@ -187,7 +224,8 @@ TEST( cipline_tech_object, _CheckErr )
         1 << BE_ERR_RETURN_TEMP_SENSOR | 1 << BE_ERR_CONCENTRATION_SENSOR;
     EXPECT_EQ( ERR_SUPPLY_TEMP_SENSOR, cip1._CheckErr() );
     cipline_tech_object::parpar[ 0 ][ P_BLOCK_ERRORS ] =
-        1 << BE_ERR_RETURN_TEMP_SENSOR | 1 << BE_ERR_CONCENTRATION_SENSOR | 1 << BE_ERR_SUPPLY_TEMP_SENSOR;
+        1 << BE_ERR_RETURN_TEMP_SENSOR | 1 << BE_ERR_CONCENTRATION_SENSOR |
+        1 << BE_ERR_SUPPLY_TEMP_SENSOR;
     EXPECT_EQ( 0, cip1._CheckErr() );
 
     G_LUA_MANAGER->free_Lua();
@@ -195,7 +233,6 @@ TEST( cipline_tech_object, _CheckErr )
 
 TEST( cipline_tech_object, evaluate )
     {
-
     lua_manager::get_instance()->set_Lua( lua_open() );
     auto* cip1 = new cipline_tech_object(
         "CIP1", 1, 1, "CIP1", 1, 1, 200, 200, 200, 200 );
@@ -218,10 +255,13 @@ TEST( cipline_tech_object, evaluate )
 
     EXPECT_EQ( nullptr, cip1->PRESSURE );
     auto current_recipe = cip1->lineRecipes->getCurrentRecipe();
-    cip1->lineRecipes->setRecipeValue( current_recipe, TRecipeManager::RV_TO_DEFAULTS, 1 );
+    cip1->lineRecipes->setRecipeValue(
+        current_recipe, TRecipeManager::RV_TO_DEFAULTS, 1 );
     cip1->lineRecipes->EvalRecipe();
-    EXPECT_EQ( 0, cip1->lineRecipes->getRecipeValue( current_recipe, TRecipeManager::RV_TO_DEFAULTS ) );
-    EXPECT_EQ( 200, cip1->lineRecipes->getRecipeValue( current_recipe, TRecipeManager::RV_V1 ) );
+    EXPECT_EQ( 0, cip1->lineRecipes->getRecipeValue(
+                      current_recipe, TRecipeManager::RV_TO_DEFAULTS ) );
+    EXPECT_EQ( 200, cip1->lineRecipes->getRecipeValue(
+                        current_recipe, TRecipeManager::RV_V1 ) );
     EXPECT_EQ( 0, cip1->evaluate() );
     cip1->rt_par_float[ P_SELECT_REC ] = 1;
     EXPECT_EQ( 0, cip1->evaluate() );
@@ -365,8 +405,10 @@ TEST( cipline_tech_object, waterTankIsEmpty )
     lua_manager::get_instance()->set_Lua( lua_open() );
 
     cip1.initline();
-    virtual_device waterTankLowLevel( "LWL", device::DT_LS, device::DST_LS_VIRT );
-    virtual_device waterTankCurrentLevel( "LTW", device::DT_LT, device::DST_LT_VIRT );
+    virtual_device waterTankLowLevel(
+        "LWL", device::DT_LS, device::DST_LS_VIRT );
+    virtual_device waterTankCurrentLevel(
+        "LTW", device::DT_LT, device::DST_LT_VIRT );
     cip1.LWL = static_cast<i_DI_device*>( &waterTankLowLevel );
     cip1.LTW = static_cast<i_AI_device*>( &waterTankCurrentLevel );
 
@@ -604,8 +646,10 @@ TEST( cipline_tech_object, _DoStep )
     cip1.initline();
     InitStationParams();
 
-    virtual_device circ_signal( "LINE1DO101", device::DT_DO, device::DST_DO_VIRT );
-    virtual_device can_continue_operation_signal( "LINE1DI101", device::DT_DI, device::DST_DI_VIRT );
+    virtual_device circ_signal(
+        "LINE1DO101", device::DT_DO, device::DST_DO_VIRT );
+    virtual_device can_continue_operation_signal(
+        "LINE1DI101", device::DT_DI, device::DST_DI_VIRT );
     cip1.dev_upr_circulation = &circ_signal;
     cip1.dev_os_can_continue = &can_continue_operation_signal;
 
@@ -639,8 +683,10 @@ TEST( cipline_tech_object, circulation_signal_with_can_continue )
     cip1.initline();
     InitStationParams();
 
-    virtual_device circ_signal( "LINE1DO101", device::DT_DO, device::DST_DO_VIRT );
-    virtual_device can_continue_operation_signal( "LINE1DI101", device::DT_DI, device::DST_DI_VIRT );
+    virtual_device circ_signal(
+        "LINE1DO101", device::DT_DO, device::DST_DO_VIRT );
+    virtual_device can_continue_operation_signal(
+        "LINE1DI101", device::DT_DI, device::DST_DI_VIRT );
     cip1.dev_upr_circulation = &circ_signal;
     cip1.dev_os_can_continue = &can_continue_operation_signal;
 
@@ -676,7 +722,8 @@ TEST( cipline_tech_object, _ToObject_rinse_with_can_continue_signal )
     cip1.initline();
     InitStationParams();
 
-    virtual_device can_continue_signal( "LINE1DI101", device::DT_DI, device::DST_DI_VIRT );
+    virtual_device can_continue_signal(
+        "LINE1DI101", device::DT_DI, device::DST_DI_VIRT );
     cip1.dev_os_can_continue = &can_continue_signal;
 
     // Test rinse step 8 - can continue OFF should return 0
@@ -688,7 +735,8 @@ TEST( cipline_tech_object, _ToObject_rinse_with_can_continue_signal )
     // Test rinse step 8 - can continue ON should allow operation to continue
     can_continue_signal.set_state( 1 );
     // Need to set up volume to not trigger return 1
-    cip1.rt_par_float[ P_VRAB ] = 1000000; // Large value so cnt doesn't trigger
+    cip1.rt_par_float[ P_VRAB ] =
+        1000000; // Large value so cnt doesn't trigger
     result = cip1._ToObject( 0, 0 );
     EXPECT_NE( 1, result ); // Should not return 1 from can_continue check
 
@@ -715,14 +763,14 @@ TEST( cipline_tech_object, _ToObject_rinse_with_can_continue_signal )
     can_continue_signal.set_state( 0 );
     cip1.rt_par_float[ P_VRAB ] = 1000000;
     result = cip1._ToObject( 0, 0 );
-    EXPECT_NE( 1, result ); // Should not return early from can_continue check
+    EXPECT_NE( 1, result );  // Should not return early from can_continue check
 
     // Test with dev_os_can_continue = NULL
     cip1.dev_os_can_continue = nullptr;
     cip1.curstep = 8;
     cip1.rt_par_float[ P_VRAB ] = 1000000;
     result = cip1._ToObject( 0, 0 );
-    EXPECT_NE( 1, result ); // Should continue normally without checking signal
+    EXPECT_NE( 1, result );  // Should continue normally without checking signal
 
     ClearCipDevices();
     G_LUA_MANAGER->free_Lua();
@@ -741,9 +789,11 @@ TEST( cipline_tech_object, _Circ_timer_behavior )
     cip1.initline();
     InitStationParams();
 
-    virtual_device can_continue_signal( "LINE1DI101", device::DT_DI, device::DST_DI_VIRT );
+    virtual_device can_continue_signal(
+        "LINE1DI101", device::DT_DI, device::DST_DI_VIRT );
     cip1.dev_os_can_continue = &can_continue_signal;
-    virtual_device TR_device( "LINE1TE102", device::DT_TE, device::DST_TE_VIRT );
+    virtual_device TR_device(
+        "LINE1TE102", device::DT_TE, device::DST_TE_VIRT );
     cip1.TR = &TR_device;
     TR_device.set_value( 100.0f );
     virtual_counter cnt_device( "LINE1CNT101" );
@@ -801,7 +851,8 @@ TEST( cipline_tech_object, save_device )
     cip1.lua_init_runtime_params();
     cip1.save_device( buff );
 
-    std::string REF_STR0 = R"(t.CIP1 = t.CIP1 or {}
+    std::string REF_STR0 =
+        R"(t.CIP1 = t.CIP1 or {}
 t.CIP1=
 	{
 	CMD=0,
@@ -832,7 +883,8 @@ t.CIP1=
         "0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, "
         "0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, "
         "0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, "
-        "0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, " R"(
+        "0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, "
+        R"(
 		},
 	S_PAR_UI=
 		{
@@ -842,7 +894,8 @@ t.CIP1=
         "0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, "
         "0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, "
         "0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, "
-        "0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, " R"(
+        "0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, "
+        R"(
 		},
 	RT_PAR_F=
 		{
@@ -853,7 +906,8 @@ t.CIP1=
         "0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, "
         "0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, "
         "0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, "
-        "0, 0, 0, 0, " R"(
+        "0, 0, 0, 0, "
+        R"(
 		},
 	RT_PAR_UI=
 		{
@@ -863,13 +917,15 @@ t.CIP1=
         "0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, "
         "0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, "
         "0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, "
-        "0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, " R"(
+        "0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, "
+        R"(
 		},
 	PAR_MAIN=
 		{
 		1.50, 0.30, 0.10, 1, 0.20, 0.10, 20, 5, 0, 8, 1.51, 1.80, 47, 57, 1.47, 1.45, 1, 52, )"
         "0.50, 30.80, 0.40, 30, 120, 50, 10000, 10000, 10000, 100, 100, 50, 0, 0, 12, 11, 20, "
-        "0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, " R"(
+        "0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, "
+        R"(
 		},
 	REC_PAR = 
 	{
@@ -882,7 +938,8 @@ t.CIP1=
         "0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 1.00, 0.00, 0.00, 0.00, 0.00, 0.00, "
         "0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, "
         "0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, "
-        "0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, " R"(
+        "0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, "
+        R"(
 	},
 	OBJSTATS_LASTWASH='Не известно',
 	OBJSTATS_LASTPROGRAM='Не определено',
@@ -895,7 +952,8 @@ t.CIP1=
 	CAUSTIC_PAR = 
 	{
 		0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, )"
-        "0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, " R"(
+        "0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, "
+        R"(
 	},
 	ACID_REC_LIST='',
 	ACID_REC_NMR='0',
@@ -904,7 +962,8 @@ t.CIP1=
 	ACID_PAR = 
 	{
 		0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, )"
-        "0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, " R"(
+        "0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, "
+        R"(
 	}
 	}
 )";
@@ -950,12 +1009,12 @@ TEST( cipline_tech_object, set_cmd )
     // Too-long name must be truncated, not ignored.
     const auto maxLen = TRecipeManager::recipeNameLength * UNICODE_MULTIPLIER;
     std::string tooLongName;
-    for ( auto i = 0; i < maxLen + 10; i++ ) tooLongName += "Ж";
+    for ( auto i = 0; i < maxLen + 10; i++ )
+        tooLongName += "Ж";
     res = cip1.set_cmd( "CUR_REC", 0, tooLongName.c_str() );
     EXPECT_EQ( res, 0 );
     EXPECT_GT( strnlen( cip1.lineRecipes->currentRecipeName, maxLen ), 0u );
-    EXPECT_LT(
-        strnlen( cip1.lineRecipes->currentRecipeName, maxLen ),
+    EXPECT_LT( strnlen( cip1.lineRecipes->currentRecipeName, maxLen ),
         static_cast<size_t>( maxLen ) );
 
     const auto medMaxLen =
@@ -963,16 +1022,15 @@ TEST( cipline_tech_object, set_cmd )
     const std::string tooLongMedName( medMaxLen + 10, 'B' );
     res = cip1.set_cmd( "CAUSTIC_PAR_NAME", 0, tooLongMedName.c_str() );
     EXPECT_EQ( res, 0 );
-    EXPECT_GT( strnlen( cip1.causticRecipes->currentRecipeName, medMaxLen ), 0u );
-    EXPECT_LT(
-        strnlen( cip1.causticRecipes->currentRecipeName, medMaxLen ),
+    EXPECT_GT(
+        strnlen( cip1.causticRecipes->currentRecipeName, medMaxLen ), 0u );
+    EXPECT_LT( strnlen( cip1.causticRecipes->currentRecipeName, medMaxLen ),
         static_cast<size_t>( medMaxLen ) );
 
     res = cip1.set_cmd( "ACID_PAR_NAME", 0, tooLongMedName.c_str() );
     EXPECT_EQ( res, 0 );
     EXPECT_GT( strnlen( cip1.acidRecipes->currentRecipeName, medMaxLen ), 0u );
-    EXPECT_LT(
-        strnlen( cip1.acidRecipes->currentRecipeName, medMaxLen ),
+    EXPECT_LT( strnlen( cip1.acidRecipes->currentRecipeName, medMaxLen ),
         static_cast<size_t>( medMaxLen ) );
 
     const auto ncarMaxLen = CAR_NAME_MAX_LENGTH * UNICODE_MULTIPLIER;
@@ -980,22 +1038,26 @@ TEST( cipline_tech_object, set_cmd )
     res = cip1.set_cmd( "NCAR", 1, tooLongNcarName.c_str() );
     EXPECT_EQ( res, 0 );
     EXPECT_GT( strnlen( cip1.ncar1, ncarMaxLen ), 0u );
-    EXPECT_LT( strnlen( cip1.ncar1, ncarMaxLen ), static_cast<size_t>( ncarMaxLen ) );
+    EXPECT_LT(
+        strnlen( cip1.ncar1, ncarMaxLen ), static_cast<size_t>( ncarMaxLen ) );
 
     res = cip1.set_cmd( "NCAR", 2, tooLongNcarName.c_str() );
     EXPECT_EQ( res, 0 );
     EXPECT_GT( strnlen( cip1.ncar2, ncarMaxLen ), 0u );
-    EXPECT_LT( strnlen( cip1.ncar2, ncarMaxLen ), static_cast<size_t>( ncarMaxLen ) );
+    EXPECT_LT(
+        strnlen( cip1.ncar2, ncarMaxLen ), static_cast<size_t>( ncarMaxLen ) );
 
     res = cip1.set_cmd( "NCAR", 3, tooLongNcarName.c_str() );
     EXPECT_EQ( res, 0 );
     EXPECT_GT( strnlen( cip1.ncar3, ncarMaxLen ), 0u );
-    EXPECT_LT( strnlen( cip1.ncar3, ncarMaxLen ), static_cast<size_t>( ncarMaxLen ) );
+    EXPECT_LT(
+        strnlen( cip1.ncar3, ncarMaxLen ), static_cast<size_t>( ncarMaxLen ) );
 
     res = cip1.set_cmd( "NCAR", 4, tooLongNcarName.c_str() );
     EXPECT_EQ( res, 0 );
     EXPECT_GT( strnlen( cip1.ncar4, ncarMaxLen ), 0u );
-    EXPECT_LT( strnlen( cip1.ncar4, ncarMaxLen ), static_cast<size_t>( ncarMaxLen ) );
+    EXPECT_LT(
+        strnlen( cip1.ncar4, ncarMaxLen ), static_cast<size_t>( ncarMaxLen ) );
 
     cip1.lineRecipes->SaveToFile( "tmp4.txt" );
 
@@ -1008,8 +1070,8 @@ TEST( cipline_tech_object, SCInitPumping )
     G_LUA_MANAGER->set_Lua( L );
 
     InitCipDevices();
-    cipline_tech_object cip1( "CIP1", 1, TECH_TYPE_SELF_CLEAN,
-        "CIP1", 1, 1, 200, 200, 200, 200 );
+    cipline_tech_object cip1(
+        "CIP1", 1, TECH_TYPE_SELF_CLEAN, "CIP1", 1, 1, 200, 200, 200, 200 );
     lua_manager::get_instance()->set_Lua( lua_open() );
 
     cip1.initline();
@@ -1027,8 +1089,8 @@ TEST( cipline_tech_object, InitFilRR )
     G_LUA_MANAGER->set_Lua( L );
 
     InitCipDevices();
-    cipline_tech_object cip1( "CIP1", 1, TECH_TYPE_SELF_CLEAN,
-        "CIP1", 1, 1, 200, 200, 200, 200 );
+    cipline_tech_object cip1(
+        "CIP1", 1, TECH_TYPE_SELF_CLEAN, "CIP1", 1, 1, 200, 200, 200, 200 );
     lua_manager::get_instance()->set_Lua( lua_open() );
 
     cip1.initline();
@@ -1046,8 +1108,8 @@ TEST( cipline_tech_object, InitCircRR )
     G_LUA_MANAGER->set_Lua( L );
 
     InitCipDevices();
-    cipline_tech_object cip1( "CIP1", 1, TECH_TYPE_SELF_CLEAN,
-        "CIP1", 1, 1, 200, 200, 200, 200 );
+    cipline_tech_object cip1(
+        "CIP1", 1, TECH_TYPE_SELF_CLEAN, "CIP1", 1, 1, 200, 200, 200, 200 );
     lua_manager::get_instance()->set_Lua( lua_open() );
 
     cip1.initline();
@@ -1065,8 +1127,8 @@ TEST( cipline_tech_object, CircRR )
     G_LUA_MANAGER->set_Lua( L );
 
     InitCipDevices();
-    cipline_tech_object cip1( "CIP1", 1, TECH_TYPE_SELF_CLEAN,
-        "CIP1", 1, 1, 200, 200, 200, 200 );
+    cipline_tech_object cip1(
+        "CIP1", 1, TECH_TYPE_SELF_CLEAN, "CIP1", 1, 1, 200, 200, 200, 200 );
     lua_manager::get_instance()->set_Lua( lua_open() );
 
     cip1.initline();
@@ -1084,8 +1146,8 @@ TEST( cipline_tech_object, timeIsOut )
     G_LUA_MANAGER->set_Lua( L );
 
     InitCipDevices();
-    cipline_tech_object cip1( "CIP1", 1, TECH_TYPE_SELF_CLEAN,
-        "CIP1", 1, 1, 200, 200, 200, 200 );
+    cipline_tech_object cip1(
+        "CIP1", 1, TECH_TYPE_SELF_CLEAN, "CIP1", 1, 1, 200, 200, 200, 200 );
     lua_manager::get_instance()->set_Lua( lua_open() );
 
     cip1.initline();
@@ -1103,8 +1165,8 @@ TEST( cipline_tech_object, InitCheckConc )
     G_LUA_MANAGER->set_Lua( L );
 
     InitCipDevices();
-    cipline_tech_object cip1( "CIP1", 1, TECH_TYPE_SELF_CLEAN,
-        "CIP1", 1, 1, 200, 200, 200, 200 );
+    cipline_tech_object cip1(
+        "CIP1", 1, TECH_TYPE_SELF_CLEAN, "CIP1", 1, 1, 200, 200, 200, 200 );
     lua_manager::get_instance()->set_Lua( lua_open() );
 
     cip1.initline();
@@ -1122,8 +1184,8 @@ TEST( cipline_tech_object, InitAddRR )
     G_LUA_MANAGER->set_Lua( L );
 
     InitCipDevices();
-    cipline_tech_object cip1( "CIP1", 1, TECH_TYPE_SELF_CLEAN,
-        "CIP1", 1, 1, 200, 200, 200, 200 );
+    cipline_tech_object cip1(
+        "CIP1", 1, TECH_TYPE_SELF_CLEAN, "CIP1", 1, 1, 200, 200, 200, 200 );
     lua_manager::get_instance()->set_Lua( lua_open() );
 
     cip1.initline();
@@ -1141,8 +1203,8 @@ TEST( cipline_tech_object, InitOpolRR )
     G_LUA_MANAGER->set_Lua( L );
 
     InitCipDevices();
-    cipline_tech_object cip1( "CIP1", 1, TECH_TYPE_SELF_CLEAN,
-        "CIP1", 1, 1, 200, 200, 200, 200 );
+    cipline_tech_object cip1(
+        "CIP1", 1, TECH_TYPE_SELF_CLEAN, "CIP1", 1, 1, 200, 200, 200, 200 );
     lua_manager::get_instance()->set_Lua( lua_open() );
 
     cip1.initline();
@@ -1160,8 +1222,8 @@ TEST( cipline_tech_object, _InitToObject )
     G_LUA_MANAGER->set_Lua( L );
 
     InitCipDevices();
-    cipline_tech_object cip1( "CIP1", 1, TECH_TYPE_SELF_CLEAN,
-        "CIP1", 1, 1, 200, 200, 200, 200 );
+    cipline_tech_object cip1(
+        "CIP1", 1, TECH_TYPE_SELF_CLEAN, "CIP1", 1, 1, 200, 200, 200, 200 );
     lua_manager::get_instance()->set_Lua( lua_open() );
 
     cip1.initline();
@@ -1179,8 +1241,8 @@ TEST( cipline_tech_object, _InitFromObject )
     G_LUA_MANAGER->set_Lua( L );
 
     InitCipDevices();
-    cipline_tech_object cip1( "CIP1", 1, TECH_TYPE_SELF_CLEAN,
-        "CIP1", 1, 1, 200, 200, 200, 200 );
+    cipline_tech_object cip1(
+        "CIP1", 1, TECH_TYPE_SELF_CLEAN, "CIP1", 1, 1, 200, 200, 200, 200 );
     lua_manager::get_instance()->set_Lua( lua_open() );
 
     cip1.initline();
@@ -1201,8 +1263,8 @@ TEST( cipline_tech_object, _InitOporCIP )
     G_LUA_MANAGER->set_Lua( L );
 
     InitCipDevices();
-    cipline_tech_object cip1( "CIP1", 1, TECH_TYPE_SELF_CLEAN,
-        "CIP1", 1, 1, 200, 200, 200, 200 );
+    cipline_tech_object cip1(
+        "CIP1", 1, TECH_TYPE_SELF_CLEAN, "CIP1", 1, 1, 200, 200, 200, 200 );
     lua_manager::get_instance()->set_Lua( lua_open() );
 
     cip1.initline();
@@ -1220,8 +1282,8 @@ TEST( cipline_tech_object, _InitFilCirc )
     G_LUA_MANAGER->set_Lua( L );
 
     InitCipDevices();
-    cipline_tech_object cip1( "CIP1", 1, TECH_TYPE_SELF_CLEAN,
-        "CIP1", 1, 1, 200, 200, 200, 200 );
+    cipline_tech_object cip1(
+        "CIP1", 1, TECH_TYPE_SELF_CLEAN, "CIP1", 1, 1, 200, 200, 200, 200 );
     lua_manager::get_instance()->set_Lua( lua_open() );
 
     cip1.initline();
@@ -1239,8 +1301,8 @@ TEST( cipline_tech_object, _InitOporCirc )
     G_LUA_MANAGER->set_Lua( L );
 
     InitCipDevices();
-    cipline_tech_object cip1( "CIP1", 1, TECH_TYPE_SELF_CLEAN,
-        "CIP1", 1, 1, 200, 200, 200, 200 );
+    cipline_tech_object cip1(
+        "CIP1", 1, TECH_TYPE_SELF_CLEAN, "CIP1", 1, 1, 200, 200, 200, 200 );
     lua_manager::get_instance()->set_Lua( lua_open() );
 
     cip1.initline();
@@ -1258,8 +1320,8 @@ TEST( cipline_tech_object, _InitCirc )
     G_LUA_MANAGER->set_Lua( L );
 
     InitCipDevices();
-    cipline_tech_object cip1( "CIP1", 1, TECH_TYPE_SELF_CLEAN,
-        "CIP1", 1, 1, 200, 200, 200, 200 );
+    cipline_tech_object cip1(
+        "CIP1", 1, TECH_TYPE_SELF_CLEAN, "CIP1", 1, 1, 200, 200, 200, 200 );
     lua_manager::get_instance()->set_Lua( lua_open() );
 
     cip1.initline();
@@ -1289,8 +1351,8 @@ TEST( cipline_tech_object, _InitDoseRR )
     G_LUA_MANAGER->set_Lua( L );
 
     InitCipDevices();
-    cipline_tech_object cip1( "CIP1", 1, TECH_TYPE_SELF_CLEAN,
-        "CIP1", 1, 1, 200, 200, 200, 200 );
+    cipline_tech_object cip1(
+        "CIP1", 1, TECH_TYPE_SELF_CLEAN, "CIP1", 1, 1, 200, 200, 200, 200 );
     lua_manager::get_instance()->set_Lua( lua_open() );
 
     cip1.initline();
@@ -1321,14 +1383,15 @@ class cipline_tech_object_test : public ::testing::Test
         class cipline_tech_object_mock : public cipline_tech_object
             {
             public:
-                cipline_tech_object_mock()
-                    : cipline_tech_object( "CIP1", 1, TECH_TYPE_SELF_CLEAN,
+                cipline_tech_object_mock() :
+                    cipline_tech_object( "CIP1", 1, TECH_TYPE_SELF_CLEAN,
                         "CIP1", 1, 1, 200, 200, 200, 200 )
-                    {}
+                    {
+                    }
 
                 int DoStep( int step_to_do ) override
                     {
-                    return -1; // mock implementation
+                    return -1;  // mock implementation
                     }
             };
 
@@ -1354,28 +1417,29 @@ TEST( cipline_tech_object, check_device_watchdog )
     device* outdev;
 
     // Test with bad device type - should not work
-    int result = cip1.check_device( outdev, P_WATCHDOG, device::C_DEVICE_TYPE_CNT );
-    EXPECT_EQ( -1, result ); // No device configured
+    int result =
+        cip1.check_device( outdev, P_WATCHDOG, device::C_DEVICE_TYPE_CNT );
+    EXPECT_EQ( -1, result );  // No device configured
 
     // Test with zero device number (no device) - should work without initialization
     cip1.rt_par_float[ P_WATCHDOG ] = 0;
     result = cip1.check_device( outdev, P_WATCHDOG, device::DT_WATCHDOG );
-    EXPECT_EQ( 0, result ); // No device configured
+    EXPECT_EQ( 0, result );  // No device configured
 
     // Test with negative parameter - should work without initialization
     cip1.rt_par_float[ P_WATCHDOG ] = -1;
     result = cip1.check_device( outdev, P_WATCHDOG, device::DT_WATCHDOG );
-    EXPECT_EQ( 0, result ); // Invalid parameter
+    EXPECT_EQ( 0, result );  // Invalid parameter
 
     // Now test with valid device - this might be the problematic part
     cip1.rt_par_float[ P_WATCHDOG ] = 1;
     result = cip1.check_device( outdev, P_WATCHDOG, device::DT_WATCHDOG );
-    EXPECT_EQ( 0, result ); // Should find device
+    EXPECT_EQ( 0, result );  // Should find device
 
     // Test with non-existent device number
     cip1.rt_par_float[ P_WATCHDOG ] = 99;
     result = cip1.check_device( outdev, P_WATCHDOG, device::DT_WATCHDOG );
-    EXPECT_EQ( -2, result ); // Should not find device
+    EXPECT_EQ( -2, result );  // Should not find device
 
     ClearCipDevices();
     }
@@ -1411,12 +1475,12 @@ TEST( cipline_tech_object, _ResetLinesDevicesBeforeReset_watchdog )
 
     // Set up watchdog device manually
     auto dm = device_manager::get_instance();
-    auto watchdog_dev = dm->get_device("LINE1WATCHDOG1");
-    ASSERT_NE(nullptr, watchdog_dev);
+    auto watchdog_dev = dm->get_device( "LINE1WATCHDOG1" );
+    ASSERT_NE( nullptr, watchdog_dev );
     cip1.dev_watchdog = watchdog_dev;
 
     // Set watchdog to active state
-    watchdog_dev->set_state(1);
+    watchdog_dev->set_state( 1 );
     EXPECT_EQ( 1, watchdog_dev->get_state() );
 
     // Call reset function
@@ -1445,7 +1509,7 @@ TEST( cipline_tech_object, watchdog_error_message )
 TEST( cipline_tech_object, recipe_RV_WATCHDOG_mapping_and_device_init )
     {
     // 1) Окружение.
-    InitCipDevices(); // Добавляет LINE1WATCHDOG1 и прочие виртуальные устройства
+    InitCipDevices();  // Добавляет LINE1WATCHDOG1 и прочие виртуальные устройства
     cipline_tech_object cip1( "CIP1", 1, 1, "CIP1", 1, 1, 200, 200, 200, 200 );
     lua_manager::get_instance()->set_Lua( lua_open() );
 
@@ -1458,12 +1522,13 @@ TEST( cipline_tech_object, recipe_RV_WATCHDOG_mapping_and_device_init )
     const auto curRec = rm->getCurrentRecipe();
     // Гарантируем базовые значения рецепта и выставляем watchdog.
     rm->ResetRecipeToDefaults( curRec );
-    ASSERT_NE( 0, rm->GetParamsCount() ); // sanity check: рецепт доступен
-    ASSERT_EQ( 0, rm->setRecipeValue( curRec, TRecipeManager::RV_WATCHDOG, 1.0f ) );
+    ASSERT_NE( 0, rm->GetParamsCount() );  // sanity check: рецепт доступен
+    ASSERT_EQ(
+        0, rm->setRecipeValue( curRec, TRecipeManager::RV_WATCHDOG, 1.0f ) );
 
     // 3) Загружаем рецепт в рантайм‑параметры CIP.
     cip1.rt_par_float[ P_SELECT_REC ] =
-        static_cast<float>( curRec + 1 ); // Нумерация рецептов в UI — с 1.
+        static_cast<float>( curRec + 1 );  // Нумерация рецептов в UI — с 1.
     EXPECT_EQ( 0, cip1.evaluate() );
 
     // Проверяем, что mapping сработал: RV_WATCHDOG -> P_WATCHDOG.
@@ -1485,11 +1550,13 @@ TEST( cipline_tech_object, recipe_RV_WATCHDOG_mapping_and_device_init )
     auto* ls1 = dm->get_device( "LINE1LS1" );
     ASSERT_NE( nullptr, ls1 );
 
-    ls1->set_state( 1 ); wd->evaluate_io();
-    EXPECT_EQ( 0, cip1._CheckErr() ); // ошибка пропала
+    ls1->set_state( 1 );
+    wd->evaluate_io();
+    EXPECT_EQ( 0, cip1._CheckErr() );  // ошибка пропала
 
-    ls1->set_state( 0 ); wd->evaluate_io();
-    EXPECT_EQ( 0, cip1._CheckErr() ); // всё ещё ок
+    ls1->set_state( 0 );
+    wd->evaluate_io();
+    EXPECT_EQ( 0, cip1._CheckErr() );  // всё ещё ок
 
     // Завершение.
     G_LUA_MANAGER->free_Lua();
@@ -1503,7 +1570,8 @@ TEST( cipline_tech_object, signal_supply_pump_running )
     // задаёт номер DO сигнала "подающий насос включен" (задача #1459).
     InitCipDevices();
     auto* dm = device_manager::get_instance();
-    dm->add_io_device( device::DEVICE_TYPE::DT_DO, device::DEVICE_SUB_TYPE::DST_DO_VIRT, "LINE1DO101", "", "" );
+    dm->add_io_device( device::DEVICE_TYPE::DT_DO,
+        device::DEVICE_SUB_TYPE::DST_DO_VIRT, "LINE1DO101", "", "" );
 
     cipline_tech_object cip1( "CIP1", 1, 1, "CIP1", 1, 1, 200, 200, 200, 200 );
     lua_manager::get_instance()->set_Lua( lua_open() );
@@ -1525,9 +1593,9 @@ TEST( cipline_tech_object, signal_supply_pump_running )
     const auto curRec = rm->getCurrentRecipe();
     rm->ResetRecipeToDefaults( curRec );
     ASSERT_EQ( 0, rm->setRecipeValue( curRec,
-        TRecipeManager::RV_SIGNAL_PUMP_RUNNING, 101.0f ) );
+                      TRecipeManager::RV_SIGNAL_PUMP_RUNNING, 101.0f ) );
     cip1.rt_par_float[ P_SELECT_REC ] =
-        static_cast<float>( curRec + 1 ); // Нумерация рецептов в UI — с 1.
+        static_cast<float>( curRec + 1 );  // Нумерация рецептов в UI — с 1.
     EXPECT_EQ( 0, cip1.evaluate() );
     EXPECT_EQ( 101.0f, cip1.rt_par_float[ P_SIGNAL_PUMP_RUNNING ] );
 
@@ -1584,7 +1652,7 @@ TEST( cipline_tech_object, check_device_watchdog_fallback_no_line_prefix )
     {
     // When LINE1WATCHDOGn is absent but WATCHDOGn exists, check_device must
     // fall back to the device without a line prefix.
-    InitCipDevices(); // Does not add WATCHDOG101.
+    InitCipDevices();  // Does not add WATCHDOG101.
     auto dm = device_manager::get_instance();
     dm->add_io_device( device::DEVICE_TYPE::DT_WATCHDOG,
         device::DEVICE_SUB_TYPE::DST_WATCHDOG, "WATCHDOG101", "", "" );
@@ -1593,8 +1661,8 @@ TEST( cipline_tech_object, check_device_watchdog_fallback_no_line_prefix )
     cip1.rt_par_float[ P_WATCHDOG ] = 101;
 
     device* outdev = nullptr;
-    int result = cip1.check_device( outdev, P_WATCHDOG,
-        device::DEVICE_TYPE::DT_WATCHDOG );
+    int result = cip1.check_device(
+        outdev, P_WATCHDOG, device::DEVICE_TYPE::DT_WATCHDOG );
 
     EXPECT_EQ( 0, result );
     ASSERT_NE( nullptr, outdev );
@@ -1607,7 +1675,7 @@ TEST( cipline_tech_object, check_device_watchdog_line_prefix_takes_priority )
     {
     // When both LINE1WATCHDOGn and WATCHDOGn exist, LINE1WATCHDOGn must be
     // preferred over WATCHDOGn.
-    InitCipDevices(); // Adds LINE1WATCHDOG1.
+    InitCipDevices();  // Adds LINE1WATCHDOG1.
     auto dm = device_manager::get_instance();
     dm->add_io_device( device::DEVICE_TYPE::DT_WATCHDOG,
         device::DEVICE_SUB_TYPE::DST_WATCHDOG, "WATCHDOG1", "", "" );
@@ -1616,8 +1684,8 @@ TEST( cipline_tech_object, check_device_watchdog_line_prefix_takes_priority )
     cip1.rt_par_float[ P_WATCHDOG ] = 1;
 
     device* outdev = nullptr;
-    int result = cip1.check_device( outdev, P_WATCHDOG,
-        device::DEVICE_TYPE::DT_WATCHDOG );
+    int result = cip1.check_device(
+        outdev, P_WATCHDOG, device::DEVICE_TYPE::DT_WATCHDOG );
 
     EXPECT_EQ( 0, result );
     ASSERT_NE( nullptr, outdev );

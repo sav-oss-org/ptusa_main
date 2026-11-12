@@ -9,11 +9,12 @@
 #include "lua_manager.h"
 #include "dtime.h"
 
-const char * const PROGRAM_STARTED =
+const char* const PROGRAM_STARTED =
 #ifndef WIN_OS
     "\x1B[32m"
 #endif // !WIN_OS
-    "INFO   (6) -> Program started (version " PRODUCT_VERSION_FULL_STR ").\n"
+    "INFO   (6) -> Program started (version " PRODUCT_VERSION_FULL_STR
+    ").\n"
 #ifndef WIN_OS
     "\x1B[0m"
 #endif // !WIN_OS
@@ -44,7 +45,7 @@ const char* const OPC_RW =
     "\x1B[33m"
 #endif
 
-"WARNING(4) -> OPC UA server is activated (read-write).\n"
+    "WARNING(4) -> OPC UA server is activated (read-write).\n"
 #ifndef WIN_OS
     "\x1B[0m"
 #endif
@@ -122,7 +123,8 @@ system.init_devices_properties = function( self )
         return 0
     end
 )";
-    EXPECT_EQ( 0, luaL_dostring( L, system_Lua_script_init_devices_properties ) );
+    EXPECT_EQ(
+        0, luaL_dostring( L, system_Lua_script_init_devices_properties ) );
     res = G_PROJECT_MANAGER->lua_load_configuration();
     ASSERT_EQ( 1, res );
 
@@ -148,7 +150,8 @@ object_manager =
     end
     }
 )";
-    EXPECT_EQ( 0, luaL_dostring( L, object_manager_Lua_script_get_objects_count ) );
+    EXPECT_EQ(
+        0, luaL_dostring( L, object_manager_Lua_script_get_objects_count ) );
     res = G_PROJECT_MANAGER->lua_load_configuration();
     ASSERT_EQ( 0, res );
 
@@ -237,8 +240,7 @@ Usage:
 
 
     auto get_time_hook = subhook_new( reinterpret_cast<void*>( &get_time ),
-        reinterpret_cast<void*>( &get_fixed_time ),
-        SUBHOOK_64BIT_OFFSET );
+        reinterpret_cast<void*>( &get_fixed_time ), SUBHOOK_64BIT_OFFSET );
     subhook_install( get_time_hook );
 
     std::tm tm = get_time();
@@ -254,9 +256,8 @@ Usage:
     output = testing::internal::GetCapturedStdout();
     ASSERT_EQ( 0, res );
 
-    std::string debug = tmp.str() + PROGRAM_STARTED +
-        "DEBUG ON.\n" +
-        tmp.str() +
+    std::string debug =
+        tmp.str() + PROGRAM_STARTED + "DEBUG ON.\n" + tmp.str() +
 #if !defined WIN_OS
         "\x1B[37m" +
 #endif
@@ -269,9 +270,9 @@ Usage:
 
     debug += tmp.str() +
 #ifdef WIN_OS
-        BUS_COUPLERS_DISABLED;
+             BUS_COUPLERS_DISABLED;
 #else
-        BUS_COUPLERS_ENABLED;
+             BUS_COUPLERS_ENABLED;
 #endif // WIN_OS
 
     EXPECT_EQ( output, debug );
@@ -287,9 +288,9 @@ Usage:
     debug += tmp.str() + OPC_OFF;
     debug += tmp.str() +
 #ifdef WIN_OS
-        BUS_COUPLERS_DISABLED;
+             BUS_COUPLERS_DISABLED;
 #else
-        BUS_COUPLERS_ENABLED;
+             BUS_COUPLERS_ENABLED;
 #endif // WIN_OS
 
     EXPECT_EQ( output, debug );
@@ -334,9 +335,9 @@ Usage:
     debug += tmp.str() + OPC_RO;
     debug += tmp.str() +
 #ifdef WIN_OS
-        BUS_COUPLERS_DISABLED;
+             BUS_COUPLERS_DISABLED;
 #else
-        BUS_COUPLERS_ENABLED;
+             BUS_COUPLERS_ENABLED;
 #endif // WIN_OS
     EXPECT_EQ( output, debug );
 
@@ -351,9 +352,9 @@ Usage:
     debug += tmp.str() + OPC_RW;
     debug += tmp.str() +
 #ifdef WIN_OS
-        BUS_COUPLERS_DISABLED;
+             BUS_COUPLERS_DISABLED;
 #else
-        BUS_COUPLERS_ENABLED;
+             BUS_COUPLERS_ENABLED;
 #endif // WIN_OS
     EXPECT_EQ( output, debug );
 
@@ -384,8 +385,8 @@ Usage:
 #if defined WIN_OS
     debug += tmp.str() + "WARNING(4) -> Bus couplers are read only.\n";
 #else
-    debug += tmp.str() + "\x1B[33m"
-        + "WARNING(4) -> Bus couplers are read only.\n" + "\x1B[0m";
+    debug += tmp.str() + "\x1B[33m" +
+             "WARNING(4) -> Bus couplers are read only.\n" + "\x1B[0m";
 #endif
     EXPECT_EQ( output, debug );
 
@@ -404,7 +405,8 @@ Usage:
     std::array<const char*, 14> argv_path{ "ptusa_main.exe", "--port", "20000",
         "--sys_path", "./sys/", "--path", "./", "--extra_paths", "./dairy_sys/",
         "--sleep_time", "5", "--no_io", "--read_only_io", "main.plua" };
-    res = G_PROJECT_MANAGER->proc_main_params( argv_path.size(), argv_path.data() );
+    res = G_PROJECT_MANAGER->proc_main_params(
+        argv_path.size(), argv_path.data() );
     ASSERT_EQ( 0, res );
 
     G_PAC_INFO()->reset_params();
@@ -478,7 +480,8 @@ TEST( project_manager, apply_opc_mode )
 
     // Возвращаем предыдущие значения.
     G_PAC_INFO()->par[ PAC_info::P_IS_OPC_UA_SERVER_ACTIVE ] = ua_server_active;
-    G_PAC_INFO()->par[ PAC_info::P_IS_OPC_UA_SERVER_CONTROL ] = ua_server_control;
+    G_PAC_INFO()->par[ PAC_info::P_IS_OPC_UA_SERVER_CONTROL ] =
+        ua_server_control;
 
     std::remove( "main.plua" );
     }

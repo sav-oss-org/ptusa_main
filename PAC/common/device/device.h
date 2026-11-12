@@ -53,7 +53,7 @@ class DO1 : public digital_io_device
             {
             }
 
-        int  get_state() const override;
+        int get_state() const override;
         void direct_on() override;
         void direct_off() override;
 
@@ -110,7 +110,7 @@ class temperature_e_analog : public AI1
 class temperature_e_iolink : public AI1
     {
     public:
-        explicit temperature_e_iolink( const char *dev_name );
+        explicit temperature_e_iolink( const char* dev_name );
 
         ~temperature_e_iolink() override = default;
 
@@ -128,18 +128,18 @@ class temperature_e_iolink : public AI1
 
         struct TE_data
             {
-            int16_t v = 0;
+                int16_t v = 0;
             };
 
         TE_data info{};
         u_int start_param_idx;
 
-		enum class CONSTANTS
-			{
-			P_ERR = 1,                ///< Аварийное значение температуры.
+        enum class CONSTANTS
+            {
+            P_ERR = 1,                ///< Аварийное значение температуры.
 
-			ADDITIONAL_PARAM_COUNT = 1, ///< Количество параметров.
-			};
+            ADDITIONAL_PARAM_COUNT = 1, ///< Количество параметров.
+            };
 
         io_link_device iol_dev;
     };
@@ -148,7 +148,7 @@ class temperature_e_iolink : public AI1
 class temperature_e_iolink_tm311 : public AI1
     {
     public:
-        explicit temperature_e_iolink_tm311( const char *dev_name );
+        explicit temperature_e_iolink_tm311( const char* dev_name );
 
         ~temperature_e_iolink_tm311() override = default;
 
@@ -166,7 +166,7 @@ class temperature_e_iolink_tm311 : public AI1
     private:
 #endif
 
-#pragma pack(push, 1)
+#pragma pack( push, 1 )
 
         constexpr inline static int TM311_PROCESS_DATA_IN_SIZE = 4;
         ///| Бит( ы ) | Имя         | Тип             |
@@ -180,15 +180,16 @@ class temperature_e_iolink_tm311 : public AI1
         ///
         struct TM311_data
             {
-            uint8_t OU1 : 1;       ///< Output 1 status bit.
-            uint8_t status2 : 2;   ///< Extra status 2 bits.
-            uint8_t status1 : 2;   ///< Status 2 bits.
-            uint8_t unused : 3;    ///< Unused bits.
-            int8_t scale{ -1 };    ///< Scale factor.
-            int16_t temperature{}; ///< Temperature value (with one decimal place).
+                uint8_t OU1 : 1;       ///< Output 1 status bit.
+                uint8_t status2 : 2;   ///< Extra status 2 bits.
+                uint8_t status1 : 2;   ///< Status 2 bits.
+                uint8_t unused : 3;    ///< Unused bits.
+                int8_t scale{ -1 };    ///< Scale factor.
+                int16_t
+                    temperature{};  ///< Temperature value (with one decimal place).
             };
 
-#pragma pack(pop)
+#pragma pack( pop )
 
         static_assert( sizeof( TM311_data ) == TM311_PROCESS_DATA_IN_SIZE,
             "Struct `TM311_data` must be the 4 byte size." );
@@ -198,9 +199,9 @@ class temperature_e_iolink_tm311 : public AI1
 
         enum class CONSTANTS
             {
-            P_ERR = 1,                ///< Аварийное значение температуры.
+            P_ERR = 1,  ///< Аварийное значение температуры.
 
-            ADDITIONAL_PARAM_COUNT = 1, ///< Количество параметров.
+            ADDITIONAL_PARAM_COUNT = 1,  ///< Количество параметров.
             };
 
         io_link_device iol_dev;
@@ -224,8 +225,9 @@ class level_e_cyl : public level
     private:
         enum CONSTANTS
             {
-            P_MAX_P = 1, ///< Индекс параметра давление настройки датчика (бар).
-            P_R,         ///< Индекс параметра радиуса танка (м).
+            P_MAX_P =
+                1,  ///< Индекс параметра давление настройки датчика (бар).
+            P_R,  ///< Индекс параметра радиуса танка (м).
 
             LAST_PARAM_IDX,
             };
@@ -239,14 +241,15 @@ class level_e_cone : public level
     public:
         explicit level_e_cone( const char* dev_name );
 
-         int calc_volume() const override;
+        int calc_volume() const override;
 
     private:
         enum CONSTANTS
             {
-            P_MAX_P = 1, ///< Индекс параметра давление настройки датчика (бар).
-            P_R,         ///< Индекс параметра радиуса танка (м).
-            P_H_CONE,    ///< Индекс параметра высоты конуса танка (м).
+            P_MAX_P =
+                1,  ///< Индекс параметра давление настройки датчика (бар).
+            P_R,  ///< Индекс параметра радиуса танка (м).
+            P_H_CONE,  ///< Индекс параметра высоты конуса танка (м).
 
             LAST_PARAM_IDX,
             };
@@ -265,12 +268,12 @@ class level_e_cyl_hor : public level
     private:
         enum class CONSTANTS
             {
-            P_C0 = 1,       ///< Индекс параметра нулевого смещения датчика (бар).
-            P_MAX_P,        ///< Индекс параметра давления настройки датчика (бар).
-            P_R,            ///< Индекс параметра радиуса цилиндра (м).
-            P_H,            ///< Индекс параметра длины цилиндра (м).
-            P_ANGLE,        ///< Индекс параметра угла наклона (градусы).
-            P_DENSITY,      ///< Индекс параметра плотности продукта (кг/м³).
+            P_C0 = 1,  ///< Индекс параметра нулевого смещения датчика (бар).
+            P_MAX_P,  ///< Индекс параметра давления настройки датчика (бар).
+            P_R,  ///< Индекс параметра радиуса цилиндра (м).
+            P_H,  ///< Индекс параметра длины цилиндра (м).
+            P_ANGLE,  ///< Индекс параметра угла наклона (градусы).
+            P_DENSITY,  ///< Индекс параметра плотности продукта (кг/м³).
 
             LAST_PARAM_IDX,
             };
@@ -292,8 +295,8 @@ class pressure_e : public AI1
             {
             ADDITIONAL_PARAM_COUNT = 2,
 
-            P_MIN_V = 1,   ///< Индекс параметра минимального значения.
-            P_MAX_V,       ///< Индекс параметра максимального значения.
+            P_MIN_V = 1,  ///< Индекс параметра минимального значения.
+            P_MAX_V,  ///< Индекс параметра максимального значения.
             };
 
         u_int start_param_idx;
@@ -335,22 +338,22 @@ class pressure_e_iolink : public analog_io_device
 
         enum PROCESSING_TYPE
             {
-            PT_DATA_TYPE,       ///< Use PT_data with reverse_copy
-            EX_PT_DATA_TYPE,    ///< Use ex_PT_data with byte swapping
+            PT_DATA_TYPE,  ///< Use PT_data with reverse_copy
+            EX_PT_DATA_TYPE,  ///< Use ex_PT_data with byte swapping
 
-            EH_PT_DATA_TYPE,    ///< Use EH_PT_data with byte swapping
+            EH_PT_DATA_TYPE,  ///< Use EH_PT_data with byte swapping
             };
 
         struct article_info
             {
-            float scaling_factor;
-            PROCESSING_TYPE processing_type;
+                float scaling_factor;
+                PROCESSING_TYPE processing_type;
             };
 
-        static void evaluate_io( const char *name, char* data, ARTICLE n_article, float& v,
-            int& st, float alfa );
-        static void read_article( const char* article, ARTICLE& n_article,
-            const device* dev  );
+        static void evaluate_io( const char* name, char* data,
+            ARTICLE n_article, float& v, int& st, float alfa );
+        static void read_article(
+            const char* article, ARTICLE& n_article, const device* dev );
         static float get_alfa( ARTICLE n_article );
         static const article_info& get_article_info( ARTICLE n_article );
 
@@ -358,21 +361,21 @@ class pressure_e_iolink : public analog_io_device
 
         const char* get_error_description() override;
 
-#pragma pack(push, 1)
+#pragma pack( push, 1 )
 
         struct PT_data
             {
-            uint16_t st1 :1;
-            uint16_t st2 :1;
-            int16_t  v   :14;
+                uint16_t st1 : 1;
+                uint16_t st2 : 1;
+                int16_t v : 14;
             };
 
         struct ex_PT_data
             {
-            int16_t v;
-            uint16_t  unused : 4;
-            uint16_t  status : 4;
-            int16_t reserved : 8;
+                int16_t v;
+                uint16_t unused : 4;
+                uint16_t status : 4;
+                int16_t reserved : 8;
             };
 
         constexpr inline static int EH_PROCESS_DATA_IN_SIZE = 4;
@@ -392,14 +395,14 @@ class pressure_e_iolink : public analog_io_device
         //
         struct EH_PT_data
             {
-            int32_t v : 30;
-            uint32_t unused : 1;
-            uint32_t OU1 : 1;
+                int32_t v : 30;
+                uint32_t unused : 1;
+                uint32_t OU1 : 1;
             };
         static_assert( sizeof( EH_PT_data ) == EH_PROCESS_DATA_IN_SIZE,
             "Struct `EH_PT_data` must be the 4 byte size." );
 
-#pragma pack(pop)
+#pragma pack( pop )
 
 #ifdef PTUSA_TEST
         ARTICLE get_article_n() const;
@@ -410,9 +413,9 @@ class pressure_e_iolink : public analog_io_device
 
         enum CONSTANTS
             {
-            C_AI_INDEX = 0,     ///< Индекс канала аналогового входа.
+            C_AI_INDEX = 0,  ///< Индекс канала аналогового входа.
 
-            P_ERR,              ///< Аварийное значение.
+            P_ERR,  ///< Аварийное значение.
 
             LAST_PARAM_IDX,
             };
@@ -428,13 +431,13 @@ class pressure_e_iolink : public analog_io_device
 class circuit_breaker : public analog_io_device
     {
     public:
-        explicit circuit_breaker(const char* dev_name);
+        explicit circuit_breaker( const char* dev_name );
 
-        int save_device_ex(char* buff) const override;
+        int save_device_ex( char* buff ) const override;
 
         int set_cmd( const char* prop, u_int idx, double val ) override;
 
-        void direct_set_value(float v) override;
+        void direct_set_value( float v ) override;
 
         void direct_on() override;
 
@@ -448,42 +451,42 @@ class circuit_breaker : public analog_io_device
 
         struct F_data_in
             {
-            bool err_ch4 : 1;
-            bool err_ch3 : 1;
-            bool err_ch2 : 1;
-            bool err_ch1 : 1;
-            bool st_ch4 : 1;
-            bool st_ch3 : 1;
-            bool st_ch2 : 1;
-            bool st_ch1 : 1;
+                bool err_ch4 : 1;
+                bool err_ch3 : 1;
+                bool err_ch2 : 1;
+                bool err_ch1 : 1;
+                bool st_ch4 : 1;
+                bool st_ch3 : 1;
+                bool st_ch2 : 1;
+                bool st_ch1 : 1;
 
-            uint16_t nominal_current_ch2 : 4;
-            uint16_t nominal_current_ch1 : 4;
-            uint16_t nominal_current_ch4 : 4;
-            uint16_t nominal_current_ch3 : 4;
+                uint16_t nominal_current_ch2 : 4;
+                uint16_t nominal_current_ch1 : 4;
+                uint16_t nominal_current_ch4 : 4;
+                uint16_t nominal_current_ch3 : 4;
 
-            uint16_t load_current_ch1 : 8;
-            uint16_t load_current_ch2 : 8;
-            uint16_t load_current_ch3 : 8;
-            uint16_t load_current_ch4 : 8;
-            uint16_t v : 8;
+                uint16_t load_current_ch1 : 8;
+                uint16_t load_current_ch2 : 8;
+                uint16_t load_current_ch3 : 8;
+                uint16_t load_current_ch4 : 8;
+                uint16_t v : 8;
             };
 
         struct F_data_out
             {
-            bool switch_ch1 : 1;
-            bool switch_ch2 : 1;
-            bool switch_ch3 : 1;
-            bool switch_ch4 : 1;
-            uint16_t reserved : 3;
-            bool valid_flag : 1;
+                bool switch_ch1 : 1;
+                bool switch_ch2 : 1;
+                bool switch_ch3 : 1;
+                bool switch_ch4 : 1;
+                uint16_t reserved : 3;
+                bool valid_flag : 1;
 
-            uint16_t nominal_current_ch2 : 4;
-            uint16_t nominal_current_ch1 : 4;
-            uint16_t nominal_current_ch4 : 4;
-            uint16_t nominal_current_ch3 : 4;
+                uint16_t nominal_current_ch2 : 4;
+                uint16_t nominal_current_ch1 : 4;
+                uint16_t nominal_current_ch4 : 4;
+                uint16_t nominal_current_ch3 : 4;
 
-            F_data_out();
+                F_data_out();
             };
 
     private:
@@ -518,20 +521,23 @@ class level_e_iolink : public level
         void set_article( const char* new_article ) override;
         void evaluate_io() override;
 
-        void set_string_property(const char* field, const char* value) override;
+        void set_string_property(
+            const char* field, const char* value ) override;
 
         const char* get_error_description() override;
 
 #ifndef PTUSA_TEST
     private:
 #endif
-        pressure_e_iolink::ARTICLE n_article = pressure_e_iolink::ARTICLE::DEFAULT;
+        pressure_e_iolink::ARTICLE n_article =
+            pressure_e_iolink::ARTICLE::DEFAULT;
 
         enum CONSTANTS
             {
-            P_MAX_P = 1, ///< Индекс параметра давление настройки датчика (бар).
-            P_R,         ///< Индекс параметра радиуса танка (м).
-            P_H_CONE,    ///< Индекс параметра высоты конуса танка (м).
+            P_MAX_P =
+                1,  ///< Индекс параметра давление настройки датчика (бар).
+            P_R,  ///< Индекс параметра радиуса танка (м).
+            P_H_CONE,  ///< Индекс параметра высоты конуса танка (м).
 
             LAST_PARAM_IDX,
             };
@@ -561,8 +567,8 @@ class concentration_e : public AI1
             {
             ADDITIONAL_PARAM_COUNT = 2,
 
-            P_MIN_V = 1,   ///< Индекс параметра минимального значения.
-            P_MAX_V,       ///< Индекс параметра максимального значения.
+            P_MIN_V = 1,  ///< Индекс параметра минимального значения.
+            P_MAX_V,  ///< Индекс параметра максимального значения.
             };
 
         u_int start_param_idx;
@@ -581,7 +587,7 @@ class concentration_e_ok : public concentration_e
     private:
         enum CONSTANTS
             {
-            DI_INDEX = 0,         ///< Индекс канала дискретного входа.
+            DI_INDEX = 0,  ///< Индекс канала дискретного входа.
             };
     };
 //-----------------------------------------------------------------------------
@@ -589,11 +595,11 @@ class concentration_e_ok : public concentration_e
 class concentration_e_iolink : public analog_io_device
     {
     public:
-        explicit concentration_e_iolink(const char* dev_name);
+        explicit concentration_e_iolink( const char* dev_name );
 
         ~concentration_e_iolink() override;
 
-        int save_device_ex( char *buff ) const override;
+        int save_device_ex( char* buff ) const override;
 
         float get_temperature() const;
 
@@ -609,27 +615,27 @@ class concentration_e_iolink : public analog_io_device
     private:
 #endif
 
-#pragma pack(push,1)
+#pragma pack( push, 1 )
         struct QT_data
             {
-            unsigned char              :4;
-            unsigned char status       :4;
-            unsigned char tmp;
-            unsigned int  temperature = 0;
-            unsigned char tmp1;
-            unsigned char tmp2;
-            unsigned int  conductivity;
+                unsigned char : 4;
+                unsigned char status : 4;
+                unsigned char tmp;
+                unsigned int temperature = 0;
+                unsigned char tmp1;
+                unsigned char tmp2;
+                unsigned int conductivity;
             };
-#pragma pack(pop)
+#pragma pack( pop )
 
         QT_data* info = new QT_data();
 
         enum class CONSTANTS
             {
-            C_AI_INDEX = 0,     ///< Индекс канала аналогового входа.
+            C_AI_INDEX = 0,  ///< Индекс канала аналогового входа.
 
-            P_ERR,              ///< Аварийное значение.
-            P_MAX_V,            ///< Максимальное значение.
+            P_ERR,  ///< Аварийное значение.
+            P_MAX_V,  ///< Максимальное значение.
 
             LAST_PARAM_IDX,
             };
@@ -651,8 +657,8 @@ class analog_input : public AI1
             {
             ADDITIONAL_PARAM_COUNT = 2,
 
-            P_MIN_V = 1,   ///< Индекс параметра минимального значения.
-            P_MAX_V,       ///< Индекс параметра максимального значения.
+            P_MIN_V = 1,  ///< Индекс параметра минимального значения.
+            P_MAX_V,  ///< Индекс параметра максимального значения.
             };
 
         u_int start_param_idx;
@@ -667,7 +673,7 @@ class virtual_wages : public device, public i_wages
 
         float get_value() const override;
 
-        void direct_set_value(float new_value) override;
+        void direct_set_value( float new_value ) override;
 
         void direct_set_state( int new_state ) override;
 
@@ -704,9 +710,9 @@ class wages_RS232 : public analog_io_device, public i_wages
     private:
         enum class CONSTANTS
             {
-            C_AIAO_INDEX = 0,   ///< Индекс канала аналоговых данных.
+            C_AIAO_INDEX = 0,  ///< Индекс канала аналоговых данных.
 
-            P_CZ = 1,           ///< Сдвиг нуля.
+            P_CZ = 1,  ///< Сдвиг нуля.
             LAST_PARAM_IDX,
             };
 
@@ -742,19 +748,20 @@ class wages_eth : public analog_io_device, public i_wages
 
         void tare() override;
 
-        void set_string_property( const char* field, const char* value ) override;
+        void set_string_property(
+            const char* field, const char* value ) override;
 
-        void direct_set_tcp_buff( const char* new_value, size_t size,
-            int new_status );
+        void direct_set_tcp_buff(
+            const char* new_value, size_t size, int new_status );
 
     private:
-        mutable auto_smart_ptr < iot_wages_eth > weth;
+        mutable auto_smart_ptr< iot_wages_eth > weth;
 
         enum class CONSTANTS
             {
-            C_AIAO_INDEX = 0,   ///< Индекс канала аналоговых данных.
+            C_AIAO_INDEX = 0,  ///< Индекс канала аналоговых данных.
 
-            P_CZ,               ///< Сдвиг нуля.
+            P_CZ,  ///< Сдвиг нуля.
             LAST_PARAM_IDX,
             };
     };
@@ -779,29 +786,30 @@ class wages_pxc_axl : public analog_io_device, public i_wages
 
         enum class ERR_VALUES : unsigned int
             {
-            ERR_OVERRANGE = 0x80000001, // Measuring range exceeded (overrange).
-            ERR_WIRE_BREAK = 0x80000002,            // Wire break.
-            ERR_SHORT_CIRCUIT = 0x80000003,         // Short-circuit.
-            ERR_INVALID_VALUE = 0x80000004,         // Measured value is invalid.
-            ERR_FAULTY_SUPPLY_VOLTAGE = 0x80000020, // Faulty supply voltage.
-            ERR_FAULTY_DEVICE = 0x80000040,         // Device faulty.
-            ERR_UNDERRANGE = 0x80000080 // Below measuring range (underrange).
+            ERR_OVERRANGE =
+                0x80000001,  // Measuring range exceeded (overrange).
+            ERR_WIRE_BREAK = 0x80000002,  // Wire break.
+            ERR_SHORT_CIRCUIT = 0x80000003,  // Short-circuit.
+            ERR_INVALID_VALUE = 0x80000004,  // Measured value is invalid.
+            ERR_FAULTY_SUPPLY_VOLTAGE = 0x80000020,  // Faulty supply voltage.
+            ERR_FAULTY_DEVICE = 0x80000040,  // Device faulty.
+            ERR_UNDERRANGE = 0x80000080  // Below measuring range (underrange).
             };
 
         enum class ERR_STATES
             {
-            ERR_OVERRANGE = -1,     // Measuring range exceeded (overrange).
-            ERR_WIRE_BREAK = -2,            // Wire break.
-            ERR_SHORT_CIRCUIT = -3,         // Short-circuit.
-            ERR_INVALID_VALUE = -4,         // Measured value is invalid.
-            ERR_FAULTY_SUPPLY_VOLTAGE = -5, // Faulty supply voltage.
-            ERR_FAULTY_DEVICE = -6,         // Device faulty.
-            ERR_UNDERRANGE = -7     // Below measuring range (underrange).
+            ERR_OVERRANGE = -1,  // Measuring range exceeded (overrange).
+            ERR_WIRE_BREAK = -2,  // Wire break.
+            ERR_SHORT_CIRCUIT = -3,  // Short-circuit.
+            ERR_INVALID_VALUE = -4,  // Measured value is invalid.
+            ERR_FAULTY_SUPPLY_VOLTAGE = -5,  // Faulty supply voltage.
+            ERR_FAULTY_DEVICE = -6,  // Device faulty.
+            ERR_UNDERRANGE = -7  // Below measuring range (underrange).
             };
 
         enum class IO_CMDS
             {
-            TARE_BIT_IDX       = 12 - 8,
+            TARE_BIT_IDX = 12 - 8,
             RESET_TARE_BIT_IDX = 13 - 8,
 
             S_TARE = 1,
@@ -815,13 +823,13 @@ class wages_pxc_axl : public analog_io_device, public i_wages
 
         enum class CONSTANTS
             {
-            C_AIAO_INDEX = 0,   ///< Индекс канала аналоговых данных.
+            C_AIAO_INDEX = 0,  ///< Индекс канала аналоговых данных.
 
-            C_TARE_TIME = 5000, ///< Время ожидания установления тары.
+            C_TARE_TIME = 5000,  ///< Время ожидания установления тары.
 
-            P_DT = 1,       ///< Пороговый фильтр времени.
-            P_CZ,           ///< Сдвиг нуля.
-            P_K,            ///< Коэффициент пропорциональности.
+            P_DT = 1,  ///< Пороговый фильтр времени.
+            P_CZ,  ///< Сдвиг нуля.
+            P_K,  ///< Коэффициент пропорциональности.
             LAST_PARAM_IDX,
             };
 
@@ -837,7 +845,7 @@ class wages_pxc_axl : public analog_io_device, public i_wages
 class wages : public analog_io_device, public i_wages
     {
     public:
-        explicit wages( const char *dev_name);
+        explicit wages( const char* dev_name );
 
         void tare() override;
         float get_weight() const;
@@ -858,15 +866,15 @@ class wages : public analog_io_device, public i_wages
 
         enum CONSTANTS
             {
-            P_NOMINAL_W = 1,    ///< Номинальная нагрузка.
-            P_RKP = 2,          ///< Рабочий коэффициент передачи
-            P_CZ = 3,           ///< Коррекция нуля
-            P_DT = 4,           ///< Коэффициент фильтра
+            P_NOMINAL_W = 1,  ///< Номинальная нагрузка.
+            P_RKP = 2,  ///< Рабочий коэффициент передачи
+            P_CZ = 3,  ///< Коррекция нуля
+            P_DT = 4,  ///< Коэффициент фильтра
 
-            ADDITIONAL_PARAM_COUNT = 4, ///< Количество параметров.
+            ADDITIONAL_PARAM_COUNT = 4,  ///< Количество параметров.
 
-            C_AI_Ud = 0,             ///< Индекс канала Ud(милливольты).
-            C_AI_Uref = 1,           ///< Индекс канала Uref(вольты).
+            C_AI_Ud = 0,  ///< Индекс канала Ud(милливольты).
+            C_AI_Uref = 1,  ///< Индекс канала Uref(вольты).
             };
 
         enum WAGES_STATES
@@ -880,8 +888,8 @@ class wages : public analog_io_device, public i_wages
 class virtual_device : public device
     {
     public:
-        virtual_device( const char *dev_name, device::DEVICE_TYPE dev_type,
-            device::DEVICE_SUB_TYPE dev_sub_type);
+        virtual_device( const char* dev_name, device::DEVICE_TYPE dev_type,
+            device::DEVICE_SUB_TYPE dev_sub_type );
 
         void direct_off() override;
 
@@ -897,13 +905,13 @@ class virtual_device : public device
 
         bool is_active() override;
 
-        void set_rt_par(unsigned int idx, float value) override;
+        void set_rt_par( unsigned int idx, float value ) override;
 
     private:
         float value = .0f;
         int state = 0;
         bool level_logic_invert = false;
-     };
+    };
 //-----------------------------------------------------------------------------
 /// @brief Устройство с одним аналоговым входом.
 ///
@@ -922,8 +930,8 @@ class analog_output : public AO1
             {
             ADDITIONAL_PARAM_COUNT = 2,
 
-            P_MIN_VALUE = 1,   ///< Индекс параметра минимального значения.
-            P_MAX_VALUE,       ///< Индекс параметра максимального значения.
+            P_MIN_VALUE = 1,  ///< Индекс параметра минимального значения.
+            P_MAX_VALUE,  ///< Индекс параметра максимального значения.
             };
     };
 //-----------------------------------------------------------------------------
@@ -951,7 +959,7 @@ class DI1 : public digital_io_device
 
         enum CONSTANTS
             {
-            DI_INDEX = 0,   ///< Индекс канала дискретного входа.
+            DI_INDEX = 0,  ///< Индекс канала дискретного входа.
 
             ADDITIONAL_PARAMS_COUNT = 1,
 
@@ -979,7 +987,6 @@ class virtual_motor : public i_motor
     private:
         float value = .0f;
         int state = 0;
-
     };
 //-----------------------------------------------------------------------------
 /// @brief Электродвигатель (мешалка, насос).
@@ -988,7 +995,7 @@ class motor : public i_motor, public io_device
     public:
         motor( const char* dev_name, device::DEVICE_SUB_TYPE sub_type );
 
-        int save_device_ex( char *buff ) const override;
+        int save_device_ex( char* buff ) const override;
 
         float get_value() const override;
 
@@ -1010,16 +1017,17 @@ class motor : public i_motor, public io_device
             C_MIN_VALUE = 0,
             C_MAX_VALUE = 100,
 
-            P_ON_TIME = 1,       ///< Индекс параметра времени включения (мс).
+            P_ON_TIME = 1,  ///< Индекс параметра времени включения (мс).
 
-            DO_INDEX = 0,        ///< Индекс канала дискретного выхода.
-            DO_INDEX_REVERSE = 1,///< Индекс канала дискретного выхода реверса.
+            DO_INDEX = 0,  ///< Индекс канала дискретного выхода.
+            DO_INDEX_REVERSE =
+                1,  ///< Индекс канала дискретного выхода реверса.
 
-            DI_INDEX       = 0,  ///< Индекс канала дискретного входа.
-                                 //   Или
+            DI_INDEX = 0,  ///< Индекс канала дискретного входа.
+            //   Или
             DI_INDEX_ERROR = 0,  ///< Индекс канала дискретного входа ошибки.
 
-            AO_INDEX = 0,        ///< Индекс канала аналогового выхода.
+            AO_INDEX = 0,  ///< Индекс канала аналогового выхода.
             };
 
         mutable uint32_t start_switch_time = get_millisec();
@@ -1029,65 +1037,66 @@ class motor : public i_motor, public io_device
 /// @brief Электродвигатель, управляемый частотным преобразователем Altivar с
 /// интерфейсной платой Ethernet.
 class motor_altivar : public i_motor, public io_device
-{
-public:
-    motor_altivar(const char *dev_name, device::DEVICE_SUB_TYPE sub_type,
-        u_int par_cnt = 0 );
+    {
+    public:
+        motor_altivar( const char* dev_name, device::DEVICE_SUB_TYPE sub_type,
+            u_int par_cnt = 0 );
 
-    int save_device_ex(char *buff) const override;
+        int save_device_ex( char* buff ) const override;
 
-    float get_value() const override;
+        float get_value() const override;
 
-    void direct_set_value(float value) override;
+        void direct_set_value( float value ) override;
 
-    void direct_set_state(int new_state) override;
+        void direct_set_state( int new_state ) override;
 
-    int  get_state() const override;
+        int get_state() const override;
 
-    void direct_on() override;
+        void direct_on() override;
 
-    void direct_off() override;
+        void direct_off() override;
 
-    void set_string_property(const char* field, const char* value) override;
+        void set_string_property(
+            const char* field, const char* value ) override;
 
-    void print() const override;
+        void print() const override;
 
-    virtual int get_params_count() const;
+        virtual int get_params_count() const;
 
-    float get_amperage() const override;
+        float get_amperage() const override;
 
-    int set_cmd( const char* prop, u_int idx, double val ) override;
+        int set_cmd( const char* prop, u_int idx, double val ) override;
 
-    float get_rpm() const
-        {
-        return static_cast<float>( rpm );
-        }
+        float get_rpm() const
+            {
+            return static_cast<float>( rpm );
+            }
 
-    altivar_node* get_atv() const
-        {
-        return atv;
-        }
+        altivar_node* get_atv() const
+            {
+            return atv;
+            }
 
-#ifndef  PTUSA_TEST
-private:
-#endif // ! PTUSA_TEST
+#ifndef PTUSA_TEST
+    private:
+#endif  // ! PTUSA_TEST
 
-    altivar_node* atv{ nullptr };
+        altivar_node* atv{ nullptr };
 
-    float freq{ .0f };
-    int reverse{ 0 };
-    int rpm{ 0 };
-    int est{ 0 };
-    float amperage{ .0f };
+        float freq{ .0f };
+        int reverse{ 0 };
+        int rpm{ 0 };
+        int est{ 0 };
+        float amperage{ .0f };
 
-    enum class CONSTANTS
-        {
-        P_ON_TIME = 1,          ///< Индекс параметра времени включения (мсек).
+        enum class CONSTANTS
+            {
+            P_ON_TIME = 1,  ///< Индекс параметра времени включения (мсек).
 
-        ADDITIONAL_PARAM_COUNT,
-        };
+            ADDITIONAL_PARAM_COUNT,
+            };
 
-    uint32_t start_switch_time{ get_millisec() };
+        uint32_t start_switch_time{ get_millisec() };
     };
 //-----------------------------------------------------------------------------
 /// @brief Электродвигатель, управляемый частотным преобразователем altivar с
@@ -1105,8 +1114,8 @@ class motor_altivar_linear : public motor_altivar
 
         enum class CONSTANTS
             {
-            P_SHAFT_DIAMETER = 1,   ///< Диаметр вала (м).
-            P_TRANSFER_RATIO,       ///< Передаточный коэффициент.
+            P_SHAFT_DIAMETER = 1,  ///< Диаметр вала (м).
+            P_TRANSFER_RATIO,  ///< Передаточный коэффициент.
 
             ADDITIONAL_PARAM_COUNT,
             };
@@ -1116,7 +1125,7 @@ class motor_altivar_linear : public motor_altivar
 class level_s : public DI1
     {
     public:
-        level_s( const char *dev_name, device::DEVICE_SUB_TYPE sub_type );
+        level_s( const char* dev_name, device::DEVICE_SUB_TYPE sub_type );
 
         bool is_active() override;
     };
@@ -1125,7 +1134,8 @@ class level_s : public DI1
 class level_s_iolink : public analog_io_device
     {
     public:
-        level_s_iolink( const char *dev_name, device::DEVICE_SUB_TYPE sub_type );
+        level_s_iolink(
+            const char* dev_name, device::DEVICE_SUB_TYPE sub_type );
 
         float get_value() const override;
 
@@ -1167,25 +1177,25 @@ class level_s_iolink : public analog_io_device
 
         struct LS_data
             {
-            uint16_t st1 :1;
-            uint16_t st2 :1;
-            int16_t  v   :14;
+                uint16_t st1 : 1;
+                uint16_t st2 : 1;
+                int16_t v : 14;
             };
         struct rev_LS_data
             {
-            int16_t  v   : 14;
-            uint16_t st1 : 1;
-            uint16_t st2 : 1;
+                int16_t v : 14;
+                uint16_t st1 : 1;
+                uint16_t st2 : 1;
             };
 
         float v = .0f;
 
         enum CONSTANTS
             {
-            C_AI_INDEX = 0,     ///< Индекс канала аналогового входа.
+            C_AI_INDEX = 0,  ///< Индекс канала аналогового входа.
 
             P_DT,
-            P_ERR,              ///< Аварийное значение уровня.
+            P_ERR,  ///< Аварийное значение уровня.
 
             LAST_PARAM_IDX,
             };
@@ -1204,8 +1214,8 @@ class flow_s : public DI1
 class state_s : public DI1
     {
     public:
-        explicit state_s( const char *dev_name ): DI1( dev_name, DT_GS, DST_GS,
-            0 )
+        explicit state_s( const char* dev_name ) :
+            DI1( dev_name, DT_GS, DST_GS, 0 )
             {
             }
     };
@@ -1214,8 +1224,8 @@ class state_s : public DI1
 class state_s_inverse : public DI1
     {
     public:
-        explicit state_s_inverse( const char* dev_name ) : DI1( dev_name, DT_GS,
-            DST_GS_INVERSE, 0, 1 )
+        explicit state_s_inverse( const char* dev_name ) :
+            DI1( dev_name, DT_GS, DST_GS_INVERSE, 0, 1 )
             {
             }
 
@@ -1229,8 +1239,8 @@ class state_s_inverse : public DI1
 class diff_pressure : public DI1
     {
     public:
-        explicit diff_pressure( const char* dev_name ) : DI1( dev_name, DT_PDS,
-            DST_PDS_VIRT, 0 )
+        explicit diff_pressure( const char* dev_name ) :
+            DI1( dev_name, DT_PDS, DST_PDS_VIRT, 0 )
             {
             }
     };
@@ -1239,8 +1249,8 @@ class diff_pressure : public DI1
 class temperature_signal : public DI1
     {
     public:
-        explicit temperature_signal( const char* dev_name ) : DI1( dev_name, DT_TS,
-            DST_TS_VIRT, 0 )
+        explicit temperature_signal( const char* dev_name ) :
+            DI1( dev_name, DT_TS, DST_TS_VIRT, 0 )
             {
             }
     };
@@ -1281,11 +1291,11 @@ class lamp : public DO1
     };
 //-----------------------------------------------------------------------------
 /// @brief Базовый счетчик.
-class base_counter: public i_counter, public device, public io_device
+class base_counter : public i_counter, public device, public io_device
     {
     public:
-        base_counter( const char* dev_name, DEVICE_SUB_TYPE sub_type,
-            int extra_par_cnt );
+        base_counter(
+            const char* dev_name, DEVICE_SUB_TYPE sub_type, int extra_par_cnt );
 
         void evaluate_io() override;
 
@@ -1329,8 +1339,8 @@ class base_counter: public i_counter, public device, public io_device
         /// @brief Получение максимального значение счетчика от устройства.
         virtual float get_max_raw_value() const = 0;
 
-        float calculate_quantity( float& value, float& last_read_value,
-            bool& is_first_read ) const;
+        float calculate_quantity(
+            float& value, float& last_read_value, bool& is_first_read ) const;
 
         /// @brief Получение значения счетчика (c учетом паузы).
         u_int get_quantity() const override;
@@ -1362,7 +1372,7 @@ class base_counter: public i_counter, public device, public io_device
 
         void set_abs_value( float new_value );
 
-        const int MAX_OVERFLOW = 300;   ///< Максимальное переполнение за цикл.
+        const int MAX_OVERFLOW = 300;  ///< Максимальное переполнение за цикл.
 
         bool non_working_pump_flag{ false };
         uint32_t start_pump_working_time = get_millisec();
@@ -1372,31 +1382,32 @@ class base_counter: public i_counter, public device, public io_device
         uint32_t start_pump_working_time_self_flow = get_millisec();
         u_int_4 counter_prev_value_self_flow = 0;
 
-        std::vector < device* > motors;
+        std::vector< device* > motors;
 
-        bool is_first_read = true;      ///< Флаг первой установки значения.
+        bool is_first_read = true;  ///< Флаг первой установки значения.
         float value = .0f;
         float last_read_value = 0.f;
 
         bool abs_is_first_read = true;
-        float abs_value = 0.f;  ///< Абсолютное значение (не становится на паузу).
+        float abs_value =
+            0.f;  ///< Абсолютное значение (не становится на паузу).
         float abs_last_read_value = 0.f;
 
         STATES day_t1_state = STATES::S_WORK;
-        float day_t1_value = .0f;               // Текущее значение за день.
+        float day_t1_value = .0f;  // Текущее значение за день.
         float prev_day_t1_value = .0f;
         STATES day_t2_state = STATES::S_WORK;
         float day_t2_value = .0f;
         float prev_day_t2_value = .0f;
 
-        int c_day = get_time().tm_yday;         // Текущий день.
+        int c_day = get_time().tm_yday;  // Текущий день.
     };
 //-----------------------------------------------------------------------------
 /// @brief Счетчик.
 class counter : public base_counter
     {
     public:
-        counter( const char *dev_name,
+        counter( const char* dev_name,
             DEVICE_SUB_TYPE sub_type = device::DST_FQT,
             int extra_par_cnt = ADDITIONAL_PARAMS_COUNT );
 
@@ -1408,13 +1419,13 @@ class counter : public base_counter
 
         u_long get_pump_dt() const override;
         float get_min_flow() const override;
-    private:
 
+    private:
         enum CONSTANTS
             {
             ADDITIONAL_PARAMS_COUNT = 0,
 
-            AI_Q_INDEX    = 0,  ///< Индекс канала аналогового входа (объем).
+            AI_Q_INDEX = 0,  ///< Индекс канала аналогового входа (объем).
             };
     };
 //-----------------------------------------------------------------------------
@@ -1423,7 +1434,7 @@ class counter : public base_counter
 class counter_f : public counter
     {
     public:
-        explicit counter_f( const char *dev_name );
+        explicit counter_f( const char* dev_name );
 
         int get_state() const override;
 
@@ -1508,9 +1519,9 @@ class counter_iolink : public base_counter
         float get_flow_gradient() const;
         enum class CONSTANTS
             {
-            AI_INDEX = 0,   ///< Индекс канала аналогового входа.
+            AI_INDEX = 0,  ///< Индекс канала аналогового входа.
 
-            MAX_OVERFLOW = 300, ///< Максимальное переполнение за цикл
+            MAX_OVERFLOW = 300,  ///< Максимальное переполнение за цикл
 
             P_CZ = 1,
             P_DT,
@@ -1521,23 +1532,23 @@ class counter_iolink : public base_counter
 
         struct in_data
             {
-            float totalizer;    //Quantity meter which continuously totals the
-                                //volumetric flow since the last reset.
-            int16_t flow;       //Current flow.
+                float totalizer;  //Quantity meter which continuously totals the
+                //volumetric flow since the last reset.
+                int16_t flow;  //Current flow.
 
-            uint16_t out2 : 1;  //Status depends on [OU2].
-            uint16_t out1 : 1;  //Status depends on [OU1].
-            int16_t temperature : 14;   //Current temperature.
+                uint16_t out2 : 1;  //Status depends on [OU2].
+                uint16_t out1 : 1;  //Status depends on [OU1].
+                int16_t temperature : 14;  //Current temperature.
             };
 
         /// @brief Process data for IFM.SMFx20 devices (SMF420, SMF320, ...).
         struct in_data_smfx20
             {
-            float totalizer;        ///< Totalizer value (volumetric flow).
-            int16_t flow;           ///< Current flow.
-            int16_t temperature;    ///< Current temperature.
-            uint16_t conductivity;  ///< Current conductivity (µS/cm).
-            uint16_t status;        ///< Device status.
+                float totalizer;  ///< Totalizer value (volumetric flow).
+                int16_t flow;  ///< Current flow.
+                int16_t temperature;  ///< Current temperature.
+                uint16_t conductivity;  ///< Current conductivity (µS/cm).
+                uint16_t status;  ///< Device status.
             };
 
         in_data in_info{ 0, 0, 0, 0, 0 };
@@ -1547,17 +1558,16 @@ class counter_iolink : public base_counter
     };
 //-----------------------------------------------------------------------------
 /// @brief Сигнальная колонна с дискретным подключением.
-    class signal_column_discrete : public signal_column
-        {
-        public:
-            signal_column_discrete( const char* dev_name,
-                int red_lamp_channel = 1, int yellow_lamp_channel = 2,
-                int green_lamp_channel = 3, int blue_lamp_channel = 0,
-                int siren_channel = 4 );
+class signal_column_discrete : public signal_column
+    {
+    public:
+        signal_column_discrete( const char* dev_name, int red_lamp_channel = 1,
+            int yellow_lamp_channel = 2, int green_lamp_channel = 3,
+            int blue_lamp_channel = 0, int siren_channel = 4 );
 
-        protected:
-            void process_DO( u_int n, DO_state state, const char* name ) override;
-        };
+    protected:
+        void process_DO( u_int n, DO_state state, const char* name ) override;
+    };
 //-----------------------------------------------------------------------------
 /// @brief Сигнальная колонна с IO-Link.
 ///
@@ -1567,7 +1577,8 @@ class signal_column_iolink : public signal_column
     public:
         explicit signal_column_iolink( const char* dev_name );
 
-        void set_string_property( const char* field, const char* value ) override;
+        void set_string_property(
+            const char* field, const char* value ) override;
 
         void evaluate_io() override;
 
@@ -1580,13 +1591,13 @@ class signal_column_iolink : public signal_column
 
         struct out_data
             {
-            uint16_t unused1 : 8;
-            bool switch_ch1 : 1;
-            bool switch_ch2 : 1;
-            bool switch_ch3 : 1;
-            bool switch_ch4 : 1;
-            bool switch_ch5 : 1;
-            uint16_t unused2 : 3;
+                uint16_t unused1 : 8;
+                bool switch_ch1 : 1;
+                bool switch_ch2 : 1;
+                bool switch_ch3 : 1;
+                bool switch_ch4 : 1;
+                bool switch_ch5 : 1;
+                uint16_t unused2 : 3;
             };
 
         static out_data stub_out_info;
@@ -1614,7 +1625,8 @@ class camera : public i_camera, public device, public io_device
 
         int set_cmd( const char* prop, u_int idx, double val ) override;
 
-        void set_string_property( const char* field, const char* value ) override;
+        void set_string_property(
+            const char* field, const char* value ) override;
 
         int get_result( int n = 1 ) const override;
 
@@ -1682,14 +1694,17 @@ class camera_DI3 : public camera_DI2
 ///
 /// Необходимо для возвращения результата поиска устройства с несуществующим
 /// номером. Методы данного класса ничего не делают.
-class dev_stub final : public i_counter, public valve, public i_wages,
-    public camera, public signal_column
+class dev_stub final : public i_counter,
+                       public valve,
+                       public i_wages,
+                       public camera,
+                       public signal_column
     {
     public:
         dev_stub();
 
         u_int_4 get_serial_n() const override;
-        void    print() const override;
+        void print() const override;
 
         float get_value() const override;
         void direct_set_value( float new_value ) override;
@@ -1711,17 +1726,17 @@ class dev_stub final : public i_counter, public valve, public i_wages,
 
         VALVE_STATE get_valve_state() const override;
 
-        void    pause() override;
-        void    start() override;
-        void    reset() override;
-        u_int   get_quantity() const override;
-        float   get_flow() const override;
+        void pause() override;
+        void start() override;
+        void reset() override;
+        u_int get_quantity() const override;
+        float get_flow() const override;
 
         u_long get_pump_dt() const override;
         float get_min_flow() const override;
 
         u_int get_abs_quantity() const override;
-        void  abs_reset() override;
+        void abs_reset() override;
 
         void pause_daily( DAY_CTR n = DAY_CTR::DAY_T1 ) override;
         void start_daily( DAY_CTR n = DAY_CTR::DAY_T1 ) override;
@@ -1732,12 +1747,12 @@ class dev_stub final : public i_counter, public valve, public i_wages,
     };
 //-----------------------------------------------------------------------------
 //-----------------------------------------------------------------------------
-class threshold_regulator :public device
+class threshold_regulator : public device
     {
     public:
         enum class PARAM
             {
-            P_is_reverse = 1,	        ///Обратного (реверсивного) действия.
+            P_is_reverse = 1,  ///Обратного (реверсивного) действия.
             P_delta,
 
             PARAMS_COUNT
@@ -1759,7 +1774,8 @@ class threshold_regulator :public device
 
         void direct_set_value( float val ) override;
 
-        void set_string_property( const char* field, const char* value ) override;
+        void set_string_property(
+            const char* field, const char* value ) override;
 
     private:
         enum class STATE
@@ -1780,8 +1796,9 @@ class threshold_regulator :public device
 class power_unit : public analog_io_device
     {
     public:
-        power_unit( const char* dev_name,
-            device::DEVICE_SUB_TYPE sub_type = device::DEVICE_SUB_TYPE::DST_G_IOL_4 );
+        power_unit(
+            const char* dev_name, device::DEVICE_SUB_TYPE sub_type =
+                                      device::DEVICE_SUB_TYPE::DST_G_IOL_4 );
 
         void direct_on() override;
         void direct_off() override;
@@ -1803,7 +1820,7 @@ class power_unit : public analog_io_device
             cmd_time = t;
             }
 
-        static unsigned int WAIT_DATA_TIME; // Ожидание записи данных, мс.
+        static unsigned int WAIT_DATA_TIME;  // Ожидание записи данных, мс.
         static unsigned int WAIT_CMD_TIME;  // Ожидание записи команды, мс.
 #endif
 
@@ -1817,101 +1834,101 @@ class power_unit : public analog_io_device
         static float decode_nominal_current( uint8_t code );
 
         float v = .0f;  // Sum of output currents.
-        int st = 0;     // Status - хотя бы один из каналов активен.
-        int err = 0;    // DC status.
+        int st = 0;  // Status - хотя бы один из каналов активен.
+        int err = 0;  // DC status.
 
         enum CONSTANTS
             {
-            C_AIAO_INDEX = 0,   ///< Индекс канала аналоговых данных.
+            C_AIAO_INDEX = 0,  ///< Индекс канала аналоговых данных.
             };
 
         bool is_processing_cmd = false;
         uint32_t cmd_time = 0;
 
-#pragma pack(push, 1)
+#pragma pack( push, 1 )
         struct process_data_in
             {
-            uint8_t out_voltage_2 : 2;          // Byte 0.
-            bool                  : 1;
-            bool out_power_90     : 1;
-            bool DC_not_OK        : 1;
-            uint8_t               : 0;
+                uint8_t out_voltage_2 : 2;  // Byte 0.
+                bool : 1;
+                bool out_power_90 : 1;
+                bool DC_not_OK : 1;
+                uint8_t : 0;
 
-            uint8_t out_voltage;                // Byte 1.
+                uint8_t out_voltage;  // Byte 1.
 
-            uint8_t sum_currents_2 : 2;         // Byte 2.
-            uint8_t                : 0;
-            uint8_t sum_currents   : 8;         // Byte 3.
+                uint8_t sum_currents_2 : 2;  // Byte 2.
+                uint8_t : 0;
+                uint8_t sum_currents : 8;  // Byte 3.
 
-            int8_t status_ch4 : 2;              // Byte 4.
-            int8_t status_ch3 : 2;
-            int8_t status_ch2 : 2;
-            int8_t status_ch1 : 2;
-            int8_t status_ch8 : 2;              // Byte 5.
-            int8_t status_ch7 : 2;
-            int8_t status_ch6 : 2;
-            int8_t status_ch5 : 2;
+                int8_t status_ch4 : 2;  // Byte 4.
+                int8_t status_ch3 : 2;
+                int8_t status_ch2 : 2;
+                int8_t status_ch1 : 2;
+                int8_t status_ch8 : 2;  // Byte 5.
+                int8_t status_ch7 : 2;
+                int8_t status_ch6 : 2;
+                int8_t status_ch5 : 2;
 
-            uint8_t nominal_current_ch2 : 3;    // Byte 6.
-            uint8_t nominal_current_ch1 : 3;
-            uint8_t                     : 2;
-            uint8_t nominal_current_ch4 : 3;    // Byte 7.
-            uint8_t nominal_current_ch3 : 3;
-            uint8_t                     : 2;
-            uint8_t nominal_current_ch6 : 3;    // Byte 8.
-            uint8_t nominal_current_ch5 : 3;
-            uint8_t                     : 2;
-            uint8_t nominal_current_ch8 : 3;    // Byte 9.
-            uint8_t nominal_current_ch7 : 3;
-            uint8_t                     : 2;
+                uint8_t nominal_current_ch2 : 3;  // Byte 6.
+                uint8_t nominal_current_ch1 : 3;
+                uint8_t : 2;
+                uint8_t nominal_current_ch4 : 3;  // Byte 7.
+                uint8_t nominal_current_ch3 : 3;
+                uint8_t : 2;
+                uint8_t nominal_current_ch6 : 3;  // Byte 8.
+                uint8_t nominal_current_ch5 : 3;
+                uint8_t : 2;
+                uint8_t nominal_current_ch8 : 3;  // Byte 9.
+                uint8_t nominal_current_ch7 : 3;
+                uint8_t : 2;
 
-            uint8_t load_current_ch1 : 8;       // Byte 10.
-            uint8_t load_current_ch2 : 8;       // Byte 11.
-            uint8_t load_current_ch3 : 8;       // Byte 12.
-            uint8_t load_current_ch4 : 8;       // Byte 13.
-            uint8_t load_current_ch5 : 8;       // Byte 14.
-            uint8_t load_current_ch6 : 8;       // Byte 15.
-            uint8_t load_current_ch7 : 8;       // Byte 16.
-            uint8_t load_current_ch8 : 8;       // Byte 17.
+                uint8_t load_current_ch1 : 8;  // Byte 10.
+                uint8_t load_current_ch2 : 8;  // Byte 11.
+                uint8_t load_current_ch3 : 8;  // Byte 12.
+                uint8_t load_current_ch4 : 8;  // Byte 13.
+                uint8_t load_current_ch5 : 8;  // Byte 14.
+                uint8_t load_current_ch6 : 8;  // Byte 15.
+                uint8_t load_current_ch7 : 8;  // Byte 16.
+                uint8_t load_current_ch8 : 8;  // Byte 17.
             };
-#pragma pack(pop)
+#pragma pack( pop )
 
-#pragma pack(push, 1)
+#pragma pack( push, 1 )
         struct process_data_out
             {
-            bool channel_status_after_reset : 1;    // Byte 0.
-            uint8_t                         : 6;
-            bool valid_flag                 : 1;
+                bool channel_status_after_reset : 1;  // Byte 0.
+                uint8_t : 6;
+                bool valid_flag : 1;
 
-            uint8_t nominal_current_ch2 : 3;        // Byte 1.
-            uint8_t nominal_current_ch1 : 3;
-            uint8_t                     : 0;
-            uint8_t nominal_current_ch4 : 3;        // Byte 2.
-            uint8_t nominal_current_ch3 : 3;
-            uint8_t                     : 0;
-            uint8_t nominal_current_ch6 : 3;        // Byte 3.
-            uint8_t nominal_current_ch5 : 3;
-            uint8_t                     : 0;
-            uint8_t nominal_current_ch8 : 3;        // Byte 4.
-            uint8_t nominal_current_ch7 : 3;
-            uint8_t                     : 0;
+                uint8_t nominal_current_ch2 : 3;  // Byte 1.
+                uint8_t nominal_current_ch1 : 3;
+                uint8_t : 0;
+                uint8_t nominal_current_ch4 : 3;  // Byte 2.
+                uint8_t nominal_current_ch3 : 3;
+                uint8_t : 0;
+                uint8_t nominal_current_ch6 : 3;  // Byte 3.
+                uint8_t nominal_current_ch5 : 3;
+                uint8_t : 0;
+                uint8_t nominal_current_ch8 : 3;  // Byte 4.
+                uint8_t nominal_current_ch7 : 3;
+                uint8_t : 0;
 
-            bool prioritization : 1;                // Byte 5.
-            uint8_t             : 0;
+                bool prioritization : 1;  // Byte 5.
+                uint8_t : 0;
 
-            bool switch_ch8 : 1;                    // Byte 6.
-            bool switch_ch7 : 1;
-            bool switch_ch6 : 1;
-            bool switch_ch5 : 1;
-            bool switch_ch4 : 1;
-            bool switch_ch3 : 1;
-            bool switch_ch2 : 1;
-            bool switch_ch1 : 1;
+                bool switch_ch8 : 1;  // Byte 6.
+                bool switch_ch7 : 1;
+                bool switch_ch6 : 1;
+                bool switch_ch5 : 1;
+                bool switch_ch4 : 1;
+                bool switch_ch3 : 1;
+                bool switch_ch2 : 1;
+                bool switch_ch1 : 1;
             };
-#pragma pack(pop)
+#pragma pack( pop )
 
 #ifndef PTUSA_TEST
-        static unsigned int WAIT_DATA_TIME; // Ожидание записи данных, мс.
+        static unsigned int WAIT_DATA_TIME;  // Ожидание записи данных, мс.
         static unsigned int WAIT_CMD_TIME;  // Ожидание записи команды, мс.
 #endif
 
@@ -1955,16 +1972,16 @@ class converter_iolink_ao : public analog_io_device
     private:
 #endif
 
-        uint16_t calc_setpoint( float &val ) const;
+        uint16_t calc_setpoint( float& val ) const;
         void calculate_state();
 
-        float v1{}; // Выходное значение канала 1.
-        float v2{}; // Выходное значение канала 2.
+        float v1{};  // Выходное значение канала 1.
+        float v2{};  // Выходное значение канала 2.
         int err{};  // Ошибка.
 
         enum CONSTANTS
             {
-            C_AIAO_INDEX = 0,   ///< Индекс канала аналоговых данных.
+            C_AIAO_INDEX = 0,  ///< Индекс канала аналоговых данных.
 
             C_MIN_VALUE = 4'000,
             C_MAX_VALUE = 20'000
@@ -1973,19 +1990,19 @@ class converter_iolink_ao : public analog_io_device
         static constexpr int PROCESS_DATA_IN_SIZE{ 1 };
         static constexpr int PROCESS_DATA_OUT_SIZE{ 4 };
 
-#pragma pack(push, 1)
+#pragma pack( push, 1 )
         struct process_data_in
             {
-            uint8_t reserved : 4;	    // Зарезервированные биты.
-            uint8_t device_status : 4;	// Статус устройства.
+                uint8_t reserved : 4;  // Зарезервированные биты.
+                uint8_t device_status : 4;  // Статус устройства.
             };
 
         struct process_data_out
             {
-            uint16_t setpoint_ch1;      // Уставка канала 1 (диапазон 0-22000).
-            uint16_t setpoint_ch2;      // Уставка канала 2 (диапазон 0-22000).
+                uint16_t setpoint_ch1;  // Уставка канала 1 (диапазон 0-22000).
+                uint16_t setpoint_ch2;  // Уставка канала 2 (диапазон 0-22000).
             };
-#pragma pack(pop)
+#pragma pack( pop )
 
         process_data_in p_data_in{};
 
@@ -2002,9 +2019,9 @@ class timer
     public:
         enum STATE
             {
-            S_STOP = 0, ///< Не работает.
-            S_WORK,     ///< Работает.
-            S_PAUSE,    ///< Пауза.
+            S_STOP = 0,  ///< Не работает.
+            S_WORK,  ///< Работает.
+            S_PAUSE,  ///< Пауза.
             };
 
         /// @brief Сохранение состояния устройства в буфер.
@@ -2012,14 +2029,14 @@ class timer
         /// @param buff [ out ] - адрес буфера, куда будут записываться данные.
         ///
         /// @return >= 0 - количество записанных байт.
-        int save( char *buff );
+        int save( char* buff );
 
         /// @brief Считывание состояния устройства из буфера.
         ///
         /// @param buff [ out ] - адрес буфера, откуда будут считываться данные.
         ///
         /// @return >= 0 - количество считанных байт.
-        int load( char *buff );
+        int load( char* buff );
 
         /// @brief Получение размера буфера для сохранения состояния устройства.
         ///
@@ -2046,7 +2063,7 @@ class timer
         /// @brief Получение времени работы таймера.
         ///
         /// @return - время работы таймера.
-        uint32_t  get_work_time() const;
+        uint32_t get_work_time() const;
 
         /// @brief Установка задания таймера.
         ///
@@ -2056,7 +2073,7 @@ class timer
         /// @brief Получение задания таймера.
         ///
         /// @return - задание таймера.
-        uint32_t  get_countdown_time() const;
+        uint32_t get_countdown_time() const;
 
         /// @brief Получение состояния таймера.
         ///
@@ -2064,11 +2081,12 @@ class timer
         STATE get_state() const;
 
     private:
-        uint32_t  last_time = 0;          ///< Время, когда таймер был запущен/остановлен.
-        uint32_t  work_time = 0;          ///< Время работы таймера.
+        uint32_t last_time =
+            0;  ///< Время, когда таймер был запущен/остановлен.
+        uint32_t work_time = 0;  ///< Время работы таймера.
 
-        STATE   state = STATE::S_STOP;  ///< Состояние.
-        uint32_t  countdown_time = 0;     ///< Задание таймера.
+        STATE state = STATE::S_STOP;  ///< Состояние.
+        uint32_t countdown_time = 0;  ///< Задание таймера.
     };
 //-----------------------------------------------------------------------------
 /// @brief таймер.
@@ -2088,16 +2106,16 @@ class timer_manager
         ///
         /// @return - таймер с нужным индексом, заглушка - в случае выхода за
         /// диапазон.
-        timer* operator[] ( unsigned int index );
+        timer* operator[]( unsigned int index );
 
         /// @brief Количество таймеров.
         int get_count() const;
 
     private:
-        u_int   timers_cnt;         ///< Количество таймеров.
-        timer   *timers = nullptr;  ///< Таймеры.
+        u_int timers_cnt;  ///< Количество таймеров.
+        timer* timers = nullptr;  ///< Таймеры.
 
-        timer   stub;               ///< Заглушка.
+        timer stub;  ///< Заглушка.
     };
 
-#endif // PAC_DEVICES_H
+#endif  // PAC_DEVICES_H

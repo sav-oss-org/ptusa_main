@@ -10,7 +10,8 @@ void print_binary( unsigned int c )
         }
 
     u_int_4 mask = 0x80000000L;
-    while( !( c & mask ) ) mask >>= 1;
+    while ( !( c & mask ) )
+        mask >>= 1;
     while ( mask )
         {
         printf( "%d", ( c & mask ) > 0 ? 1 : 0 );

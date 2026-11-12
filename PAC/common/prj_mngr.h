@@ -23,17 +23,17 @@
 ///
 class project_manager
     {
-    // Friendly класс предназначен только для тестирования
-    // и не должен использоваться в других целях
+            // Friendly класс предназначен только для тестирования
+            // и не должен использоваться в других целях
 #ifdef PTUSA_TEST
-    friend class test_project_manager;
+        friend class test_project_manager;
 #endif
     public:
         /// @brief Обработка параметров командной строки.
         ///
         /// @param argc - количество параметров.
         /// @param argv - массив параметров.
-        int proc_main_params( int argc, const char *argv[] );
+        int proc_main_params( int argc, const char* argv[] );
 
         /// @brief Применение сохраненного режима OPC UA.
         ///
@@ -64,8 +64,9 @@ class project_manager
 
         std::string main_script = "";//Скрипт Lua.
         std::string sys_path = "";   //Путь к системным скриптам Lua.
-        std::string path = "";       //Путь к описывающим проект скриптам Lua.
-        std::string extra_paths = "";//Дополнительный путь к user-скриптам Lua.
+        std::string path = "";  //Путь к описывающим проект скриптам Lua.
+        std::string extra_paths =
+            "";  //Дополнительный путь к user-скриптам Lua.
 
         unsigned int sleep_time_ms = 0;
 
@@ -83,9 +84,9 @@ class project_manager
         OPC_MODE opc_mode = OPC_MODE::UNDEFINED;
 
         /// @brief Единственный экземпляр класса.
-        static auto_smart_ptr < project_manager > instance;
+        static auto_smart_ptr< project_manager > instance;
     };
 //-----------------------------------------------------------------------------
 #define G_PROJECT_MANAGER project_manager::get_instance()
 //-----------------------------------------------------------------------------
-#endif // PRJ_MANAGER_H
+#endif  // PRJ_MANAGER_H

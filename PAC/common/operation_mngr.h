@@ -54,7 +54,8 @@ class action
         /// @return false Нет устройств, над которыми что-то делается.
         virtual bool is_empty() const;
 
-        virtual void print( const char* prefix = "", bool new_line = true ) const;
+        virtual void print(
+            const char* prefix = "", bool new_line = true ) const;
 
         /// @brief Проверка действия.
         ///
@@ -85,7 +86,7 @@ class action
         /// @param [in] dev Устройство.
         /// @param [in] group Группа устройства.
         /// @param [in] subgroup Подгруппа устройств.
-        virtual void add_dev( device *dev, u_int group = MAIN_GROUP,
+        virtual void add_dev( device* dev, u_int group = MAIN_GROUP,
             u_int subgroup = MAIN_SUBGROUP );
 
         /// @brief Поиск устройства с какой-либо ошибкой.
@@ -98,7 +99,7 @@ class action
         /// @brief Установка параметров для действия.
         ///
         /// @param [in] par Параметры.
-        virtual void set_params( const saved_params_float *new_par )
+        virtual void set_params( const saved_params_float* new_par )
             {
             par = new_par;
             }
@@ -130,8 +131,8 @@ class action
         /// @param [in] name Название свойства.
         /// @idx [in] index Индекс свойства.
         /// @param [in] value Значение свойства.
-        virtual int set_int_property( const char* prop_name, size_t idx,
-            int value );
+        virtual int set_int_property(
+            const char* prop_name, size_t idx, int value );
 
         enum CONSTANTS
             {
@@ -146,17 +147,17 @@ class action
         u_int subgropups_cnt;
 
         // Устройства.
-        std::vector < std::vector< std::vector< device* > > > devices;
-        std::string name;                           ///< Имя действия.
+        std::vector< std::vector< std::vector< device* > > > devices;
+        std::string name;  ///< Имя действия.
 
-        const saved_params_float* par = nullptr;    ///< Параметры действия.
-        std::vector< int >        par_idx;  ///< Индексы параметров действия.
+        const saved_params_float* par = nullptr;  ///< Параметры действия.
+        std::vector< int > par_idx;  ///< Индексы параметров действия.
     };
 //-----------------------------------------------------------------------------
 /// <summary>
 /// Включение устройств.
 /// </summary>
-class on_action: public action
+class on_action : public action
     {
     public:
         on_action();
@@ -196,10 +197,10 @@ class on_reverse_action : public action
 /// <summary>
 /// Выключение устройств.
 /// </summary>
-class off_action: public action
+class off_action : public action
     {
     public:
-        off_action(): action( "Выключать" )
+        off_action() : action( "Выключать" )
             {
             }
 
@@ -225,10 +226,10 @@ class delay_off_action : public action
 /// <summary>
 /// Промывка седел.
 /// </summary>
-class open_seat_action: public action
+class open_seat_action : public action
     {
     public:
-        open_seat_action( bool is_mode, operation_state *owner );
+        open_seat_action( bool is_mode, operation_state* owner );
 
         void init() override;
         void evaluate() override;
@@ -244,9 +245,10 @@ class open_seat_action: public action
         /// @param [in] dev Устройство.
         /// @param [in] group Дополнительный параметр.
         /// @param [in] seat_type Дополнительный параметр.
-        void add_dev( device *dev, u_int group, u_int seat_type ) override;
+        void add_dev( device* dev, u_int group, u_int seat_type ) override;
 
-        virtual void print( const char* prefix = "", bool new_line = true ) const;
+        virtual void print(
+            const char* prefix = "", bool new_line = true ) const;
 
         bool is_empty() const override;
 
@@ -258,35 +260,37 @@ class open_seat_action: public action
             P_OPEN_LOWER,
             };
 
-        PHASES phase;      ///< Текущий этап.
-        PHASES next_phase; ///< Следующий этап.
+        PHASES phase;  ///< Текущий этап.
+        PHASES next_phase;  ///< Следующий этап.
 
         u_int active_group_n;  ///< Номер промываемой сейчас группы.
 
-        uint32_t wait_time;      ///< Время ожидания перед промыванием седел.
+        uint32_t wait_time;  ///< Время ожидания перед промыванием седел.
 
         /// Седла.
         std::vector< std::vector< device* > > wash_upper_seat_devices;
         std::vector< std::vector< device* > > wash_lower_seat_devices;
 
-        uint32_t start_cycle_time; ///< Время старта цикла (ожидания или промывки).
+        uint32_t
+            start_cycle_time;  ///< Время старта цикла (ожидания или промывки).
 
-        bool is_mode;             ///< Является ли шагом операции.
+        bool is_mode;  ///< Является ли шагом операции.
         operation_state* owner;
 
         void switch_off( std::vector< std::vector< device* > > devices,
             bool is_check = false );
 
-        void switch_off_group( std::vector< device* > group,
-            bool is_check = false );
+        void switch_off_group(
+            std::vector< device* > group, bool is_check = false );
 
-        void switch_on_group( std::vector< device* > group, valve::VALVE_STATE st );
+        void switch_on_group(
+            std::vector< device* > group, valve::VALVE_STATE st );
     };
 //-----------------------------------------------------------------------------
 /// <summary>
 /// Пары DI->DO.
 /// </summary>
-class DI_DO_action: public action
+class DI_DO_action : public action
     {
     public:
         explicit DI_DO_action( std::string name = "Группы DIs->DOs",
@@ -298,15 +302,15 @@ class DI_DO_action: public action
 
         void finalize() override;
 
-        void print( const char* prefix = "",
-            bool new_line = true ) const override;
+        void print(
+            const char* prefix = "", bool new_line = true ) const override;
 
         /// @brief Установка свойства для группы DI->DO.
         ///
         /// Используется для конфигурирования логики обработки сигналов DI
         /// (типа логики OR/AND) при управлении соответствующими DO.
-        int set_int_property( const char* prop_name, size_t idx,
-            int value ) override;
+        int set_int_property(
+            const char* prop_name, size_t idx, int value ) override;
 
         bool is_di_device_type( device::DEVICE_TYPE device_type ) const;
 
@@ -322,10 +326,10 @@ class DI_DO_action: public action
             AND = 1  // All DI must be active to turn on all DO.
             };
 
-        std::vector < LOGIC_TYPE > logic_type;
+        std::vector< LOGIC_TYPE > logic_type;
 
-        virtual void evaluate_DO( const std::vector< device* >& devices,
-            LOGIC_TYPE logic_t );
+        virtual void evaluate_DO(
+            const std::vector< device* >& devices, LOGIC_TYPE logic_t );
 
         bool is_inverted{ false };
     };
@@ -348,10 +352,10 @@ class AI_AO_action : public action
 /// <summary>
 /// Проверка дискретных входных сигналов.
 /// </summary>
-class required_DI_action: public action
+class required_DI_action : public action
     {
     public:
-        required_DI_action(): action( "Сигналы для включения" )
+        required_DI_action() : action( "Сигналы для включения" )
             {
             }
 
@@ -380,29 +384,31 @@ class checked_devices_action final : public action
 /// <summary>
 /// Мойка линии.
 /// </summary>
-class wash_action: public action
+class wash_action : public action
     {
     public:
-        wash_action(): action( "Устройства DI's DO's DEV's R_DEV's AI", G_SUBGROUPS_CNT )
+        wash_action() :
+            action( "Устройства DI's DO's DEV's R_DEV's AI", G_SUBGROUPS_CNT )
             {
             }
 
         void evaluate() override;
 
-        virtual void print( const char* prefix = "", bool new_line = true ) const;
+        virtual void print(
+            const char* prefix = "", bool new_line = true ) const;
 
         void finalize() override;
 
     private:
         enum GROUPS
             {
-            G_DI = 0,       //Входные сигналы запроса включения устройств.
-            G_DO,           //Выходные сигналы "ОК".
-            G_DEV,          //Устройства, включаемые по запросу.
-            G_REV_DEV,      //Реверсные устройства, включаемые по запросу.
-            G_PUMP_FREQ,    //Задания производительности.
+            G_DI = 0,  //Входные сигналы запроса включения устройств.
+            G_DO,  //Выходные сигналы "ОК".
+            G_DEV,  //Устройства, включаемые по запросу.
+            G_REV_DEV,  //Реверсные устройства, включаемые по запросу.
+            G_PUMP_FREQ,  //Задания производительности.
 
-            G_SUBGROUPS_CNT,   //Количество групп.
+            G_SUBGROUPS_CNT,  //Количество групп.
             };
     };
 //-----------------------------------------------------------------------------
@@ -415,33 +421,33 @@ class jump_if_action : public action
     public:
         explicit jump_if_action( const char* name );
 
-        bool is_jump( int &next, std::string &reason );
+        bool is_jump( int& next, std::string& reason );
 
-        int set_int_property( const char* prop_name, size_t idx,
-            int value ) override;
+        int set_int_property(
+            const char* prop_name, size_t idx, int value ) override;
 
-        int get_int_property( const char* prop_name, size_t idx ) ;
+        int get_int_property( const char* prop_name, size_t idx );
 
         /// @brief Завершения действия.
         void finalize() override;
 
-        void print( const char* prefix = "",
-            bool new_line = true ) const override;
+        void print(
+            const char* prefix = "", bool new_line = true ) const override;
 
     private:
-        bool check( const std::vector< device* > &checked_devices,
+        bool check( const std::vector< device* >& checked_devices,
             bool check_is_opened ) const;
 
         enum GROUPS
             {
-            G_ON_DEVICES = 0,   //Устройства, которые должны быть включены.
-            G_OFF_DEVICES,      //Устройства, которые должны быть отключены.
+            G_ON_DEVICES = 0,  //Устройства, которые должны быть включены.
+            G_OFF_DEVICES,  //Устройства, которые должны быть отключены.
 
-            G_GROUPS_CNT,       //Количество групп.
+            G_GROUPS_CNT,  //Количество групп.
             };
 
         // Устройства.
-        std::vector < int > next_n;
+        std::vector< int > next_n;
     };
 //-----------------------------------------------------------------------------
 /// <summary>
@@ -492,7 +498,7 @@ class step
             A_JUMP_IF,
             };
 
-        step( std::string name, operation_state *owner, bool is_mode = false );
+        step( std::string name, operation_state* owner, bool is_mode = false );
 
         ~step();
 
@@ -502,7 +508,7 @@ class step
         ///
         /// @return - значение действия с заданным индексом. Если индекс
         /// выходит за диапазон, возвращается значение 0.
-        action* operator[] ( int idx );
+        action* operator[]( int idx );
 
         /// @brief Проверка возможности выполнения шага.
         ///
@@ -545,18 +551,19 @@ class step
             {
             return active;
             }
-    private:
-        std::vector< action* > actions; ///< Действия.
-        action action_stub;             ///< Фиктивное действие.
-        uint32_t start_time;             ///< Время старта шага.
 
-        bool is_mode;     ///< Выполняется ли все время во время операции.
-        std::string name; ///< Имя.
+    private:
+        std::vector< action* > actions;  ///< Действия.
+        action action_stub;  ///< Фиктивное действие.
+        uint32_t start_time;  ///< Время старта шага.
+
+        bool is_mode;  ///< Выполняется ли все время во время операции.
+        std::string name;  ///< Имя.
 
         bool active;
-        uint32_t dx_time;                ///< Время шага, отработанное до паузы.
+        uint32_t dx_time;  ///< Время шага, отработанное до паузы.
 
-        int tag = -1;   ///< Тег (индекс связанного объекта).
+        int tag = -1;  ///< Тег (индекс связанного объекта).
 
     public:
         /// Добавление времени для возобновления после паузы.
@@ -581,7 +588,7 @@ class step
 class operation_state
     {
     public:
-        operation_state( const char* name, operation_manager *owner, int n );
+        operation_state( const char* name, operation_manager* owner, int n );
 
         ~operation_state();
 
@@ -595,7 +602,7 @@ class operation_state
         /// @return - значение операции с заданным индексом. Если индекс
         /// выходит за диапазон, возвращается значение заглушки - поля @ref
         /// mode::step_stub.
-        step* operator[] ( int idx );
+        step* operator[]( int idx );
 
         int check_on( char* reason, unsigned int max_len ) const;
 
@@ -649,17 +656,19 @@ class operation_state
 
         bool is_goto_next_state( int& next_state, std::string& reason ) const;
 
-        void set_step_cooperate_time_par_n( int step_cooperate_time_par_number );
+        void set_step_cooperate_time_par_n(
+            int step_cooperate_time_par_number );
+
     private:
         std::string name;
         std::vector< step* > steps;
 
         step* mode_step;
 
-        int active_step_n;           ///< Активный шаг.
-        int active_step_time;        ///< Время активного шага.
-        int active_step_max_time;    ///< Максимальное время активного шага.
-        int active_step_next_step_n; ///< Следующий шаг.
+        int active_step_n;  ///< Активный шаг.
+        int active_step_time;  ///< Время активного шага.
+        int active_step_max_time;  ///< Максимальное время активного шага.
+        int active_step_next_step_n;  ///< Следующий шаг.
 
         /// @brief Номера параметров времен шагов.
         std::vector< int > step_duration_par_ns;
@@ -670,11 +679,11 @@ class operation_state
         /// @brief Следующие шаги.
         std::vector< int > next_step_ns;
 
-        uint32_t start_time; ///< Время начала операции.
-        step step_stub;     ///< Шаг-заглушка.
+        uint32_t start_time;  ///< Время начала операции.
+        step step_stub;  ///< Шаг-заглушка.
 
-        operation_manager *owner;
-        int operation_number;   /// Номер операции.
+        operation_manager* owner;
+        int operation_number;  /// Номер операции.
 
         /// Время выполнения активного шага, для возобновления после паузы.
         uint32_t dx_step_time;
@@ -696,7 +705,8 @@ class operation_state
         void load();
 
         int on_extra_step( int step_idx );
-        int on_extra_step( int step_idx, uint32_t step_time, bool is_print_time );
+        int on_extra_step(
+            int step_idx, uint32_t step_time, bool is_print_time );
 
         int off_extra_step( int step_idx );
 
@@ -722,21 +732,21 @@ class operation_state
 #ifndef __GNUC__
 #pragma endregion
 #endif
-
     };
 //-----------------------------------------------------------------------------
 /// @brief Содержит информацию об операции.
 class operation
     {
     public:
-        operation( const char* name, operation_manager *owner, int n );
+        operation( const char* name, operation_manager* owner, int n );
 
         ~operation();
 
 #ifndef __GNUC__
 #pragma region Совместимость со старой версией.
 #endif
-        int check_devices_on_run_state( char* err_dev_name, unsigned int str_len );
+        int check_devices_on_run_state(
+            char* err_dev_name, unsigned int str_len );
 
         int check_on_run_state( char* reason, unsigned int max_len ) const;
 
@@ -788,57 +798,43 @@ class operation
 
         enum state_idx
             {
-            IDLE = 0,// Ожидание.
-            RUN,     // Выполнение.
-            PAUSE,   // Пауза.
-            STOP,    // Остановлен.
+            IDLE = 0,  // Ожидание.
+            RUN,  // Выполнение.
+            PAUSE,  // Пауза.
+            STOP,  // Остановлен.
 
             STARTING = 10,  //Запускается.
-            PAUSING,        //Становится в паузу.
-            UNPAUSING,      //Выходит из паузы.
-            STOPPING,       //Останавливается.
-            COMPLETING,     //Завершается.
+            PAUSING,  //Становится в паузу.
+            UNPAUSING,  //Выходит из паузы.
+            STOPPING,  //Останавливается.
+            COMPLETING,  //Завершается.
 
-			STATES_MAX,
+            STATES_MAX,
             };
 
-        static constexpr const std::array <const char* const, STATES_MAX> state_str =
-            {
-            "Отключен",
-            "Выполнение",
-            "Пауза",
-            "Остановлен",
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            "Запускается",
-            "Становится в паузу",
-            "Выходит из паузы",
-            "Останавливается",
-            "Завершается",
+        static constexpr const std::array<const char* const, STATES_MAX>
+            state_str = {
+                "Отключен",
+                "Выполнение",
+                "Пауза",
+                "Остановлен",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "Запускается",
+                "Становится в паузу",
+                "Выходит из паузы",
+                "Останавливается",
+                "Завершается",
             };
 
-        static constexpr const std::array <const char* const, STATES_MAX> en_state_str =
-            {
-            "OFF",
-            "RUN",
-            "PAUSE",
-            "STOP",
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            "STARTING",
-            "PAUSING",
-            "UNPAUSING",
-            "STOPPING",
-            "COMPLETING"
-            };
+        static constexpr const std::array<const char* const, STATES_MAX>
+            en_state_str = { "OFF", "RUN", "PAUSE", "STOP", "", "", "", "", "",
+                "", "STARTING", "PAUSING", "UNPAUSING", "STOPPING",
+                "COMPLETING" };
 
         state_idx get_state() const;
 
@@ -864,7 +860,7 @@ class operation
         /// @brief Получение операции через индексирование.
         ///
         /// @param idx - индекс операции.
-        operation_state* operator[] ( int idx )
+        operation_state* operator[]( int idx )
             {
             if ( idx < static_cast<int>( state_idx::STATES_MAX ) )
                 {
@@ -874,7 +870,8 @@ class operation
                 {
                 if ( G_DEBUG )
                     {
-                    printf( "Error operation_state* operation::operator[] "
+                    printf(
+                        "Error operation_state* operation::operator[] "
                         "( int idx ) - idx %d > count %d.\n",
                         idx, state_idx::STATES_MAX );
                     }
@@ -927,23 +924,24 @@ class operation
     private:
         int process_auto_switch_on( const std::string& reason );
 
-        int process_new_state_from_run( int next_state,
-            const std::string& reason );
+        int process_new_state_from_run(
+            int next_state, const std::string& reason );
 
         /// @brief Обработка перехода по умолчанию - переход к остановке
         /// или к следующему состоянию.
         ///
         /// @param next_state - новое состояние.
         /// @param def_state - новое состояние по умолчанию.
-        int default_process_new_state( state_idx next_state, state_idx def_state );
+        int default_process_new_state(
+            state_idx next_state, state_idx def_state );
 
         state_idx current_state = IDLE;
 
         std::vector< operation_state* > states;
 
         std::string name;
-        operation_manager *owner;
-        int operation_num;                                /// Номер операции у владельца.
+        operation_manager* owner;
+        int operation_num;  /// Номер операции у владельца.
 
         operation_state stub;
 
@@ -970,7 +968,7 @@ class operation_manager
         /// @brief Конструктор с параметрами.
         ///
         /// @param i_tech_object - техобъект-владелец.
-        explicit operation_manager( i_tech_object *owner );
+        explicit operation_manager( i_tech_object* owner );
 
         ~operation_manager();
 
@@ -988,7 +986,7 @@ class operation_manager
         ///
         /// @return - значение операции с заданным индексом. Если индекс
         /// выходит за диапазон, возвращается значение заглушки.
-        operation* operator[] ( unsigned int idx );
+        operation* operator[]( unsigned int idx );
 
         /// @brief Время бездействия (нет включенных операций) в секундах.
         ///
@@ -1023,10 +1021,10 @@ class operation_manager
             return owner->get_params();
             }
 
-        i_tech_object *owner;              ///Техобъект-владелец.
+        i_tech_object* owner;  ///Техобъект-владелец.
 
     private:
-        std::vector< operation* > operations; ///< Операции.
+        std::vector< operation* > operations;  ///< Операции.
 
         ///< Операция-заглушка.
         operation oper_stub{ "Операция-заглушка", this, -1 };
@@ -1036,4 +1034,4 @@ class operation_manager
             std::chrono::steady_clock::now();
     };
 //-----------------------------------------------------------------------------
-#endif // MODE_MNGR
+#endif  // MODE_MNGR

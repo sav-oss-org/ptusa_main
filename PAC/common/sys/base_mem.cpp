@@ -1,6 +1,5 @@
-#if !defined WIN_OS && \
-    !( defined LINUX_OS && defined PAC_PC ) && \
-	!( defined LINUX_OS && defined PAC_PLCNEXT )
+#if !defined WIN_OS && !( defined LINUX_OS && defined PAC_PC ) && \
+    !( defined LINUX_OS && defined PAC_PLCNEXT )
 #error You must define OS!
 #endif
 
@@ -48,14 +47,14 @@ int SRAM::load_data()
 
     if ( std::error_code ec; !std::filesystem::exists( file_path, ec ) )
         {
-        G_LOG->notice( "SRAM() - File (%s) not found.",
-            file_path.string().c_str() );
+        G_LOG->notice(
+            "SRAM() - File (%s) not found.", file_path.string().c_str() );
         return 1;
         }
     else
         {
-        G_LOG->notice( "SRAM() - File (%s) found, loading.",
-            file_path.string().c_str() );
+        G_LOG->notice(
+            "SRAM() - File (%s) found, loading.", file_path.string().c_str() );
         auto f = fopen( file_path.string().c_str(), "rb" );
 
         if ( f )
@@ -84,8 +83,7 @@ int SRAM::load_data()
             }
         else
             {
-            G_LOG->error(
-                "SRAM() - ERROR: Can't open device (%s) : %s.\n",
+            G_LOG->error( "SRAM() - ERROR: Can't open device (%s) : %s.\n",
                 file_path.string().c_str(), strerror( errno ) );
             return 2;
             }
@@ -118,7 +116,7 @@ int SRAM::safe_save()
     else
         {
         if ( auto res =
-            fwrite( get_data(), sizeof( std::byte ), get_size(), temp );
+                 fwrite( get_data(), sizeof( std::byte ), get_size(), temp );
             res != get_size() )
             {
             G_LOG->error( "SRAM() - ERROR: fwrite (%s) wrote %zu of %u bytes.",
@@ -172,7 +170,8 @@ int SRAM::safe_save()
             return 3;
             }
 
-        if ( auto dir = open( tmp_path.parent_path().string().c_str(), O_RDONLY );
+        if ( auto dir =
+                 open( tmp_path.parent_path().string().c_str(), O_RDONLY );
             dir != -1 )
             {
             fsync( dir );
@@ -183,8 +182,10 @@ int SRAM::safe_save()
         if ( G_DEBUG )
             {
             auto end = std::chrono::high_resolution_clock::now();
-            const auto duration = std::chrono::duration_cast<
-                std::chrono::microseconds>( end - start ).count();
+            const auto duration =
+                std::chrono::duration_cast< std::chrono::microseconds>(
+                    end - start )
+                    .count();
             G_LOG->debug( "SRAM::safe_save() - write time: %lld us (%s).",
                 static_cast<long long>( duration ),
                 file_path.string().c_str() );

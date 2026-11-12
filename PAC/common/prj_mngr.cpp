@@ -28,7 +28,7 @@
 extern bool G_NO_IO_NODES;
 extern bool G_READ_ONLY_IO_NODES;
 
-auto_smart_ptr < project_manager > project_manager::instance;
+auto_smart_ptr< project_manager > project_manager::instance;
 //-----------------------------------------------------------------------------
 int project_manager::proc_main_params( int argc, const char* argv[] )
     {
@@ -46,36 +46,33 @@ int project_manager::proc_main_params( int argc, const char* argv[] )
         "false";
 #endif // defined WIN_OS
 
-    options.add_options()
-        ( "v,version", "Print version info" )
-        ( "d,debug", "Enable debugging",
-            cxxopts::value<bool>()->default_value( "false" ) )
+    options.add_options()( "v,version", "Print version info" )( "d,debug",
+        "Enable debugging", cxxopts::value<bool>()->default_value( "false" ) )
 
         ( "no_io", "No communicate with I\\O nodes",
-                cxxopts::value<bool>()->default_value( DEFAULT_NO_IO ) )
-        ( "read_only_io", "Read only from I\\O nodes",
+            cxxopts::value<bool>()->default_value( DEFAULT_NO_IO ) )(
+            "read_only_io", "Read only from I\\O nodes",
             cxxopts::value<bool>()->default_value( DEFAULT_NO_IO ) )
 
-        ( "p,port", "Param port",
+            ( "p,port", "Param port",
 
-            cxxopts::value<int>()->default_value( "10000" ) )
-        ( "h,help", "Print help info" )
-        ( "r,rcrc", "Reset params" )
+                cxxopts::value<int>()->default_value( "10000" ) )(
+                "h,help", "Print help info" )( "r,rcrc", "Reset params" )
 
-        ( "opc", "OPC UA server behavior (off, r, rw)",
-            cxxopts::value<std::string>() )
+                ( "opc", "OPC UA server behavior (off, r, rw)",
+                    cxxopts::value<std::string>() )
 
-        ( "sys_path", "Sys path",
-            cxxopts::value<std::string>()->default_value( "./sys" ) )
-        ( "path", "Path",
-            cxxopts::value<std::string>()->default_value( "." ) )
-        ( "extra_paths", "Extra paths",
-            cxxopts::value<std::string>()->default_value( "./dairy-sys" ) )
-        ( "sleep_time", "Sleep time, ms",
-            cxxopts::value<unsigned int>()->default_value( "2" ) )
+                    ( "sys_path", "Sys path",
+                        cxxopts::value<std::string>()->default_value(
+                            "./sys" ) )( "path", "Path",
+                        cxxopts::value<std::string>()->default_value( "." ) )(
+                        "extra_paths", "Extra paths",
+                        cxxopts::value<std::string>()->default_value(
+                            "./dairy-sys" ) )( "sleep_time", "Sleep time, ms",
+                        cxxopts::value<unsigned int>()->default_value( "2" ) )
 
-        ( "script", "The script file to execute",
-            cxxopts::value<std::string>()  );
+                        ( "script", "The script file to execute",
+                            cxxopts::value<std::string>() );
 
     options.parse_positional( { "script" } );
     options.positional_help( "<script>" );
@@ -123,8 +120,8 @@ int project_manager::proc_main_params( int argc, const char* argv[] )
         if ( p > 0 )
             {
             tcp_communicator::set_port( p, p + 502 );
-            G_LOG->notice( "New tcp_communicator ports: %d [modbus %d].",
-                p, p + 502 );
+            G_LOG->notice(
+                "New tcp_communicator ports: %d [modbus %d].", p, p + 502 );
             }
         }
 
@@ -145,8 +142,10 @@ int project_manager::proc_main_params( int argc, const char* argv[] )
             }
         else
             {
-            G_LOG->error( "Unknown OPC UA mode: '%s'. "
-                "Valid values: off, r, rw.", opc_mode_arg.c_str() );
+            G_LOG->error(
+                "Unknown OPC UA mode: '%s'. "
+                "Valid values: off, r, rw.",
+                opc_mode_arg.c_str() );
             return 1;
             }
 
@@ -156,12 +155,17 @@ int project_manager::proc_main_params( int argc, const char* argv[] )
     sleep_time_ms = result[ "sleep_time" ].as<unsigned int>();
 
     // Нормализуем пути и гарантируем слеш на конце через /= "".
-    auto p_norm = std::filesystem::path(
-        result[ "path" ].as<std::string>() ).lexically_normal() / "";
-    auto s_norm = std::filesystem::path(
-        result[ "sys_path" ].as<std::string>() ).lexically_normal() / "";
-    auto e_norm = std::filesystem::path(
-        result[ "extra_paths" ].as<std::string>() ).lexically_normal() / "";
+    auto p_norm = std::filesystem::path( result[ "path" ].as<std::string>() )
+                      .lexically_normal() /
+                  "";
+    auto s_norm =
+        std::filesystem::path( result[ "sys_path" ].as<std::string>() )
+            .lexically_normal() /
+        "";
+    auto e_norm =
+        std::filesystem::path( result[ "extra_paths" ].as<std::string>() )
+            .lexically_normal() /
+        "";
 
     path = p_norm.generic_string();
     sys_path = s_norm.generic_string();
@@ -209,14 +213,14 @@ void project_manager::log_opc_mode() const
 int project_manager::apply_opc_mode( bool show_msg /* = true */ ) const
     {
     auto pac_info = G_PAC_INFO();
-    auto save_param_if_changed = [ pac_info ]( unsigned int param_idx,
-        u_int_4 value )
-        {
+    auto save_param_if_changed = [ pac_info ](
+                                     unsigned int param_idx, u_int_4 value )
+    {
         if ( pac_info->par[ param_idx ] != value )
             {
             pac_info->par.save( param_idx, value );
             }
-        };
+    };
 
     switch ( opc_mode )
         {
@@ -299,8 +303,8 @@ int project_manager::lua_load_configuration()
         }
 
     //-I/O modules data.
-    auto res = lua_manager::get_instance()->void_exec_lua_method( "system",
-        "create_io", "project_manager::lua_load_configuration()" );
+    auto res = lua_manager::get_instance()->void_exec_lua_method(
+        "system", "create_io", "project_manager::lua_load_configuration()" );
 
     if ( res ) return 1;
 
@@ -318,7 +322,8 @@ int project_manager::lua_load_configuration()
 
     //-Devices properties.
     res = lua_manager::get_instance()->void_exec_lua_method( "system",
-        "init_devices_properties", "project_manager::lua_load_configuration()" );
+        "init_devices_properties",
+        "project_manager::lua_load_configuration()" );
 
     if ( res ) return 1;
 
@@ -352,9 +357,10 @@ int project_manager::lua_load_configuration()
     int objects_count = res;
     for ( int i = 1; i <= objects_count; i++ )
         {
-        void * res_object = lua_manager::get_instance()->user_object_exec_lua_method(
-            "object_manager", "get_object", i,
-            "project_manager::lua_load_configuration()" );
+        void* res_object =
+            lua_manager::get_instance()->user_object_exec_lua_method(
+                "object_manager", "get_object", i,
+                "project_manager::lua_load_configuration()" );
 
         if ( 0 == res_object )
             {
@@ -362,7 +368,7 @@ int project_manager::lua_load_configuration()
             return 1;
             }
 
-        G_TECH_OBJECT_MNGR()->add_tech_object( ( tech_object * ) res_object );
+        G_TECH_OBJECT_MNGR()->add_tech_object( (tech_object*)res_object );
         }
 
     if ( G_DEBUG )
@@ -381,7 +387,7 @@ int project_manager::lua_load_configuration()
 
     G_DEVICE_CMMCTR->add_device( siren_lights_manager::get_instance() );
 
-    G_DEVICE_CMMCTR->add_device( ParamsRecipeManager::getInstance());
+    G_DEVICE_CMMCTR->add_device( ParamsRecipeManager::getInstance() );
 
     if ( G_DEBUG )
         {

@@ -16,7 +16,7 @@
 #include "l_tcp_cmctr.h"
 #endif
 
-auto_smart_ptr < tcp_communicator > tcp_communicator::instance = 0;
+auto_smart_ptr< tcp_communicator > tcp_communicator::instance = 0;
 int tcp_communicator::master_socket = 0;
 int tcp_communicator::port = 10000;
 int tcp_communicator::port_modbus = 10502;
@@ -24,19 +24,21 @@ int tcp_communicator::port_modbus = 10502;
 bool tcp_communicator::is_init = false;
 #endif //PTUSA_TEST
 //------------------------------------------------------------------------------
-tcp_communicator::tcp_communicator(): in_buffer_count( 0 ), pidx( 0 ), net_id( 0 )
+tcp_communicator::tcp_communicator() :
+    in_buffer_count( 0 ), pidx( 0 ), net_id( 0 )
     {
-    max_cycles          = 10;
-    glob_cmctr_ok       = 1;
-    for ( int i = 0; i < TC_MAX_SERVICE_NUMBER; i++ ) services[ i ] = nullptr;
+    max_cycles = 10;
+    glob_cmctr_ok = 1;
+    for ( int i = 0; i < TC_MAX_SERVICE_NUMBER; i++ )
+        services[ i ] = nullptr;
 
     clients = new std::map<int, tcp_client*>();
     }
 //------------------------------------------------------------------------------
-tcp_communicator::srv_ptr tcp_communicator::reg_service( u_char srv_id,
-    srv_ptr fk )
+tcp_communicator::srv_ptr tcp_communicator::reg_service(
+    u_char srv_id, srv_ptr fk )
     {
-    if ( services[ srv_id ] == nullptr)
+    if ( services[ srv_id ] == nullptr )
         {
         services[ srv_id ] = fk;
         return nullptr;
@@ -137,11 +139,9 @@ bool tcp_communicator::checkBuff( int s )
     return n >= 1;
     }
 //------------------------------------------------------------------------------
-int tcp_communicator::recvtimeout( int s, u_char* buf,
-    int len, long int sec, long int usec, const char* IP, const char* name,
-    stat_time* stat )
+int tcp_communicator::recvtimeout( int s, u_char* buf, int len, long int sec,
+    long int usec, const char* IP, const char* name, stat_time* stat )
     {
-
     //Network performance info.
     if ( stat )
         {
@@ -151,20 +151,21 @@ int tcp_communicator::recvtimeout( int s, u_char* buf,
         if ( stat->print_cycle_last_h != timeInfo_.tm_hour )
             {
             u_int t =
-                G_PAC_INFO()->par[ PAC_info::P_WAGO_TCP_NODE_WARN_ANSWER_AVG_TIME ];
+                G_PAC_INFO()
+                    ->par[ PAC_info::P_WAGO_TCP_NODE_WARN_ANSWER_AVG_TIME ];
 
             stat->print_cycle_last_h = timeInfo_.tm_hour;
 
             u_long avg_time = stat->all_time / stat->cycles_cnt;
             G_LOG->debug( R"(Network performance : recv : s%d->"%s":"%s" )"
-                "avg = %lu, min = %lu, max = %lu, tresh = %u (ms).",
+                          "avg = %lu, min = %lu, max = %lu, tresh = %u (ms).",
                 s, name, IP, avg_time, stat->min_iteration_cycle_time,
                 stat->max_iteration_cycle_time, t );
 
             if ( t < avg_time )
                 {
                 G_LOG->alert( R"(Network performance : recv : s%d->"%s":"%s" )"
-                    "avg %lu > tresh %u (ms).",
+                              "avg %lu > tresh %u (ms).",
                     s, name, IP, avg_time, t );
                 }
 
@@ -187,8 +188,8 @@ int tcp_communicator::recvtimeout( int s, u_char* buf,
     //Network performance info.
     uint32_t start_time = get_millisec();
 
-    auto update_stat_time = [&]()
-        {
+    auto update_stat_time = [ & ]()
+    {
         if ( !stat ) return;
 
         auto select_wait_time = get_delta_millisec( start_time );
@@ -203,16 +204,15 @@ int tcp_communicator::recvtimeout( int s, u_char* buf,
             {
             stat->min_iteration_cycle_time = select_wait_time;
             }
-        };
+    };
 
     // Ждем таймаута или полученных данных.
     int n = select( s + 1, &fds, nullptr, nullptr, &rec_tv );
 
     if ( 0 == n )
         {
-        G_LOG->error(
-            R"(Network device : s%d->"%s":"%s")"
-            " disconnected on select read try : timeout (%ld ms).",
+        G_LOG->error( R"(Network device : s%d->"%s":"%s")"
+                      " disconnected on select read try : timeout (%ld ms).",
             s, name, IP, sec * 1000 + usec / 1000 );
 
         update_stat_time();
@@ -221,11 +221,10 @@ int tcp_communicator::recvtimeout( int s, u_char* buf,
 
     if ( -1 == n )
         {
-        G_LOG->error(
-            R"(Network device : s%d->"%s":"%s")"
-            " disconnected on select read try : %s"
+        G_LOG->error( R"(Network device : s%d->"%s":"%s")"
+                      " disconnected on select read try : %s"
 #ifndef WIN_OS
-            "."
+                      "."
 #endif
             ,
             s, name, IP,
@@ -233,11 +232,11 @@ int tcp_communicator::recvtimeout( int s, u_char* buf,
             WSA_Last_Err_Decode()
 #else
             strerror( errno )
-#endif // WIN_OS
-            );
+#endif  // WIN_OS
+        );
 
         update_stat_time();
-        return -1; // error
+        return -1;  // error
         }
 
     // Данные должны быть здесь, поэтому делаем обычный recv().
@@ -245,19 +244,17 @@ int tcp_communicator::recvtimeout( int s, u_char* buf,
 
     if ( 0 == res )
         {
-        G_LOG->warning(
-            R"(Network device : s%d->"%s":"%s")"
-            " was closed.",
+        G_LOG->warning( R"(Network device : s%d->"%s":"%s")"
+                        " was closed.",
             s, name, IP );
         }
 
     if ( res < 0 )
         {
-        G_LOG->error(
-            R"(Network device : s%d->"%s":"%s")"
-            " disconnected on read try : %s"
+        G_LOG->error( R"(Network device : s%d->"%s":"%s")"
+                      " disconnected on read try : %s"
 #ifndef WIN_OS
-            "."
+                      "."
 #endif
             ,
             s, name, IP,
@@ -265,7 +262,7 @@ int tcp_communicator::recvtimeout( int s, u_char* buf,
             WSA_Last_Err_Decode()
 #else
             strerror( errno )
-#endif // WIN_OS
+#endif  // WIN_OS
         );
         }
 
@@ -278,23 +275,24 @@ int tcp_communicator::recvtimeout( int s, u_char* buf,
 #endif
     };
 //------------------------------------------------------------------------------
-void tcp_communicator::init_instance( const char *name_rus, const char *name_eng )
+void tcp_communicator::init_instance(
+    const char* name_rus, const char* name_eng )
     {
 #ifdef PTUSA_TEST
     if ( !is_init )
-       {
-       is_init = true;
-#endif //PTUSA_TEST
+        {
+        is_init = true;
+#endif  //PTUSA_TEST
 #ifdef WIN_OS
-	    instance = new tcp_communicator_win( name_rus, name_eng );
-#endif // WIN_OS
+        instance = new tcp_communicator_win( name_rus, name_eng );
+#endif  // WIN_OS
 
 #ifdef LINUX_OS
-	    instance = new tcp_communicator_linux( name_rus, name_eng );
+        instance = new tcp_communicator_linux( name_rus, name_eng );
 #endif
 #ifdef PTUSA_TEST
         }
-#endif //PTUSA_TEST
+#endif  //PTUSA_TEST
     }
 //------------------------------------------------------------------------------
 #ifdef PTUSA_TEST
@@ -306,21 +304,22 @@ void tcp_communicator::clear_instance()
         is_init = false;
         }
     }
-#endif //PTUSA_TEST
+#endif  //PTUSA_TEST
 //------------------------------------------------------------------------------
 int tcp_communicator::add_async_client( tcp_client* client )
     {
-    clients[0][client->get_socket()] = client;
+    clients[ 0 ][ client->get_socket() ] = client;
     client->async_queued = get_millisec();
     return 0;
     }
 //------------------------------------------------------------------------------
 int tcp_communicator::remove_async_client( tcp_client* client )
     {
-    std::map<int, tcp_client*>::iterator it = clients->find(client->get_socket());
-    if (it != clients->end())
+    std::map<int, tcp_client*>::iterator it =
+        clients->find( client->get_socket() );
+    if ( it != clients->end() )
         {
-        clients->erase(it);
+        clients->erase( it );
         }
     return 0;
     }

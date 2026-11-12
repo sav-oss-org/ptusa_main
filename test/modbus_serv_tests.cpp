@@ -9,7 +9,7 @@ TEST( ModbusServ, ModbusService )
     auto L = lua_open();
     G_LUA_MANAGER->set_Lua( L );
     const auto BUFSIZE = 100;
-    u_char  buf[ BUFSIZE ] = { 0 };
+    u_char buf[ BUFSIZE ] = { 0 };
 
 
     auto res = ModbusServ::ModbusService( BUFSIZE, buf, buf );

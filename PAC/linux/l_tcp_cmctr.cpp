@@ -15,12 +15,12 @@
 unsigned int max_buffer_use = 0;
 
 //------------------------------------------------------------------------------
-tcp_communicator_linux::tcp_communicator_linux( const char *name_rus,
-    const char *name_eng ):tcp_communicator(),
-    sst(), netOK( 0 )
+tcp_communicator_linux::tcp_communicator_linux(
+    const char* name_rus, const char* name_eng ) :
+    tcp_communicator(), sst(), netOK( 0 )
     {
     // Задаем таймаут.
-    tv.tv_sec  = 0;
+    tv.tv_sec = 0;
     tv.tv_usec = 1000;
 
     sin_len = sizeof( ssin );
@@ -29,7 +29,7 @@ tcp_communicator_linux::tcp_communicator_linux( const char *name_rus,
 
     if ( G_DEBUG )
         {
-        printf ( "PAC name \"%s\" (\"%s\").\n", host_name_rus, host_name_eng );
+        printf( "PAC name \"%s\" (\"%s\").\n", host_name_rus, host_name_eng );
         }
 
     glob_last_transfer_time = get_millisec();
@@ -57,12 +57,15 @@ int tcp_communicator_linux::net_init()
 
     int type = SOCK_STREAM;
     int protocol = 0;        /* всегда 0 */
-    int err = master_socket = socket( PF_INET, type, protocol ); // Cоздание мастер-сокета.
+    int err = master_socket =
+        socket( PF_INET, type, protocol ); // Cоздание мастер-сокета.
 
     if ( G_DEBUG )
         {
-        printf( "tcp_communicator_linux:net_init() - master socket created. "
-            "Has number %d:%d.\n", master_socket, port );
+        printf(
+            "tcp_communicator_linux:net_init() - master socket created. "
+            "Has number %d:%d.\n",
+            master_socket, port );
         }
 
     if ( master_socket < 0 )
@@ -78,8 +81,7 @@ int tcp_communicator_linux::net_init()
         {
         PAC_critical_errors_manager::get_instance()->reset_global_error(
             PAC_critical_errors_manager::AC_NET,
-            PAC_critical_errors_manager::AS_SOCKET_F,
-            0 );
+            PAC_critical_errors_manager::AS_SOCKET_F, 0 );
         }
 
     // Переводим в неблокирующий режим.
@@ -89,12 +91,13 @@ int tcp_communicator_linux::net_init()
     socket_state master_socket_state;
     memset( &master_socket_state.sin, 0, sizeof( master_socket_state.sin ) );
     master_socket_state.socket = master_socket;
-    master_socket_state.sin.sin_family 	 = AF_INET;
+    master_socket_state.sin.sin_family = AF_INET;
     master_socket_state.sin.sin_addr.s_addr = INADDR_ANY;
-    master_socket_state.sin.sin_port 		 = htons ( port );
+    master_socket_state.sin.sin_port = htons( port );
     master_socket_state.ismodbus = 0;
 
-    if ( const int on = 1; setsockopt( master_socket, SOL_SOCKET, SO_REUSEADDR, &on, sizeof( on ) ) )
+    if ( const int on = 1; setsockopt(
+             master_socket, SOL_SOCKET, SO_REUSEADDR, &on, sizeof( on ) ) )
         {
         PAC_critical_errors_manager::get_instance()->set_global_error(
             PAC_critical_errors_manager::AC_NET,
@@ -108,12 +111,11 @@ int tcp_communicator_linux::net_init()
         {
         PAC_critical_errors_manager::get_instance()->reset_global_error(
             PAC_critical_errors_manager::AC_NET,
-            PAC_critical_errors_manager::AS_SETSOCKOPT_F,
-            0 );
+            PAC_critical_errors_manager::AS_SETSOCKOPT_F, 0 );
         }
 
     // Привязка сокета.
-    err = bind( master_socket, ( struct sockaddr * ) & master_socket_state.sin,
+    err = bind( master_socket, (struct sockaddr*)&master_socket_state.sin,
         sizeof( master_socket_state.sin ) );
     if ( err < 0 )
         {
@@ -129,8 +131,7 @@ int tcp_communicator_linux::net_init()
         {
         PAC_critical_errors_manager::get_instance()->reset_global_error(
             PAC_critical_errors_manager::AC_NET,
-            PAC_critical_errors_manager::AS_BIND_F,
-            0 );
+            PAC_critical_errors_manager::AS_BIND_F, 0 );
         }
 
     err = listen( master_socket, QLEN ); // Делаем мастер-сокет слушателем.
@@ -138,8 +139,7 @@ int tcp_communicator_linux::net_init()
         {
         PAC_critical_errors_manager::get_instance()->set_global_error(
             PAC_critical_errors_manager::AC_NET,
-            PAC_critical_errors_manager::AS_LISTEN_F,
-            0 );
+            PAC_critical_errors_manager::AS_LISTEN_F, 0 );
 
         close( master_socket );
         return -6;
@@ -148,22 +148,22 @@ int tcp_communicator_linux::net_init()
         {
         PAC_critical_errors_manager::get_instance()->reset_global_error(
             PAC_critical_errors_manager::AC_NET,
-            PAC_critical_errors_manager::AS_LISTEN_F,
-            0 );
+            PAC_critical_errors_manager::AS_LISTEN_F, 0 );
         }
 
-    master_socket_state.active      = 1; // мастер-сокет всегда активный.
+    master_socket_state.active = 1; // мастер-сокет всегда активный.
     master_socket_state.is_listener = 1; // сокет является слушателем.
-    master_socket_state.evaluated   = 0;
+    master_socket_state.evaluated = 0;
 
     sst.push_back( master_socket_state );
 
     // Создание серверного сокета modbus_socket.
-    err = modbus_socket = socket ( PF_INET, type, protocol );
+    err = modbus_socket = socket( PF_INET, type, protocol );
 
     if ( G_DEBUG )
         {
-        printf( "tcp_communicator_linux:net_init() - modbus socket created. "
+        printf(
+            "tcp_communicator_linux:net_init() - modbus socket created. "
             "Has number %d:%d.\n",
             modbus_socket, port_modbus );
         }
@@ -181,27 +181,25 @@ int tcp_communicator_linux::net_init()
         {
         PAC_critical_errors_manager::get_instance()->reset_global_error(
             PAC_critical_errors_manager::AC_NET,
-            PAC_critical_errors_manager::AS_SOCKET_F,
-            1 );
+            PAC_critical_errors_manager::AS_SOCKET_F, 1 );
         }
 
     // Адресация modbus_socket сокета.
     socket_state modbus_socket_state;
-    memset( &modbus_socket_state.sin, 0, sizeof ( modbus_socket_state.sin ) );
+    memset( &modbus_socket_state.sin, 0, sizeof( modbus_socket_state.sin ) );
     modbus_socket_state.socket = modbus_socket;
-    modbus_socket_state.sin.sin_family 	  = AF_INET;
+    modbus_socket_state.sin.sin_family = AF_INET;
     modbus_socket_state.sin.sin_addr.s_addr = 0;
-    modbus_socket_state.sin.sin_port 		  = htons ( port_modbus ); // Порт.
+    modbus_socket_state.sin.sin_port = htons( port_modbus ); // Порт.
     modbus_socket_state.ismodbus = 1;
 
-    err = bind( modbus_socket, ( struct sockaddr * ) & modbus_socket_state.sin,
-        sizeof ( modbus_socket_state.sin ) );	   // Привязка сокета.
+    err = bind( modbus_socket, (struct sockaddr*)&modbus_socket_state.sin,
+        sizeof( modbus_socket_state.sin ) );    // Привязка сокета.
     if ( err < 0 )
         {
         PAC_critical_errors_manager::get_instance()->set_global_error(
             PAC_critical_errors_manager::AC_NET,
-            PAC_critical_errors_manager::AS_BIND_F,
-            1 );
+            PAC_critical_errors_manager::AS_BIND_F, 1 );
 
         close( master_socket );
         return -5;
@@ -210,8 +208,7 @@ int tcp_communicator_linux::net_init()
         {
         PAC_critical_errors_manager::get_instance()->reset_global_error(
             PAC_critical_errors_manager::AC_NET,
-            PAC_critical_errors_manager::AS_BIND_F,
-            1 );
+            PAC_critical_errors_manager::AS_BIND_F, 1 );
         }
 
     err = listen( modbus_socket, QLEN ); // Делаем слушателем.
@@ -219,8 +216,7 @@ int tcp_communicator_linux::net_init()
         {
         PAC_critical_errors_manager::get_instance()->set_global_error(
             PAC_critical_errors_manager::AC_NET,
-            PAC_critical_errors_manager::AS_LISTEN_F,
-            1 );
+            PAC_critical_errors_manager::AS_LISTEN_F, 1 );
 
         close( master_socket );
         return -6;
@@ -229,17 +225,16 @@ int tcp_communicator_linux::net_init()
         {
         PAC_critical_errors_manager::get_instance()->reset_global_error(
             PAC_critical_errors_manager::AC_NET,
-            PAC_critical_errors_manager::AS_LISTEN_F,
-            1 );
+            PAC_critical_errors_manager::AS_LISTEN_F, 1 );
         }
 
-    modbus_socket_state.active      = 1;
+    modbus_socket_state.active = 1;
     modbus_socket_state.is_listener = 1;
-    modbus_socket_state.evaluated   = 0;
+    modbus_socket_state.evaluated = 0;
 
-    sst.push_back(modbus_socket_state);
+    sst.push_back( modbus_socket_state );
 
-    FD_ZERO ( &rfds );
+    FD_ZERO( &rfds );
 
     netOK = 1;
     return 0;
@@ -259,7 +254,7 @@ tcp_communicator_linux::~tcp_communicator_linux()
 int tcp_communicator_linux::evaluate()
     {
     // Проверка связи с сервером.
-    if ( get_delta_millisec(glob_last_transfer_time) > 5000L )
+    if ( get_delta_millisec( glob_last_transfer_time ) > 5000L )
         {
         if ( glob_cmctr_ok )
             {
@@ -297,19 +292,18 @@ int tcp_communicator_linux::evaluate()
         {
         /* service loop */
         count_cycles++;
-        sleep_ms(1);
+        sleep_ms( 1 );
         max_sock_number = 0;
 
         FD_ZERO( &rfds );
         for ( u_int i = 0; i < sst.size(); i++ )
             {
-            if ( sst[ i ].active &&
-                sst[ i ].is_listener &&
-                !sst[ i ].evaluated )
+            if ( sst[ i ].active && sst[ i ].is_listener &&
+                 !sst[ i ].evaluated )
                 {
                 /* re-join active sockets */
                 FD_SET( sst[ i ].socket, &rfds );
-                if (sst[ i ].socket > max_sock_number)
+                if ( sst[ i ].socket > max_sock_number )
                     {
                     max_sock_number = sst[ i ].socket;
                     }
@@ -317,10 +311,11 @@ int tcp_communicator_linux::evaluate()
             }
 
         //Добавляем асинхронные сокеты в список прослушки
-        for (std::map<int, tcp_client*>::iterator it = clients->begin(); it != clients->end(); ++ it)
+        for ( std::map<int, tcp_client*>::iterator it = clients->begin();
+            it != clients->end(); ++it )
             {
-            FD_SET( it->second->get_socket(), &rfds);
-            if (it->second->get_socket() > max_sock_number)
+            FD_SET( it->second->get_socket(), &rfds );
+            if ( it->second->get_socket() > max_sock_number )
                 {
                 max_sock_number = it->second->get_socket();
                 }
@@ -333,27 +328,27 @@ int tcp_communicator_linux::evaluate()
 
         if ( rc < 0 )
             {
-            sprintf( G_LOG->msg,
-                "Network communication : select socket : %s.",
+            sprintf( G_LOG->msg, "Network communication : select socket : %s.",
                 strerror( errno ) );
             G_LOG->write_log( i_log::P_ERR );
 
             continue;
             }
 
-        for ( u_int i = 0; i < sst.size(); i++ )  /* scan all possible sockets */
+        for ( u_int i = 0; i < sst.size(); i++ ) /* scan all possible sockets */
             {
             // Поступил новый запрос на соединение.
-            if ( FD_ISSET ( sst[ i ].socket, &rfds ) )
+            if ( FD_ISSET( sst[ i ].socket, &rfds ) )
                 {
-                if ( sst[ i ].socket == master_socket || sst[ i ].socket == modbus_socket )
-                     {
+                if ( sst[ i ].socket == master_socket ||
+                     sst[ i ].socket == modbus_socket )
+                    {
                     /* master socket */
-                    memset( &ssin, 0, sizeof ( ssin ) );
-                    slave_socket = accept ( sst[ i ].socket,
-                        ( struct sockaddr * ) &ssin, &sin_len );
+                    memset( &ssin, 0, sizeof( ssin ) );
+                    slave_socket = accept(
+                        sst[ i ].socket, (struct sockaddr*)&ssin, &sin_len );
 
-                    if ( slave_socket <= 0 )    // Ошибка.
+                    if ( slave_socket <= 0 )  // Ошибка.
                         {
                         sprintf( G_LOG->msg,
                             "Network communication : accept socket : %s.",
@@ -366,7 +361,8 @@ int tcp_communicator_linux::evaluate()
                     if ( sst[ i ].socket != modbus_socket )
                         {
                         char Message1[] = "PAC accept";
-                        send( slave_socket, Message1, strlen ( Message1 ), MSG_NOSIGNAL );
+                        send( slave_socket, Message1, strlen( Message1 ),
+                            MSG_NOSIGNAL );
                         }
                     // Установка сокета в неблокирующий режим.
                     if ( fcntl( slave_socket, F_SETFL, O_NONBLOCK ) < 0 )
@@ -383,7 +379,7 @@ int tcp_communicator_linux::evaluate()
                         continue;
                         }
 
-                    const char *DESCR = "modbus";
+                    const char* DESCR = "modbus";
                     if ( sst[ i ].socket != modbus_socket )
                         {
                         DESCR = "server";
@@ -399,7 +395,7 @@ int tcp_communicator_linux::evaluate()
                     socket_state slave_socket_state;
                     slave_socket_state.socket = slave_socket;
                     slave_socket_state.active = 1;
-                    slave_socket_state.init   = 1;
+                    slave_socket_state.init = 1;
                     slave_socket_state.is_listener = 1;
                     slave_socket_state.evaluated = 0;
                     memcpy( &slave_socket_state.sin, &ssin, sin_len );
@@ -412,9 +408,9 @@ int tcp_communicator_linux::evaluate()
                         slave_socket_state.ismodbus = 0;
                         }
 
-                    sst.push_back(slave_socket_state);
+                    sst.push_back( slave_socket_state );
                     }
-                else         /* slave socket */
+                else /* slave socket */
                     {
                     do_echo( i );
                     glob_last_transfer_time = get_millisec();
@@ -423,48 +419,51 @@ int tcp_communicator_linux::evaluate()
             }
 
         //проверка асинхронных сокетов на предмет поступления данных
-         for (std::map<int, tcp_client*>::iterator it = clients->begin(); it != clients->end();)
-             {
-             int is_removed = 0;
-             if (FD_ISSET(it->second->get_socket(), &rfds)) //если есть событие на сокете
-                 {
-                 if ( int err = recvtimeout(it->second->get_socket(),
-                     (unsigned char*)it->second->buff, it->second->buff_size,
-                     1, 0, it->second->ip, "async client", 0);
-                     err <= 0 ) //Ошибка чтения
-                     {
-                     it->second->Disconnect();
-                     it->second->set_async_result(it->second->AR_SOCKETERROR);
-                     }
-                 else //Получены данные
-                     {
-                     in_buffer_count = err;
-                     it->second->set_async_result(in_buffer_count);
-                     }
-                 is_removed = 1;
-                 }
-             else //проверяем на таймаут
-                 {
-                 if (get_delta_millisec(it->second->async_queued) > it->second->async_timeout)
-                     {
-                     it->second->Disconnect();
-                     it->second->set_async_result(it->second->AR_TIMEOUT);
-                     is_removed = 1;
-                     }
-                 }
+        for ( std::map<int, tcp_client*>::iterator it = clients->begin();
+            it != clients->end(); )
+            {
+            int is_removed = 0;
+            if ( FD_ISSET( it->second->get_socket(),
+                     &rfds ) )  //если есть событие на сокете
+                {
+                if ( int err = recvtimeout( it->second->get_socket(),
+                         (unsigned char*)it->second->buff,
+                         it->second->buff_size, 1, 0, it->second->ip,
+                         "async client", 0 );
+                    err <= 0 )  //Ошибка чтения
+                    {
+                    it->second->Disconnect();
+                    it->second->set_async_result( it->second->AR_SOCKETERROR );
+                    }
+                else  //Получены данные
+                    {
+                    in_buffer_count = err;
+                    it->second->set_async_result( in_buffer_count );
+                    }
+                is_removed = 1;
+                }
+            else  //проверяем на таймаут
+                {
+                if ( get_delta_millisec( it->second->async_queued ) >
+                     it->second->async_timeout )
+                    {
+                    it->second->Disconnect();
+                    it->second->set_async_result( it->second->AR_TIMEOUT );
+                    is_removed = 1;
+                    }
+                }
 
-             if (is_removed)
-                 {
-                 clients->erase(it++);
-                 }
-             else
-                 {
-                 it++;
-                 }
-             }
+            if ( is_removed )
+                {
+                clients->erase( it++ );
+                }
+            else
+                {
+                it++;
+                }
+            }
 
-        }  /* service loop */
-
+        } /* service loop */
 
 
     for ( u_int i = 0; i < sst.size(); i++ )
@@ -475,36 +474,36 @@ int tcp_communicator_linux::evaluate()
     return 0;
     }
 //------------------------------------------------------------------------------
-int tcp_communicator_linux::sendall (int sockfd, unsigned char *buf, int len,
-    int sec, int usec, const char* IP, const char* name,
-    stat_time *stat )
+int tcp_communicator_linux::sendall( int sockfd, unsigned char* buf, int len,
+    int sec, int usec, const char* IP, const char* name, stat_time* stat )
     {
     //Network performance info.
-    if (stat)
+    if ( stat )
         {
         static time_t t_;
-        struct tm *timeInfo_;
-        t_ = time(0);
-        timeInfo_ = localtime(&t_);
+        struct tm* timeInfo_;
+        t_ = time( 0 );
+        timeInfo_ = localtime( &t_ );
 
         //Once per hour writes performance info.
-        if (stat->print_cycle_last_h != timeInfo_->tm_hour)
+        if ( stat->print_cycle_last_h != timeInfo_->tm_hour )
             {
             auto t =
-                G_PAC_INFO()->par[PAC_info::P_WAGO_TCP_NODE_WARN_ANSWER_AVG_TIME];
+                G_PAC_INFO()
+                    ->par[ PAC_info::P_WAGO_TCP_NODE_WARN_ANSWER_AVG_TIME ];
 
             stat->print_cycle_last_h = timeInfo_->tm_hour;
 
             auto avg_time = stat->all_time / stat->cycles_cnt;
             sprintf( G_LOG->msg,
                 R"(Network performance : send : s%d->"%s":"%s" )"
-                "avg = %" PRIu32 ", min = %" PRIu32 ", max = %" PRIu32 ", tresh = %u (ms).",
-                sockfd, name, IP,
-                avg_time, stat->min_iteration_cycle_time,
+                "avg = %" PRIu32 ", min = %" PRIu32 ", max = %" PRIu32
+                ", tresh = %u (ms).",
+                sockfd, name, IP, avg_time, stat->min_iteration_cycle_time,
                 stat->max_iteration_cycle_time, t );
             G_LOG->write_log( i_log::P_DEBUG );
 
-            if (t < avg_time)
+            if ( t < avg_time )
                 {
                 sprintf( G_LOG->msg,
                     R"(Network performance : send : s%d->"%s":"%s" )"
@@ -518,7 +517,7 @@ int tcp_communicator_linux::sendall (int sockfd, unsigned char *buf, int len,
         }
 
     int total_size = 0;
-    unsigned char *p = buf;
+    unsigned char* p = buf;
 
     // Настраиваем  file descriptor set.
     fd_set fds;
@@ -562,7 +561,7 @@ int tcp_communicator_linux::sendall (int sockfd, unsigned char *buf, int len,
                 sockfd, name, IP, strerror( errno ) );
             G_LOG->write_log( i_log::P_ERR );
 
-            return -1; // error
+            return -1;  // error
             }
 
         int n = 0;
@@ -576,7 +575,7 @@ int tcp_communicator_linux::sendall (int sockfd, unsigned char *buf, int len,
                 sockfd, name, IP, strerror( errno ) );
             G_LOG->write_log( i_log::P_ERR );
 
-            res = -3; //send error
+            res = -3;  //send error
             break;
             }
 
@@ -608,15 +607,15 @@ int tcp_communicator_linux::sendall (int sockfd, unsigned char *buf, int len,
     return res;
     }
 //------------------------------------------------------------------------------
-int tcp_communicator_linux::do_echo ( int idx )
+int tcp_communicator_linux::do_echo( int idx )
     {
-    socket_state &sock_state = sst[ idx ];
+    socket_state& sock_state = sst[ idx ];
     FD_CLR( sock_state.socket, &rfds );
 
     static const char* const SERVER = "easyserver";
     static const char* const MODBUS_DEV = "modbus device";
 
-    const char *dev_name = SERVER;
+    const char* dev_name = SERVER;
     if ( sock_state.ismodbus )
         {
         dev_name = MODBUS_DEV;
@@ -627,15 +626,16 @@ int tcp_communicator_linux::do_echo ( int idx )
     sock_state.evaluated = 1;
     memset( buf, 0, BUFSIZE );
 
-    if (sock_state.init)
+    if ( sock_state.init )
         {
         sock_state.init = 0;
-        if (sock_state.ismodbus)
+        if ( sock_state.ismodbus )
             {
             // Ожидаем данные с таймаутом 50 мсек.
-            err = in_buffer_count = recvtimeout( sock_state.socket, buf, BUFSIZE, 0, 50000L,
-                inet_ntoa( sock_state.sin.sin_addr ), dev_name, &sock_state.recv_stat );
-            if (err == -2)
+            err = in_buffer_count = recvtimeout( sock_state.socket, buf,
+                BUFSIZE, 0, 50000L, inet_ntoa( sock_state.sin.sin_addr ),
+                dev_name, &sock_state.recv_stat );
+            if ( err == -2 )
                 {
                 //Если при подключении на модбас-сокет первый раз данные не пришли, то игнорируем(панель Weintek)
                 return 0;
@@ -644,26 +644,28 @@ int tcp_communicator_linux::do_echo ( int idx )
         else
             {
             // Ожидаем данные с таймаутом 300 мсек.
-            err = in_buffer_count = recvtimeout( sock_state.socket, buf, BUFSIZE, 0, 300000L,
-                inet_ntoa( sock_state.sin.sin_addr ), dev_name, &sock_state.recv_stat );
+            err = in_buffer_count = recvtimeout( sock_state.socket, buf,
+                BUFSIZE, 0, 300000L, inet_ntoa( sock_state.sin.sin_addr ),
+                dev_name, &sock_state.recv_stat );
             }
         }
     else
         {
         // Ожидаем данные с таймаутом 300 мсек.
-        err = in_buffer_count = recvtimeout( sock_state.socket, buf, BUFSIZE, 0, 300000L,
-            inet_ntoa( sock_state.sin.sin_addr ), dev_name, &sock_state.recv_stat );
+        err = in_buffer_count = recvtimeout( sock_state.socket, buf, BUFSIZE, 0,
+            300000L, inet_ntoa( sock_state.sin.sin_addr ), dev_name,
+            &sock_state.recv_stat );
         }
 
-    if ( err <= 0 )               /* read error */
+    if ( err <= 0 ) /* read error */
         {
         shutdown( sock_state.socket, 0 );
         close( sock_state.socket );
-        sst.erase(sst.begin() + idx, sst.begin() + idx + 1);
+        sst.erase( sst.begin() + idx, sst.begin() + idx + 1 );
         return err;
         }
 
-    if ( sock_state.init )         /* socket is just initiated */
+    if ( sock_state.init ) /* socket is just initiated */
         {
         sock_state.init = 0;
         }
@@ -679,23 +681,23 @@ int tcp_communicator_linux::do_echo ( int idx )
         }
 
     net_id = buf[ 0 ];
-    pidx   = buf[ 3 ];
+    pidx = buf[ 3 ];
 
-    if ( net_id == 's' && buf[ 1 ] < TC_MAX_SERVICE_NUMBER && services[ buf[ 1 ] ] != NULL &&
-        buf[ 2 ] + buf[ 3 ] != 0 )
+    if ( net_id == 's' && buf[ 1 ] < TC_MAX_SERVICE_NUMBER &&
+         services[ buf[ 1 ] ] != NULL && buf[ 2 ] + buf[ 3 ] != 0 )
         {
         switch ( buf[ 2 ] )
             {
             case FRAME_SINGLE:
 
-                res = services[ buf[ 1 ] ] (
-                    ( u_int ) ( buf[ 4 ] * 256 + buf[ 5 ] ), buf + 6, buf + 5 );
+                res = services[ buf[ 1 ] ](
+                    (u_int)( buf[ 4 ] * 256 + buf[ 5 ] ), buf + 6, buf + 5 );
 
-                if ( ( unsigned int ) res > max_buffer_use )
+                if ( (unsigned int)res > max_buffer_use )
                     {
                     sprintf( G_LOG->msg,
                         "Network performance : (out) buffer use max = %u, tresh = %u (b).",
-                         res, BUFSIZE );
+                        res, BUFSIZE );
                     G_LOG->write_log( i_log::P_DEBUG );
 
                     max_buffer_use = res + 0.1 * res;
@@ -723,11 +725,10 @@ int tcp_communicator_linux::do_echo ( int idx )
         }
     else
         {
-        if ( services[ 15 ] != NULL && 0 == buf[ 2 ] + buf[ 3 ] ) //MODBUS
+        if ( services[ 15 ] != NULL && 0 == buf[ 2 ] + buf[ 3 ] )  //MODBUS
             {
-            res = services[ 15 ] ( ( u_int ) ( buf[ 4 ] * 256 + buf[ 5 ] ),
-                buf + 6,
-                buf + 6 );
+            res = services[ 15 ](
+                (u_int)( buf[ 4 ] * 256 + buf[ 5 ] ), buf + 6, buf + 6 );
             if ( res > 0 )
                 {
                 buf[ 4 ] = ( res >> 8 ) & 0xFF;
@@ -740,9 +741,9 @@ int tcp_communicator_linux::do_echo ( int idx )
             {
             _ErrorAkn( ERR_WRONG_SERVICE );
 
-            sprintf( G_LOG->msg,
-                "No such service %d at socket %d->\"%s\".",
-                buf[ 1 ], sock_state.socket, inet_ntoa( sock_state.sin.sin_addr ) );
+            sprintf( G_LOG->msg, "No such service %d at socket %d->\"%s\".",
+                buf[ 1 ], sock_state.socket,
+                inet_ntoa( sock_state.sin.sin_addr ) );
             G_LOG->write_log( i_log::P_WARNING );
             }
         }
@@ -750,11 +751,11 @@ int tcp_communicator_linux::do_echo ( int idx )
     err = sendall( sock_state.socket, buf, in_buffer_count, 0, 300000,
         inet_ntoa( sock_state.sin.sin_addr ), dev_name, &sock_state.send_stat );
 
-    if ( err <= 0 )               /* write error */
+    if ( err <= 0 ) /* write error */
         {
         shutdown( sock_state.socket, 0 );
         close( sock_state.socket );
-        sst.erase(sst.begin() + idx, sst.begin() + idx + 1);
+        sst.erase( sst.begin() + idx, sst.begin() + idx + 1 );
 
         return err;
         }

@@ -15,18 +15,18 @@
 /// Базовый интерфейсный класс для журнала.
 /// Содержит основные методы работы - запиь в лог, т.д.
 ///
-class w_log: public i_log
-	{
-	public:
-
-		virtual ~w_log()
-			{
-			}
+class w_log : public i_log
+    {
+    public:
+        virtual ~w_log()
+            {
+            }
 
 #pragma warning( push )
-#pragma warning( disable: 4996 ) //warning C4996: 'localtime': This function or variable may be unsafe.
-		void virtual write_log(PRIORITIES priority)
-			{
+#pragma warning( disable \
+    : 4996 )  //warning C4996: 'localtime': This function or variable may be unsafe.
+        void virtual write_log( PRIORITIES priority )
+            {
             std::tm tm = get_time();
 
             std::cout << std::put_time( &tm, "%Y-%m-%d %H.%M.%S " );
@@ -77,12 +77,12 @@ class w_log: public i_log
             SetColor( RESET );
 
             fflush( stdout );
-			}
+            }
 #pragma warning( pop )
 
-		w_log()
-			{
-			}
-	};
+        w_log()
+            {
+            }
+    };
 
-#endif // w_log_h__
+#endif  // w_log_h__

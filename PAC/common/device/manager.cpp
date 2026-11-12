@@ -6,7 +6,7 @@
 
 #include "PID.h"
 
-auto_smart_ptr < device_manager > device_manager::instance;
+auto_smart_ptr< device_manager > device_manager::instance;
 
 //-----------------------------------------------------------------------------
 //-----------------------------------------------------------------------------
@@ -288,8 +288,7 @@ device_manager* device_manager::get_instance()
     return instance;
     }
 //-----------------------------------------------------------------------------
-device* device_manager::get_device( int dev_type,
-    const char* dev_name )
+device* device_manager::get_device( int dev_type, const char* dev_name )
     {
     if ( auto dev_n = get_device_n( (device::DEVICE_TYPE)dev_type, dev_name );
         dev_n >= 0 )
@@ -309,15 +308,16 @@ device* device_manager::get_device( int dev_type,
         if ( dev_type < device::C_DEVICE_TYPE_CNT )
             {
             size = ( fmt::format_to_n( G_LOG->msg, MAX_COPY_SIZE, "{} ",
-                device::DEV_NAMES[ dev_type ] ) ).size;
+                         device::DEV_NAMES[ dev_type ] ) )
+                       .size;
             }
         else
             {
-            size = ( fmt::format_to_n( G_LOG->msg, MAX_COPY_SIZE, "unknown "
-                ) ).size;
+            size = ( fmt::format_to_n( G_LOG->msg, MAX_COPY_SIZE, "unknown " ) )
+                       .size;
             }
-        auto res = fmt::format_to_n( G_LOG->msg + size, MAX_COPY_SIZE, "\"{}\" not found!",
-            dev_name );
+        auto res = fmt::format_to_n(
+            G_LOG->msg + size, MAX_COPY_SIZE, "\"{}\" not found!", dev_name );
         *res.out = '\0';
         G_LOG->write_log( i_log::P_ERR );
         }
@@ -383,15 +383,14 @@ void device_manager::print() const
     for ( u_int i = 0; i < project_devices.size(); i++ )
         {
         printf( "    %3i. ", i + 1 );
-        printf( "%-20s %s",
-            project_devices[ i ]->get_name(), project_devices[ i ]->get_description() );
+        printf( "%-20s %s", project_devices[ i ]->get_name(),
+            project_devices[ i ]->get_description() );
         printf( "\n" );
         }
     }
 //-----------------------------------------------------------------------------
-device_manager::device_manager() : project_devices( 0 ),
-    disable_error_logging( false ),
-    stub( new dev_stub() )
+device_manager::device_manager() :
+    project_devices( 0 ), disable_error_logging( false ), stub( new dev_stub() )
     {
     G_DEVICE_CMMCTR->add_device( this );
     }
@@ -566,7 +565,8 @@ i_DO_AO_device* device_manager::get_F( const char* dev_name )
 //-----------------------------------------------------------------------------
 i_DO_AO_device* device_manager::get_C( const char* dev_name )
     {
-    return dynamic_cast<i_DO_AO_device*>( get_device( device::DT_REGULATOR, dev_name ) );
+    return dynamic_cast<i_DO_AO_device*>(
+        get_device( device::DT_REGULATOR, dev_name ) );
     }
 //-----------------------------------------------------------------------------
 signal_column* device_manager::get_HLA( const char* dev_name )
@@ -662,7 +662,8 @@ io_device* device_manager::add_io_device( int dev_type, int dev_sub_type,
                     new_io_device = (valve_AS_mix_proof*)new_device;
                     if ( valve_AS::V70_ARTICLES.count( article ) > 0 )
                         {
-                        ( (valve_AS_mix_proof*)new_io_device )->reverse_seat_connection = true;
+                        ( (valve_AS_mix_proof*)new_io_device )
+                            ->reverse_seat_connection = true;
                         }
                     break;
 
@@ -702,33 +703,50 @@ io_device* device_manager::add_io_device( int dev_type, int dev_sub_type,
                     break;
 
                 case device::V_IOLINK_MIXPROOF:
-                    if (strcmp(article, valve_iolink_gea_tvis_a15_ds::GEA_TVIS_A15_DOUBLE_SEAT_ARTICLE.c_str()) == 0) {
-                        new_device = new valve_iolink_gea_tvis_a15_ds(dev_name);
-                        new_io_device = (valve_iolink_gea_tvis_a15_ds*)new_device;
-                    }
-                    else {
-                        new_device = new valve_iolink_mix_proof(dev_name);
+                    if ( strcmp( article,
+                             valve_iolink_gea_tvis_a15_ds::
+                                 GEA_TVIS_A15_DOUBLE_SEAT_ARTICLE.c_str() ) ==
+                         0 )
+                        {
+                        new_device =
+                            new valve_iolink_gea_tvis_a15_ds( dev_name );
+                        new_io_device =
+                            (valve_iolink_gea_tvis_a15_ds*)new_device;
+                        }
+                    else
+                        {
+                        new_device = new valve_iolink_mix_proof( dev_name );
                         new_io_device = (valve_iolink_mix_proof*)new_device;
-                    }
+                        }
                     break;
 
                 case device::V_IOLINK_DO1_DI2:
                     {
-                    if ( strcmp( article,
-                        valve_iolink_shut_off_sorio::SORIO_ARTICLE.c_str() ) == 0 )
+                    if ( strcmp(
+                             article, valve_iolink_shut_off_sorio::SORIO_ARTICLE
+                                          .c_str() ) == 0 )
                         {
-                        new_device = new valve_iolink_shut_off_sorio( dev_name );
-                        new_io_device = (valve_iolink_shut_off_sorio*)new_device;
+                        new_device =
+                            new valve_iolink_shut_off_sorio( dev_name );
+                        new_io_device =
+                            (valve_iolink_shut_off_sorio*)new_device;
                         }
-                    else if (strcmp(article, valve_iolink_gea_tvis_a15_ss::GEA_TVIS_A15_SINGLE_SEAT_ARTICLE.c_str()) == 0)
+                    else if ( strcmp(
+                                  article, valve_iolink_gea_tvis_a15_ss::
+                                               GEA_TVIS_A15_SINGLE_SEAT_ARTICLE
+                                                   .c_str() ) == 0 )
                         {
-                        new_device = new valve_iolink_gea_tvis_a15_ss(dev_name);
-                        new_io_device = (valve_iolink_gea_tvis_a15_ss*)new_device;
+                        new_device =
+                            new valve_iolink_gea_tvis_a15_ss( dev_name );
+                        new_io_device =
+                            (valve_iolink_gea_tvis_a15_ss*)new_device;
                         }
                     else
                         {
-                        new_device = new valve_iolink_shut_off_thinktop( dev_name );
-                        new_io_device = (valve_iolink_shut_off_thinktop*)new_device;
+                        new_device =
+                            new valve_iolink_shut_off_thinktop( dev_name );
+                        new_io_device =
+                            (valve_iolink_shut_off_thinktop*)new_device;
                         }
                     break;
                     }
@@ -743,19 +761,24 @@ io_device* device_manager::add_io_device( int dev_type, int dev_sub_type,
                     break;
 
                 case device::V_IOL_TERMINAL_MIXPROOF_DO3:
-                    new_device = new valve_iol_terminal_mixproof_DO3( dev_name );
-                    new_io_device = (valve_iol_terminal_mixproof_DO3*)new_device;
+                    new_device =
+                        new valve_iol_terminal_mixproof_DO3( dev_name );
+                    new_io_device =
+                        (valve_iol_terminal_mixproof_DO3*)new_device;
                     break;
 
                 case device::V_IOL_TERMINAL_MIXPROOF_DO3_DI2:
-                    new_device = new valve_iol_terminal_mixproof_DO3_DI2( dev_name );
-                    new_io_device = (valve_iol_terminal_mixproof_DO3_DI2*)new_device;
+                    new_device =
+                        new valve_iol_terminal_mixproof_DO3_DI2( dev_name );
+                    new_io_device =
+                        (valve_iol_terminal_mixproof_DO3_DI2*)new_device;
                     break;
 
                 default:
                     if ( G_DEBUG )
                         {
-                        printf( "Unknown V device subtype %d!\n", dev_sub_type );
+                        printf(
+                            "Unknown V device subtype %d!\n", dev_sub_type );
                         }
                     break;
                 }
@@ -777,7 +800,8 @@ io_device* device_manager::add_io_device( int dev_type, int dev_sub_type,
                     break;
 
                 case device::DST_VC_VIRT:
-                    new_device = new virtual_device( dev_name, device::DT_VC, device::DST_VC_VIRT );
+                    new_device = new virtual_device(
+                        dev_name, device::DT_VC, device::DST_VC_VIRT );
                     break;
 
                 case device::DST_VC_EY:
@@ -787,7 +811,8 @@ io_device* device_manager::add_io_device( int dev_type, int dev_sub_type,
                 default:
                     if ( G_DEBUG )
                         {
-                        printf( "Unknown VC device subtype %d!\n", dev_sub_type );
+                        printf(
+                            "Unknown VC device subtype %d!\n", dev_sub_type );
                         }
                     break;
                 }
@@ -804,14 +829,14 @@ io_device* device_manager::add_io_device( int dev_type, int dev_sub_type,
                 case device::DST_M_REV_FREQ_2:
                 case device::M_REV_2_ERROR:
                 case device::DST_M_REV_FREQ_2_ERROR:
-                    new_device = new motor( dev_name,
-                        (device::DEVICE_SUB_TYPE)dev_sub_type );
+                    new_device = new motor(
+                        dev_name, (device::DEVICE_SUB_TYPE)dev_sub_type );
                     new_io_device = (motor*)new_device;
                     break;
 
                 case device::M_ATV:
-                    new_device = new motor_altivar( dev_name,
-                        (device::DEVICE_SUB_TYPE)dev_sub_type );
+                    new_device = new motor_altivar(
+                        dev_name, (device::DEVICE_SUB_TYPE)dev_sub_type );
                     new_io_device = (motor_altivar*)new_device;
                     break;
 
@@ -827,7 +852,8 @@ io_device* device_manager::add_io_device( int dev_type, int dev_sub_type,
                 default:
                     if ( G_DEBUG )
                         {
-                        printf( "Unknown M device subtype %d!\n", dev_sub_type );
+                        printf(
+                            "Unknown M device subtype %d!\n", dev_sub_type );
                         }
                     break;
                 }
@@ -838,26 +864,28 @@ io_device* device_manager::add_io_device( int dev_type, int dev_sub_type,
                 {
                 case device::DST_LS_MIN:
                 case device::DST_LS_MAX:
-                    new_device = new level_s( dev_name,
-                        (device::DEVICE_SUB_TYPE)dev_sub_type );
+                    new_device = new level_s(
+                        dev_name, (device::DEVICE_SUB_TYPE)dev_sub_type );
                     new_io_device = (level_s*)new_device;
                     break;
 
                 case device::LS_IOLINK_MAX:
                 case device::LS_IOLINK_MIN:
-                    new_device = new level_s_iolink( dev_name,
-                        (device::DEVICE_SUB_TYPE)dev_sub_type );
+                    new_device = new level_s_iolink(
+                        dev_name, (device::DEVICE_SUB_TYPE)dev_sub_type );
                     new_io_device = (level_s_iolink*)new_device;
                     break;
 
                 case device::DST_LS_VIRT:
-                    new_device = new virtual_device( dev_name, device::DT_LS, device::DST_LS_VIRT );
+                    new_device = new virtual_device(
+                        dev_name, device::DT_LS, device::DST_LS_VIRT );
                     break;
 
                 default:
                     if ( G_DEBUG )
                         {
-                        printf( "Unknown LS device subtype %d!\n", dev_sub_type );
+                        printf(
+                            "Unknown LS device subtype %d!\n", dev_sub_type );
                         }
                     break;
                 }
@@ -873,7 +901,9 @@ io_device* device_manager::add_io_device( int dev_type, int dev_sub_type,
                     break;
 
                 case device::DST_TE_IOLINK:
-                    if ( strcmp( article, temperature_e_iolink_tm311::ARTICLE.c_str() ) == 0 )
+                    if ( strcmp( article,
+                             temperature_e_iolink_tm311::ARTICLE.c_str() ) ==
+                         0 )
                         {
                         new_device = new temperature_e_iolink_tm311( dev_name );
                         new_io_device = (temperature_e_iolink_tm311*)new_device;
@@ -886,7 +916,8 @@ io_device* device_manager::add_io_device( int dev_type, int dev_sub_type,
                     break;
 
                 case device::DST_TE_VIRT:
-                    new_device = new virtual_device( dev_name, device::DT_TE, device::DST_TE_VIRT );
+                    new_device = new virtual_device(
+                        dev_name, device::DT_TE, device::DST_TE_VIRT );
                     break;
 
                 case device::DST_TE_ANALOG:
@@ -897,7 +928,8 @@ io_device* device_manager::add_io_device( int dev_type, int dev_sub_type,
                 default:
                     if ( G_DEBUG )
                         {
-                        printf( "Unknown TE device subtype %d!\n", dev_sub_type );
+                        printf(
+                            "Unknown TE device subtype %d!\n", dev_sub_type );
                         }
                     break;
                 }
@@ -913,13 +945,15 @@ io_device* device_manager::add_io_device( int dev_type, int dev_sub_type,
                     break;
 
                 case device::DST_FS_VIRT:
-                    new_device = new virtual_device( dev_name, device::DT_FS, device::DST_FS_VIRT );
+                    new_device = new virtual_device(
+                        dev_name, device::DT_FS, device::DST_FS_VIRT );
                     break;
 
                 default:
                     if ( G_DEBUG )
                         {
-                        printf( "Unknown FS device subtype %d!\n", dev_sub_type );
+                        printf(
+                            "Unknown FS device subtype %d!\n", dev_sub_type );
                         }
                     break;
                 }
@@ -950,7 +984,8 @@ io_device* device_manager::add_io_device( int dev_type, int dev_sub_type,
                 default:
                     if ( G_DEBUG )
                         {
-                        printf( "Unknown FQT device subtype %d!\n", dev_sub_type );
+                        printf(
+                            "Unknown FQT device subtype %d!\n", dev_sub_type );
                         }
                     break;
                 }
@@ -966,13 +1001,15 @@ io_device* device_manager::add_io_device( int dev_type, int dev_sub_type,
                     break;
 
                 case device::DST_AO_VIRT:
-                    new_device = new virtual_device( dev_name, device::DT_AO, device::DST_AO_VIRT );
+                    new_device = new virtual_device(
+                        dev_name, device::DT_AO, device::DST_AO_VIRT );
                     break;
 
                 default:
                     if ( G_DEBUG )
                         {
-                        printf( "Unknown AO device subtype %d!\n", dev_sub_type );
+                        printf(
+                            "Unknown AO device subtype %d!\n", dev_sub_type );
                         }
                     break;
                 }
@@ -1008,14 +1045,16 @@ io_device* device_manager::add_io_device( int dev_type, int dev_sub_type,
                     break;
 
                 case device::DST_LT_VIRT:
-                    new_device = new virtual_device( dev_name, device::DT_LT, device::DST_LT_VIRT );
+                    new_device = new virtual_device(
+                        dev_name, device::DT_LT, device::DST_LT_VIRT );
                     break;
 
                 case device::DST_LT_TRUNC:
                 default:
                     if ( G_DEBUG )
                         {
-                        printf( "Unknown LT device subtype %d!\n", dev_sub_type );
+                        printf(
+                            "Unknown LT device subtype %d!\n", dev_sub_type );
                         }
                     break;
                 }
@@ -1031,13 +1070,15 @@ io_device* device_manager::add_io_device( int dev_type, int dev_sub_type,
                     break;
 
                 case device::DST_DI_VIRT:
-                    new_device = new virtual_device( dev_name, device::DT_DI, device::DST_DI_VIRT );
+                    new_device = new virtual_device(
+                        dev_name, device::DT_DI, device::DST_DI_VIRT );
                     break;
 
                 default:
                     if ( G_DEBUG )
                         {
-                        printf( "Unknown DI device subtype %d!\n", dev_sub_type );
+                        printf(
+                            "Unknown DI device subtype %d!\n", dev_sub_type );
                         }
                     break;
                 }
@@ -1053,13 +1094,15 @@ io_device* device_manager::add_io_device( int dev_type, int dev_sub_type,
                     break;
 
                 case device::DST_DO_VIRT:
-                    new_device = new virtual_device( dev_name, device::DT_DO, device::DST_DO_VIRT );
+                    new_device = new virtual_device(
+                        dev_name, device::DT_DO, device::DST_DO_VIRT );
                     break;
 
                 default:
                     if ( G_DEBUG )
                         {
-                        printf( "Unknown DO device subtype %d!\n", dev_sub_type );
+                        printf(
+                            "Unknown DO device subtype %d!\n", dev_sub_type );
                         }
                     break;
                 }
@@ -1080,13 +1123,15 @@ io_device* device_manager::add_io_device( int dev_type, int dev_sub_type,
                     break;
 
                 case device::DST_PT_VIRT:
-                    new_device = new virtual_device( dev_name, device::DT_PT, device::DST_PT_VIRT );
+                    new_device = new virtual_device(
+                        dev_name, device::DT_PT, device::DST_PT_VIRT );
                     break;
 
                 default:
                     if ( G_DEBUG )
                         {
-                        printf( "Unknown PT device subtype %d!\n", dev_sub_type );
+                        printf(
+                            "Unknown PT device subtype %d!\n", dev_sub_type );
                         }
                     break;
                 }
@@ -1097,7 +1142,8 @@ io_device* device_manager::add_io_device( int dev_type, int dev_sub_type,
                 {
                 case device::DST_NONE:
                 case device::DST_QT:
-                    new_device = new concentration_e( dev_name, device::DST_QT );
+                    new_device =
+                        new concentration_e( dev_name, device::DST_QT );
                     new_io_device = (concentration_e*)new_device;
                     break;
 
@@ -1112,13 +1158,15 @@ io_device* device_manager::add_io_device( int dev_type, int dev_sub_type,
                     break;
 
                 case device::DST_QT_VIRT:
-                    new_device = new virtual_device( dev_name, device::DT_QT, device::DST_QT_VIRT );
+                    new_device = new virtual_device(
+                        dev_name, device::DT_QT, device::DST_QT_VIRT );
                     break;
 
                 default:
                     if ( G_DEBUG )
                         {
-                        printf( "Unknown QT device subtype %d!\n", dev_sub_type );
+                        printf(
+                            "Unknown QT device subtype %d!\n", dev_sub_type );
                         }
                     break;
                 }
@@ -1134,13 +1182,15 @@ io_device* device_manager::add_io_device( int dev_type, int dev_sub_type,
                     break;
 
                 case device::DST_AI_VIRT:
-                    new_device = new virtual_device( dev_name, device::DT_AI, device::DST_AI_VIRT );
+                    new_device = new virtual_device(
+                        dev_name, device::DT_AI, device::DST_AI_VIRT );
                     break;
 
                 default:
                     if ( G_DEBUG )
                         {
-                        printf( "Unknown AI device subtype %d!\n", dev_sub_type );
+                        printf(
+                            "Unknown AI device subtype %d!\n", dev_sub_type );
                         }
                     break;
                 }
@@ -1156,13 +1206,15 @@ io_device* device_manager::add_io_device( int dev_type, int dev_sub_type,
                     break;
 
                 case device::DST_HA_VIRT:
-                    new_device = new virtual_device( dev_name, device::DT_HA, device::DST_HA_VIRT );
+                    new_device = new virtual_device(
+                        dev_name, device::DT_HA, device::DST_HA_VIRT );
                     break;
 
                 default:
                     if ( G_DEBUG )
                         {
-                        printf( "Unknown HA device subtype %d!\n", dev_sub_type );
+                        printf(
+                            "Unknown HA device subtype %d!\n", dev_sub_type );
                         }
                     break;
                 }
@@ -1178,13 +1230,15 @@ io_device* device_manager::add_io_device( int dev_type, int dev_sub_type,
                     break;
 
                 case device::DST_HL_VIRT:
-                    new_device = new virtual_device( dev_name, device::DT_HL, device::DST_HL_VIRT );
+                    new_device = new virtual_device(
+                        dev_name, device::DT_HL, device::DST_HL_VIRT );
                     break;
 
                 default:
                     if ( G_DEBUG )
                         {
-                        printf( "Unknown HL device subtype %d!\n", dev_sub_type );
+                        printf(
+                            "Unknown HL device subtype %d!\n", dev_sub_type );
                         }
                     break;
                 }
@@ -1200,13 +1254,15 @@ io_device* device_manager::add_io_device( int dev_type, int dev_sub_type,
                     break;
 
                 case device::DST_SB_VIRT:
-                    new_device = new virtual_device( dev_name, device::DT_SB, device::DST_SB_VIRT );
+                    new_device = new virtual_device(
+                        dev_name, device::DT_SB, device::DST_SB_VIRT );
                     break;
 
                 default:
                     if ( G_DEBUG )
                         {
-                        printf( "Unknown SB device subtype %d!\n", dev_sub_type );
+                        printf(
+                            "Unknown SB device subtype %d!\n", dev_sub_type );
                         }
                     break;
                 }
@@ -1222,7 +1278,8 @@ io_device* device_manager::add_io_device( int dev_type, int dev_sub_type,
                     break;
 
                 case device::DST_GS_VIRT:
-                    new_device = new virtual_device( dev_name, device::DT_GS, device::DST_GS_VIRT );
+                    new_device = new virtual_device(
+                        dev_name, device::DT_GS, device::DST_GS_VIRT );
                     break;
 
                 case device::DST_GS_INVERSE:
@@ -1233,7 +1290,8 @@ io_device* device_manager::add_io_device( int dev_type, int dev_sub_type,
                 default:
                     if ( G_DEBUG )
                         {
-                        printf( "Unknown GS device subtype %d!\n", dev_sub_type );
+                        printf(
+                            "Unknown GS device subtype %d!\n", dev_sub_type );
                         }
                     break;
                 }
@@ -1248,13 +1306,15 @@ io_device* device_manager::add_io_device( int dev_type, int dev_sub_type,
                     break;
 
                 case device::DST_PDS_VIRT:
-                    new_device = new virtual_device( dev_name, device::DT_PDS, device::DST_PDS_VIRT );
+                    new_device = new virtual_device(
+                        dev_name, device::DT_PDS, device::DST_PDS_VIRT );
                     break;
 
                 default:
                     if ( G_DEBUG )
                         {
-                        printf( "Unknown PDS device subtype %d!\n", dev_sub_type );
+                        printf(
+                            "Unknown PDS device subtype %d!\n", dev_sub_type );
                         }
                     break;
                 }
@@ -1291,7 +1351,8 @@ io_device* device_manager::add_io_device( int dev_type, int dev_sub_type,
                 default:
                     if ( G_DEBUG )
                         {
-                        printf( "Unknown WT device subtype %d!\n", dev_sub_type );
+                        printf(
+                            "Unknown WT device subtype %d!\n", dev_sub_type );
                         }
                     break;
                 }
@@ -1307,13 +1368,15 @@ io_device* device_manager::add_io_device( int dev_type, int dev_sub_type,
                     break;
 
                 case device::DST_F_VIRT:
-                    new_device = new virtual_device( dev_name, device::DT_F, device::DST_F_VIRT );
+                    new_device = new virtual_device(
+                        dev_name, device::DT_F, device::DST_F_VIRT );
                     break;
 
                 default:
                     if ( G_DEBUG )
                         {
-                        printf( "Unknown F device subtype %d!\n", dev_sub_type );
+                        printf(
+                            "Unknown F device subtype %d!\n", dev_sub_type );
                         }
                     break;
                 }
@@ -1347,7 +1410,8 @@ io_device* device_manager::add_io_device( int dev_type, int dev_sub_type,
                     break;
 
                 case device::DST_HLA_VIRT:
-                    new_device = new virtual_device( dev_name, device::DT_HLA, device::DST_HLA_VIRT );
+                    new_device = new virtual_device(
+                        dev_name, device::DT_HLA, device::DST_HLA_VIRT );
                     break;
 
                 case device::DST_HLA_IOLINK:
@@ -1358,7 +1422,8 @@ io_device* device_manager::add_io_device( int dev_type, int dev_sub_type,
                 default:
                     if ( G_DEBUG )
                         {
-                        printf( "Unknown HLA device subtype %d!\n", dev_sub_type );
+                        printf(
+                            "Unknown HLA device subtype %d!\n", dev_sub_type );
                         }
                     break;
                 }
@@ -1369,13 +1434,13 @@ io_device* device_manager::add_io_device( int dev_type, int dev_sub_type,
                 {
                 case device::DST_CAM_DO1_DI1:
                     new_device = new camera( dev_name,
-                        static_cast<device::DEVICE_SUB_TYPE> ( dev_sub_type ) );
+                        static_cast<device::DEVICE_SUB_TYPE>( dev_sub_type ) );
                     new_io_device = (camera*)new_device;
                     break;
 
                 case device::DST_CAM_DO1_DI2:
                     new_device = new camera_DI2( dev_name,
-                        static_cast<device::DEVICE_SUB_TYPE> ( dev_sub_type ) );
+                        static_cast<device::DEVICE_SUB_TYPE>( dev_sub_type ) );
                     new_io_device = (camera_DI2*)new_device;
                     break;
 
@@ -1387,7 +1452,8 @@ io_device* device_manager::add_io_device( int dev_type, int dev_sub_type,
                 default:
                     if ( G_DEBUG )
                         {
-                        printf( "Unknown CAM device subtype %d!\n", dev_sub_type );
+                        printf(
+                            "Unknown CAM device subtype %d!\n", dev_sub_type );
                         }
                     break;
                 }
@@ -1402,13 +1468,15 @@ io_device* device_manager::add_io_device( int dev_type, int dev_sub_type,
                     break;
 
                 case device::DST_TS_VIRT:
-                    new_device = new virtual_device( dev_name, device::DT_TS, device::DST_TS_VIRT );
+                    new_device = new virtual_device(
+                        dev_name, device::DT_TS, device::DST_TS_VIRT );
                     break;
 
                 default:
                     if ( G_DEBUG )
                         {
-                        printf( "Unknown TS device subtype %d!\n", dev_sub_type );
+                        printf(
+                            "Unknown TS device subtype %d!\n", dev_sub_type );
                         }
                     break;
                 }
@@ -1420,14 +1488,15 @@ io_device* device_manager::add_io_device( int dev_type, int dev_sub_type,
                 case device::DST_G_IOL_4:
                 case device::DST_G_IOL_8:
                     new_device = new power_unit( dev_name,
-                        static_cast<device::DEVICE_SUB_TYPE> ( dev_sub_type ) );
+                        static_cast<device::DEVICE_SUB_TYPE>( dev_sub_type ) );
                     new_io_device = (power_unit*)new_device;
                     break;
 
                 default:
                     if ( G_DEBUG )
                         {
-                        printf( "Unknown G device subtype %d!\n", dev_sub_type );
+                        printf(
+                            "Unknown G device subtype %d!\n", dev_sub_type );
                         }
                     break;
                 }
@@ -1440,8 +1509,8 @@ io_device* device_manager::add_io_device( int dev_type, int dev_sub_type,
                 }
             else
                 {
-                G_LOG->alert( "Unknown WATCHDOG device subtype %d!\n",
-                    dev_sub_type );
+                G_LOG->alert(
+                    "Unknown WATCHDOG device subtype %d!\n", dev_sub_type );
                 }
             break;
 
@@ -1456,7 +1525,8 @@ io_device* device_manager::add_io_device( int dev_type, int dev_sub_type,
                 default:
                     if ( G_DEBUG )
                         {
-                        printf( "Unknown Y device subtype %d!\n", dev_sub_type );
+                        printf(
+                            "Unknown Y device subtype %d!\n", dev_sub_type );
                         }
                     break;
                 }
@@ -1469,8 +1539,8 @@ io_device* device_manager::add_io_device( int dev_type, int dev_sub_type,
                 }
             else
                 {
-                G_LOG->alert( "Unknown NODE device subtype %d!\n",
-                    dev_sub_type );
+                G_LOG->alert(
+                    "Unknown NODE device subtype %d!\n", dev_sub_type );
                 }
             break;
 
@@ -1485,7 +1555,8 @@ io_device* device_manager::add_io_device( int dev_type, int dev_sub_type,
     // Ошибки.
     if ( !new_device )
         {
-        new_device = static_cast<device*>( static_cast<valve*>( new dev_stub() ) );
+        new_device =
+            static_cast<device*>( static_cast<valve*>( new dev_stub() ) );
         }
 
     G_ERRORS_MANAGER->add_error( new simple_error( new_device ) );
@@ -1533,8 +1604,8 @@ void device_manager::clear_io_devices()
 //-----------------------------------------------------------------------------
 int device_manager::init_params()
     {
-    lua_manager::get_instance()->void_exec_lua_method( "system",
-        "init_devices_params", "device_manager::init_params()" );
+    lua_manager::get_instance()->void_exec_lua_method(
+        "system", "init_devices_params", "device_manager::init_params()" );
 
     return 0;
     }
@@ -1552,7 +1623,8 @@ int device_manager::save_device( char* buff ) const
     }
 //-----------------------------------------------------------------------------
 #ifdef PTUSA_TEST
-int device_manager::add_device( device* new_device, device::DEVICE_TYPE dev_type )
+int device_manager::add_device(
+    device* new_device, device::DEVICE_TYPE dev_type )
     {
     u_int new_dev_index = project_devices.size();
     project_devices.push_back( new_device );
@@ -1587,7 +1659,8 @@ int device_manager::remove_device( u_int idx )
     }
 #endif
 //-----------------------------------------------------------------------------
-int device_manager::get_device_n( device::DEVICE_TYPE dev_type, const char* dev_name )
+int device_manager::get_device_n(
+    device::DEVICE_TYPE dev_type, const char* dev_name )
     {
     int l = -1;
     int u = -1;
@@ -1626,7 +1699,8 @@ int device_manager::get_device_n( device::DEVICE_TYPE dev_type, const char* dev_
 //-----------------------------------------------------------------------------
 int device_manager::get_device_n( const char* dev_name )
     {
-    for ( int dev_type = device::DT_V; dev_type < device::C_DEVICE_TYPE_CNT; dev_type++ )
+    for ( int dev_type = device::DT_V; dev_type < device::C_DEVICE_TYPE_CNT;
+        dev_type++ )
         {
         auto res = get_device_n( (device::DEVICE_TYPE)dev_type, dev_name );
         if ( res >= 0 ) return res;

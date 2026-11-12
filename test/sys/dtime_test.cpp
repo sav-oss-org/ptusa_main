@@ -40,12 +40,12 @@ TEST( sys, get_sec )
 TEST( sys, get_delta_millisec )
     {
     auto get_delta_millisec_test = []( uint32_t time1 )
-        {
+    {
         uint32_t now = 0;
         // Unsigned integer subtraction in C++ handles wraparound correctly via
         // modular arithmetic.
         return now - time1;
-        };
+    };
 
     auto dt = get_delta_millisec( 0 );
     EXPECT_GE( dt, 0 );

@@ -14,15 +14,15 @@
 
 extern bool G_NO_IO_NODES;
 
-auto_smart_ptr < PAC_info > PAC_info::instance;///< Экземпляр класса.
+auto_smart_ptr< PAC_info > PAC_info::instance;///< Экземпляр класса.
 
 //-----------------------------------------------------------------------------
 //-----------------------------------------------------------------------------
 void PAC_info::eval()
     {
     if ( restrictions_set_to_off_time &&
-        get_delta_millisec( restrictions_set_to_off_time ) >
-        par[ P_RESTRICTIONS_MANUAL_TIME ] )
+         get_delta_millisec( restrictions_set_to_off_time ) >
+             par[ P_RESTRICTIONS_MANUAL_TIME ] )
         {
         par[ P_RESTRICTIONS_MODE ] = 0;
         restrictions_set_to_off_time = 0;
@@ -71,7 +71,7 @@ void PAC_info::eval()
             {
             const auto dev = G_DEVICE_MANAGER()->get_device( i );
             if ( dev && dev->get_type() == device::DT_WATCHDOG &&
-                dev->get_state() < 0 )
+                 dev->get_state() < 0 )
                 {
                 watchdog_error = 1;
                 break;
@@ -116,100 +116,136 @@ void PAC_info::reset_params()
 //-----------------------------------------------------------------------------
 int PAC_info::save_device( char* buff ) const
     {
-    int size = fmt::format_to_n( buff, MAX_COPY_SIZE, "t.SYSTEM = \n\t{{\n" ).size;
-    size += fmt::format_to_n( buff + size, MAX_COPY_SIZE,
-        "\tRESET_BY={},\n", reset_type ).size;
-    size += fmt::format_to_n( buff + size, MAX_COPY_SIZE,
-        "\tUP_DAYS={},\n", up_days ).size;
-    size += fmt::format_to_n( buff + size, MAX_COPY_SIZE,
-        "\tUP_HOURS={},\n", up_hours ).size;
-    size += fmt::format_to_n( buff + size, MAX_COPY_SIZE,
-        "\tUP_MINS={},\n", up_mins ).size;
-    size += fmt::format_to_n( buff + size, MAX_COPY_SIZE,
-        "\tUP_SECS={},\n", up_secs ).size;
-    size += fmt::format_to_n( buff + size, MAX_COPY_SIZE,
-        "\tUP_TIME=\"{}\",\n", up_time_str ).size;
+    int size =
+        fmt::format_to_n( buff, MAX_COPY_SIZE, "t.SYSTEM = \n\t{{\n" ).size;
+    size += fmt::format_to_n(
+        buff + size, MAX_COPY_SIZE, "\tRESET_BY={},\n", reset_type )
+                .size;
+    size += fmt::format_to_n(
+        buff + size, MAX_COPY_SIZE, "\tUP_DAYS={},\n", up_days )
+                .size;
+    size += fmt::format_to_n(
+        buff + size, MAX_COPY_SIZE, "\tUP_HOURS={},\n", up_hours )
+                .size;
+    size += fmt::format_to_n(
+        buff + size, MAX_COPY_SIZE, "\tUP_MINS={},\n", up_mins )
+                .size;
+    size += fmt::format_to_n(
+        buff + size, MAX_COPY_SIZE, "\tUP_SECS={},\n", up_secs )
+                .size;
+    size += fmt::format_to_n(
+        buff + size, MAX_COPY_SIZE, "\tUP_TIME=\"{}\",\n", up_time_str )
+                .size;
+
+    size += fmt::format_to_n(
+        buff + size, MAX_COPY_SIZE, "\tCYCLE_TIME={},\n", cycle_time )
+                .size;
 
     size += fmt::format_to_n( buff + size, MAX_COPY_SIZE,
-        "\tCYCLE_TIME={},\n", cycle_time ).size;
+        "\tWASH_VALVE_SEAT_PERIOD={},\n", par[ P_MIX_FLIP_PERIOD ] )
+                .size;
+    size += fmt::format_to_n( buff + size, MAX_COPY_SIZE,
+        "\tWASH_VALVE_UPPER_SEAT_TIME={},\n", par[ P_MIX_FLIP_UPPER_TIME ] )
+                .size;
+    size += fmt::format_to_n( buff + size, MAX_COPY_SIZE,
+        "\tWASH_VALVE_LOWER_SEAT_TIME={},\n", par[ P_MIX_FLIP_LOWER_TIME ] )
+                .size;
 
     size += fmt::format_to_n( buff + size, MAX_COPY_SIZE,
-        "\tWASH_VALVE_SEAT_PERIOD={},\n", par[ P_MIX_FLIP_PERIOD ] ).size;
+        "\tP_V_OFF_DELAY_TIME={},\n", par[ P_V_OFF_DELAY_TIME ] )
+                .size;
     size += fmt::format_to_n( buff + size, MAX_COPY_SIZE,
-        "\tWASH_VALVE_UPPER_SEAT_TIME={},\n", par[ P_MIX_FLIP_UPPER_TIME ] ).size;
-    size += fmt::format_to_n( buff + size, MAX_COPY_SIZE,
-        "\tWASH_VALVE_LOWER_SEAT_TIME={},\n",par[ P_MIX_FLIP_LOWER_TIME ] ).size;
+        "\tP_V_BOTTOM_ON_DELAY_TIME={},\n", par[ P_V_BOTTOM_OFF_DELAY_TIME ] )
+                .size;
 
     size += fmt::format_to_n( buff + size, MAX_COPY_SIZE,
-        "\tP_V_OFF_DELAY_TIME={},\n", par[ P_V_OFF_DELAY_TIME ] ).size;
+        "\tP_WAGO_TCP_NODE_WARN_ANSWER_AVG_TIME={},\n",
+        par[ P_WAGO_TCP_NODE_WARN_ANSWER_AVG_TIME ] )
+                .size;
     size += fmt::format_to_n( buff + size, MAX_COPY_SIZE,
-        "\tP_V_BOTTOM_ON_DELAY_TIME={},\n", par[ P_V_BOTTOM_OFF_DELAY_TIME ] ).size;
+        "\tP_MAIN_CYCLE_WARN_ANSWER_AVG_TIME={},\n",
+        par[ P_MAIN_CYCLE_WARN_ANSWER_AVG_TIME ] )
+                .size;
 
     size += fmt::format_to_n( buff + size, MAX_COPY_SIZE,
-        "\tP_WAGO_TCP_NODE_WARN_ANSWER_AVG_TIME={},\n", par[ P_WAGO_TCP_NODE_WARN_ANSWER_AVG_TIME ] ).size;
+        "\tP_RESTRICTIONS_MODE={},\n", par[ P_RESTRICTIONS_MODE ] )
+                .size;
     size += fmt::format_to_n( buff + size, MAX_COPY_SIZE,
-        "\tP_MAIN_CYCLE_WARN_ANSWER_AVG_TIME={},\n", par[ P_MAIN_CYCLE_WARN_ANSWER_AVG_TIME ] ).size;
+        "\tP_RESTRICTIONS_MANUAL_TIME={},\n",
+        par[ P_RESTRICTIONS_MANUAL_TIME ] )
+                .size;
 
     size += fmt::format_to_n( buff + size, MAX_COPY_SIZE,
-        "\tP_RESTRICTIONS_MODE={},\n", par[ P_RESTRICTIONS_MODE ] ).size;
-    size += fmt::format_to_n( buff + size, MAX_COPY_SIZE,
-        "\tP_RESTRICTIONS_MANUAL_TIME={},\n", par[ P_RESTRICTIONS_MANUAL_TIME ] ).size;
+        "\tP_AUTO_PAUSE_OPER_ON_DEV_ERR={},\n",
+        par[ P_AUTO_PAUSE_OPER_ON_DEV_ERR ] )
+                .size;
 
-    size += fmt::format_to_n( buff + size, MAX_COPY_SIZE,
-        "\tP_AUTO_PAUSE_OPER_ON_DEV_ERR={},\n", par[ P_AUTO_PAUSE_OPER_ON_DEV_ERR ] ).size;
+    size +=
+        fmt::format_to_n( buff + size, MAX_COPY_SIZE, "\tCMD={},\n", cmd ).size;
+    size += fmt::format_to_n(
+        buff + size, MAX_COPY_SIZE, "\tCMD_ANSWER=\"{}\",\n", cmd_answer )
+                .size;
 
-    size += fmt::format_to_n( buff + size, MAX_COPY_SIZE,
-        "\tCMD={},\n", cmd ).size;
-    size += fmt::format_to_n( buff + size, MAX_COPY_SIZE,
-        "\tCMD_ANSWER=\"{}\",\n", cmd_answer ).size;
+    size += fmt::format_to_n( buff + size, MAX_COPY_SIZE, "\tVERSION=\"{}\",\n",
+        PRODUCT_VERSION_FULL_STR )
+                .size;
 
-    size += fmt::format_to_n( buff + size, MAX_COPY_SIZE,
-        "\tVERSION=\"{}\",\n", PRODUCT_VERSION_FULL_STR ).size;
-
-    size += fmt::format_to_n( buff + size, MAX_COPY_SIZE,
-        "\tNODEENABLED = \n\t{{\n\t" ).size;
+    size += fmt::format_to_n(
+        buff + size, MAX_COPY_SIZE, "\tNODEENABLED = \n\t{{\n\t" )
+                .size;
     unsigned int nc = io_manager::get_instance()->get_nodes_count();
     for ( unsigned int i = 0; i < nc; i++ )
         {
         auto wn = io_manager::get_instance()->get_node( i );
         const char* active_str = wn->is_active ? "1, " : "0, ";
-        size += fmt::format_to_n( buff + size, MAX_COPY_SIZE,
-            "{}", active_str ).size;
+        size += fmt::format_to_n( buff + size, MAX_COPY_SIZE, "{}", active_str )
+                    .size;
         }
     size += fmt::format_to_n( buff + size, MAX_COPY_SIZE, "\n\t}},\n" ).size;
 
-    size += fmt::format_to_n( buff + size, MAX_COPY_SIZE,
-        "\tNODEST = \n\t{{\n\t" ).size;
+    size +=
+        fmt::format_to_n( buff + size, MAX_COPY_SIZE, "\tNODEST = \n\t{{\n\t" )
+            .size;
     for ( unsigned int i = 0; i < nc; i++ )
         {
         auto wn = io_manager::get_instance()->get_node( i );
-        size += fmt::format_to_n( buff + size, MAX_COPY_SIZE,
-            "{}, ", static_cast<int>( wn->get_display_state() ) ).size;
+        size += fmt::format_to_n( buff + size, MAX_COPY_SIZE, "{}, ",
+            static_cast<int>( wn->get_display_state() ) )
+                    .size;
         }
     size += fmt::format_to_n( buff + size, MAX_COPY_SIZE, "\n\t}},\n" ).size;
 
     size += fmt::format_to_n( buff + size, MAX_COPY_SIZE,
-        "\tP_IS_OPC_UA_SERVER_ACTIVE={},\n", par[ P_IS_OPC_UA_SERVER_ACTIVE ] ).size;
+        "\tP_IS_OPC_UA_SERVER_ACTIVE={},\n", par[ P_IS_OPC_UA_SERVER_ACTIVE ] )
+                .size;
     size += fmt::format_to_n( buff + size, MAX_COPY_SIZE,
-        "\tP_IS_OPC_UA_SERVER_CONTROL={},\n", par[ P_IS_OPC_UA_SERVER_CONTROL ] ).size;
+        "\tP_IS_OPC_UA_SERVER_CONTROL={},\n",
+        par[ P_IS_OPC_UA_SERVER_CONTROL ] )
+                .size;
 
     size += fmt::format_to_n( buff + size, MAX_COPY_SIZE,
-        "\tP_BK_ANSWER_MAX_WAIT_TIME={},\n", par[ P_BK_ANSWER_MAX_WAIT_TIME ] ).size;
+        "\tP_BK_ANSWER_MAX_WAIT_TIME={},\n", par[ P_BK_ANSWER_MAX_WAIT_TIME ] )
+                .size;
 
     size += fmt::format_to_n( buff + size, MAX_COPY_SIZE,
-        "\tNODES_COMM_ERROR={},\n", nodes_comm_error ).size;
-    size += fmt::format_to_n( buff + size, MAX_COPY_SIZE,
-        "\tWATCHDOG_ERROR={},\n", watchdog_error ).size;
-    size += fmt::format_to_n( buff + size, MAX_COPY_SIZE,
-        "\tCOMMUN_ERROR={},\n", commun_error ).size;
+        "\tNODES_COMM_ERROR={},\n", nodes_comm_error )
+                .size;
+    size += fmt::format_to_n(
+        buff + size, MAX_COPY_SIZE, "\tWATCHDOG_ERROR={},\n", watchdog_error )
+                .size;
+    size += fmt::format_to_n(
+        buff + size, MAX_COPY_SIZE, "\tCOMMUN_ERROR={},\n", commun_error )
+                .size;
 
 
     size += fmt::format_to_n( buff + size, MAX_COPY_SIZE,
         "\tPARAMS_CHANGE_COUNTER={},\n",
-        params_manager::get_instance()->get_params_change_counter() ).size;
+        params_manager::get_instance()->get_params_change_counter() )
+                .size;
     size += fmt::format_to_n( buff + size, MAX_COPY_SIZE,
         "\tPARAMS_SAVE_COUNTER={},\n",
-        params_manager::get_instance()->get_params_save_counter() ).size;
+        params_manager::get_instance()->get_params_save_counter() )
+                .size;
 
 
     size += fmt::format_to_n( buff + size, MAX_COPY_SIZE, "\t}}\n" ).size;
@@ -246,7 +282,8 @@ int PAC_info::set_cmd( const char* prop, u_int idx, double val )
 
             case COMMANDS::RELOAD_RESTRICTIONS:
                 {
-                G_LOG->notice( "Reload restrictions (remote monitor "
+                G_LOG->notice(
+                    "Reload restrictions (remote monitor "
                     "client command)." );
                 cmd = G_LUA_MANAGER->reload_script( RESTRICTIONS_SCRIPT_N,
                     "restrictions", cmd_answer, sizeof( cmd_answer ) );
@@ -256,7 +293,8 @@ int PAC_info::set_cmd( const char* prop, u_int idx, double val )
             case COMMANDS::RESET_PARAMS:
                 {
                 auto prev_val = par[ P_IS_OPC_UA_SERVER_ACTIVE ];
-                G_LOG->notice( "Resetting parameters (remote monitor "
+                G_LOG->notice(
+                    "Resetting parameters (remote monitor "
                     "client command)." );
                 params_manager::get_instance()->reset_CRC_mem();
                 params_manager::get_instance()->final_init();
@@ -266,7 +304,8 @@ int PAC_info::set_cmd( const char* prop, u_int idx, double val )
                 }
 
             case COMMANDS::FORCE_SAVE_PARAMS:
-                G_LOG->notice( "Force saving parameters (remote monitor "
+                G_LOG->notice(
+                    "Force saving parameters (remote monitor "
                     "client command)." );
                 return params_manager::get_instance()->save_params();
             }
@@ -377,20 +416,22 @@ int PAC_info::set_cmd( const char* prop, u_int idx, double val )
                 // Если была активна данная ошибка, удаляем её аналогично.
                 if ( wn->is_err_mode_alarm_set )
                     {
-                    PAC_critical_errors_manager::get_instance()->reset_global_error(
-                        PAC_critical_errors_manager::AC_PP_MODE,
-                        PAC_critical_errors_manager::AS_IO_COUPLER, wn->number,
-                        false );
+                    PAC_critical_errors_manager::get_instance()
+                        ->reset_global_error(
+                            PAC_critical_errors_manager::AC_PP_MODE,
+                            PAC_critical_errors_manager::AS_IO_COUPLER,
+                            wn->number, false );
                     wn->is_err_mode_alarm_set = false;
                     wn->prev_status_register = 0;
                     }
                 // Если была активна данная ошибка, удаляем её аналогично.
                 if ( wn->is_cfg_bus_error_alarm_set )
                     {
-                    PAC_critical_errors_manager::get_instance()->reset_global_error(
-                        PAC_critical_errors_manager::AC_CFG_BUS_ERROR,
-                        PAC_critical_errors_manager::AS_IO_COUPLER, wn->number,
-                        false );
+                    PAC_critical_errors_manager::get_instance()
+                        ->reset_global_error(
+                            PAC_critical_errors_manager::AC_CFG_BUS_ERROR,
+                            PAC_critical_errors_manager::AS_IO_COUPLER,
+                            wn->number, false );
                     wn->is_cfg_bus_error_alarm_set = false;
                     wn->prev_diagnostic_status_register = 0;
                     }
@@ -464,10 +505,10 @@ int PAC_info::proc_OPC( int prev_val, int val, bool is_save )
         if ( auto retval = G_OPCUA_SERVER.init_all_and_start();
             retval != UA_STATUSCODE_GOOD )
             {
-            G_LOG->error( "OPC UA server start failed (0x%X). %s",
-                retval, UA_StatusCode_name( retval ) );
-            auto r = fmt::format_to_n( cmd_answer, sizeof( cmd_answer ) - 1,
-                "{}", G_LOG->msg );
+            G_LOG->error( "OPC UA server start failed (0x%X). %s", retval,
+                UA_StatusCode_name( retval ) );
+            auto r = fmt::format_to_n(
+                cmd_answer, sizeof( cmd_answer ) - 1, "{}", G_LOG->msg );
             *r.out = '\0';
 
             G_OPCUA_SERVER.shutdown();

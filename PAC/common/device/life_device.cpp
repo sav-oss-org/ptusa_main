@@ -3,9 +3,9 @@
 #include "life_device.h"
 
 //-----------------------------------------------------------------------------
-watchdog::watchdog( const char* name, device::DEVICE_SUB_TYPE sub_type ) :device( name,
-    device::DEVICE_TYPE::DT_WATCHDOG, sub_type,
-    static_cast<u_int>( PARAM::PARAMS_COUNT ) - 1 )
+watchdog::watchdog( const char* name, device::DEVICE_SUB_TYPE sub_type ) :
+    device( name, device::DEVICE_TYPE::DT_WATCHDOG, sub_type,
+        static_cast<u_int>( PARAM::PARAMS_COUNT ) - 1 )
     {
     set_par_name( static_cast<u_int>( PARAM::P_T_GEN ), 0, "P_T_GEN" );
     set_par_name( static_cast<u_int>( PARAM::P_T_ERR ), 0, "P_T_ERR" );
@@ -38,7 +38,7 @@ void watchdog::evaluate_io()
         }
 
     if ( auto set_dt = static_cast<unsigned long>(
-        get_par( static_cast<u_int>( PARAM::P_T_ERR ) ) );
+             get_par( static_cast<u_int>( PARAM::P_T_ERR ) ) );
         set_dt > 0 && get_delta_millisec( start_in_check_time ) > set_dt )
         {
         start_in_check_time = get_millisec();
@@ -46,7 +46,7 @@ void watchdog::evaluate_io()
         }
 
     if ( auto set_dt = static_cast<unsigned long>(
-        get_par( static_cast<u_int>( PARAM::P_T_GEN ) ) );
+             get_par( static_cast<u_int>( PARAM::P_T_GEN ) ) );
         get_delta_millisec( start_out_check_time ) > set_dt )
         {
         start_out_check_time = get_millisec();
@@ -84,8 +84,10 @@ void watchdog::set_string_property( const char* field, const char* value )
         }
     else
         {
-        G_LOG->alert( "%s\t watchdog::set_string_property() - "
-            "Unknown field \"%s\"", get_name(), field );
+        G_LOG->alert(
+            "%s\t watchdog::set_string_property() - "
+            "Unknown field \"%s\"",
+            get_name(), field );
         }
     }
 //-----------------------------------------------------------------------------
@@ -93,7 +95,8 @@ void watchdog::set_property( const char* field, device* value )
     {
     if ( G_DEBUG )
         {
-        G_LOG->debug( "%s\t watchdog::set_property() - "
+        G_LOG->debug(
+            "%s\t watchdog::set_property() - "
             "field = \"%s\", val = \"%s\"",
             get_name(), field, value ? value->get_name() : "nullptr" );
         }
@@ -118,8 +121,10 @@ void watchdog::set_property( const char* field, device* value )
         }
     else
         {
-        G_LOG->alert( "%s\t watchdog::set_property() - "
-            "Unknown field \"%s\"", get_name(), field );
+        G_LOG->alert(
+            "%s\t watchdog::set_property() - "
+            "Unknown field \"%s\"",
+            get_name(), field );
         }
     }
 //-----------------------------------------------------------------------------

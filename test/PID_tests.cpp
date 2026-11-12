@@ -5,9 +5,8 @@ using namespace ::testing;
 
 TEST( PID, get_actuator )
     {
-    auto res = G_DEVICE_MANAGER()->add_io_device(
-        device::DT_REGULATOR, device::DST_REGULATOR_PID, "TC1",
-        "Test controller", "T" );
+    auto res = G_DEVICE_MANAGER()->add_io_device( device::DT_REGULATOR,
+        device::DST_REGULATOR_PID, "TC1", "Test controller", "T" );
     ASSERT_EQ( nullptr, res );
     auto p1_dev = G_DEVICE_MANAGER()->get_C( "TC1" );
     ASSERT_NE( nullptr, p1_dev );
@@ -55,9 +54,8 @@ void init_PID_parameters( PID& test_PID, float min_value = 0.f )
 
 TEST( PID, direct_set_value )
     {
-    auto res = G_DEVICE_MANAGER()->add_io_device(
-        device::DT_REGULATOR, device::DST_REGULATOR_PID, "TC1",
-        "Test controller", "T" );
+    auto res = G_DEVICE_MANAGER()->add_io_device( device::DT_REGULATOR,
+        device::DST_REGULATOR_PID, "TC1", "Test controller", "T" );
     ASSERT_EQ( nullptr, res );
     res = G_DEVICE_MANAGER()->add_io_device(
         device::DT_TE, device::DST_TE_VIRT, "TE1", "Test sensor", "T" );
@@ -158,7 +156,8 @@ TEST( PID, save_device )
         "PID2={M=0, ST=0, V=0, Z=0.00, P_k=0, P_Ti=0, P_Td=0, P_dt=0, "
         "P_max=0, P_min=0, P_acceleration_time=0, P_is_manual_mode=0, "
         "P_U_manual=0, P_k2=0, P_Ti2=0, P_Td2=0, P_out_max=0, P_out_min=0, "
-        "P_is_reverse=0, P_is_zero_start=0},\n", buff );
+        "P_is_reverse=0, P_is_zero_start=0},\n",
+        buff );
     }
 
 
@@ -194,25 +193,27 @@ TEST( PID, eval )
     DeltaMilliSecSubHooker::set_default_time();
     }
 
-namespace {
-
-void init_PID_for_output_limit_test( PID& pid, float out_min, float out_max )
+namespace
     {
-    pid.init_param( PID::P_k, 1.f );
-    pid.init_param( PID::P_Ti, 6.f );
-    pid.init_param( PID::P_Td, 0.01f );
-    pid.init_param( PID::P_dt, 1000.f );
-    pid.init_param( PID::P_max, 100.f );
-    pid.init_param( PID::P_min, 0.f );
-    pid.init_param( PID::P_acceleration_time, 0.f );
-    pid.init_param( PID::P_is_manual_mode, 0.f );
-    pid.init_param( PID::P_out_min, out_min );
-    pid.init_param( PID::P_out_max, out_max );
-    pid.init_param( PID::P_is_zero_start, 1.f );
-    pid.save_param();
-    }
 
-} // namespace
+    void init_PID_for_output_limit_test(
+        PID& pid, float out_min, float out_max )
+        {
+        pid.init_param( PID::P_k, 1.f );
+        pid.init_param( PID::P_Ti, 6.f );
+        pid.init_param( PID::P_Td, 0.01f );
+        pid.init_param( PID::P_dt, 1000.f );
+        pid.init_param( PID::P_max, 100.f );
+        pid.init_param( PID::P_min, 0.f );
+        pid.init_param( PID::P_acceleration_time, 0.f );
+        pid.init_param( PID::P_is_manual_mode, 0.f );
+        pid.init_param( PID::P_out_min, out_min );
+        pid.init_param( PID::P_out_max, out_max );
+        pid.init_param( PID::P_is_zero_start, 1.f );
+        pid.save_param();
+        }
+
+    } // namespace
 
 TEST( PID, anti_windup_on_output_limits )
     {

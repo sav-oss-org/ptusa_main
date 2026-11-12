@@ -15,13 +15,11 @@
 #ifndef ERRORS_H
 #define ERRORS_H
 
-#if !( defined PAC_PC || defined PAC_PLCNEXT ) && \
-    !defined DRIVER
+#if !( defined PAC_PC || defined PAC_PLCNEXT ) && !defined DRIVER
 #error You must define type!
 #endif
 
-#if ( defined PAC_PC || defined PAC_PLCNEXT ) && \
-    !defined PAC
+#if ( defined PAC_PC || defined PAC_PLCNEXT ) && !defined PAC
 #define PAC
 #endif
 
@@ -46,12 +44,12 @@ enum ALARM_TYPE
 
 enum ALARM_CLASS_PRIORITY
     {
-    P_FATAL         = 0,
+    P_FATAL = 0,
     P_ERR_CONNECTION = 100,
-    P_ALARM          = 250,
-    P_MESSAGE        = 500,
-    P_ANSWER         = 750,
-    P_REMIND         = 1000,
+    P_ALARM = 250,
+    P_MESSAGE = 500,
+    P_ANSWER = 750,
+    P_REMIND = 1000,
     };
 
 #endif // defined PAC || defined WIN32
@@ -60,98 +58,99 @@ enum ALARM_CLASS_PRIORITY
 #include <string.h>
 
 typedef unsigned char UCHAR;
-typedef unsigned int  UINT;
+typedef unsigned int UINT;
 
 #pragma pack( push, 8 ) //Выравнивание полей структур по 8 байт.
 
 /// @brief Глобальный идентификатор тревоги.
 struct alarm_id
     {
-    int object_type;
-    int object_number;
-    int object_alarm_number;
+        int object_type;
+        int object_number;
+        int object_alarm_number;
     };
 //-----------------------------------------------------------------------------
 struct alarm_params
     {
-    double  param1;
-    double  param2;
-    double  param3;
-    double  param4;
-    double  param5;
-    double  param6;
-    double  param7;
-    double  param8;
-    double  param9;
-    double  param10;
+        double param1;
+        double param2;
+        double param3;
+        double param4;
+        double param5;
+        double param6;
+        double param7;
+        double param8;
+        double param9;
+        double param10;
     };
 
 struct alarm
     {
-    alarm_params params;
+        alarm_params params;
 
-    //     atDiscrete      - дискретная ( true/false )
-    //     atValue         - контроля значения ( Lo/LoLo, Hi/HiHi )
-    //     atDeviation     - отклонения ( MinValue/MaxValue )
-    //     atRateOfChange  - изменения скорости ( speed )
-    //     atSpecial       - специальная
-    ALARM_TYPE type;    ///< Тип тревоги.
+        //     atDiscrete      - дискретная ( true/false )
+        //     atValue         - контроля значения ( Lo/LoLo, Hi/HiHi )
+        //     atDeviation     - отклонения ( MinValue/MaxValue )
+        //     atRateOfChange  - изменения скорости ( speed )
+        //     atSpecial       - специальная
+        ALARM_TYPE type;    ///< Тип тревоги.
 
-    char *description;  ///< Описание тревоги.
-    UCHAR enable;       ///< Блокировка тревоги на этапе проектирования.
-    char *group;        ///< Определяет принадлежность тревоги какой либо группе тревог.
-    UCHAR  inhibit;     ///< Блокировка тревоги во время работы.
+        char* description;  ///< Описание тревоги.
+        UCHAR enable;       ///< Блокировка тревоги на этапе проектирования.
+        char*
+            group;  ///< Определяет принадлежность тревоги какой либо группе тревог.
+        UCHAR inhibit;  ///< Блокировка тревоги во время работы.
 
-    //  Приоритеты тревоги:
-    //     0       - системные
-    //     1-249   - критические
-    //     250-499 - важные
-    //     500-749 - маловажные
-    //     750-999 - информационные
-    int priority; ///< Приоритет тревоги ( 0 - 999 ).
+        //  Приоритеты тревоги:
+        //     0       - системные
+        //     1-249   - критические
+        //     250-499 - важные
+        //     500-749 - маловажные
+        //     750-999 - информационные
+        int priority;  ///< Приоритет тревоги ( 0 - 999 ).
 
-    //     asNormal    - тревоги нет
-    //     asAlarm     - тревога есть
-    //     asReturn    - контролируемое значение
-    //                вернулось в нормальное
-    //                состояние
-    //     asAccept    - тревога подтверждена
-    ALARM_STATE state;  ///< Состояние тревоги.
+        //     asNormal    - тревоги нет
+        //     asAlarm     - тревога есть
+        //     asReturn    - контролируемое значение
+        //                вернулось в нормальное
+        //                состояние
+        //     asAccept    - тревога подтверждена
+        ALARM_STATE state;  ///< Состояние тревоги.
 
-    bool suppress;      ///< Подавление тревоги клиентами.
-    alarm_id id;        ///< Глобальный идентификатор тревоги.
-    UCHAR driver_id;    ///< id драйвера.
+        bool suppress;  ///< Подавление тревоги клиентами.
+        alarm_id id;  ///< Глобальный идентификатор тревоги.
+        UCHAR driver_id;  ///< id драйвера.
     };
 
 struct all_alarm
     {
-    int     cnt;
-    alarm   *alarms;
-    int     id;
+        int cnt;
+        alarm* alarms;
+        int id;
     };
 //-----------------------------------------------------------------------------
 //-----------------------------------------------------------------------------
 struct error_cmd
     {
-    int cmd;
-    int object_type;
-    int object_number;
-    int object_alarm_number;
+        int cmd;
+        int object_type;
+        int object_number;
+        int object_alarm_number;
     };
 
 enum ERR_CONSTANTS
     {
     MAX_PROJECTS_CNT = 256,
-    MAX_ALARMS_CNT   = 200,
+    MAX_ALARMS_CNT = 200,
 
-    MAX_DESCR_LEN    = 600,
-    MAX_GROUP_LEN    = 50,
+    MAX_DESCR_LEN = 600,
+    MAX_GROUP_LEN = 50,
     };
 
-int save_to_stream( alarm &a, char *buff );
-int load_from_stream( alarm &a, char *buff );
+int save_to_stream( alarm& a, char* buff );
+int load_from_stream( alarm& a, char* buff );
 
-#endif // DRIVER
+#endif  // DRIVER
 //-----------------------------------------------------------------------------
 //-----------------------------------------------------------------------------
 #ifdef PAC
@@ -182,12 +181,12 @@ class base_error
         ///                       (0 - нет, 1 - да).
         ///
         /// @return - количество записанных байт.
-        virtual int save_as_Lua_str( char *str ) = 0;
+        virtual int save_as_Lua_str( char* str ) = 0;
 
         /// @brief Обновление состояния ошибок.
         /// @param is_new_state - изменилось ли состояние ошибки
         ///                       (0 - нет, 1 - да).
-        virtual void evaluate( bool &is_new_state ) = 0;
+        virtual void evaluate( bool& is_new_state ) = 0;
 
         /// @brief Отладочный вывод содержимого класса в консоль.
         virtual void print() const = 0;
@@ -209,25 +208,24 @@ class base_error
 
         enum PARAMS  ///< Параметры ошибки, определяют номера битов.
             {
-            P_PARAM_N = 1,	  //Номер параметра.
+            P_PARAM_N = 1,  //Номер параметра.
 
             P_IS_ENABLE = 1,  ///< Блокировка тревоги на этапе проектирования.
-            P_IS_INHIBIT = 2, ///< Блокировка тревоги во время работы.
-            P_IS_SUPPRESS = 4,///< Подавление тревоги клиентами.
+            P_IS_INHIBIT = 2,  ///< Блокировка тревоги во время работы.
+            P_IS_SUPPRESS = 4,  ///< Подавление тревоги клиентами.
             };
 
-        enum COMMANDS                ///< Константы.
+        enum COMMANDS  ///< Константы.
             {
-
-            C_CMD_ACCEPT   = 100,    ///< Подтвердить ошибку.
-            C_CMD_SUPPRESS = 200,    ///< Подавить ошибку.
-            C_CMD_UNSET_SUPPRESS,    ///< Убрать подавление ошибки.
+            C_CMD_ACCEPT = 100,  ///< Подтвердить ошибку.
+            C_CMD_SUPPRESS = 200,  ///< Подавить ошибку.
+            C_CMD_UNSET_SUPPRESS,  ///< Убрать подавление ошибки.
             };
 
     protected:
         saved_params_u_int_4 err_par;
 
-        unsigned char error_state;    ///< Состояние ошибки.
+        unsigned char error_state;  ///< Состояние ошибки.
     };
 //-----------------------------------------------------------------------------
 /// @brief Содержит информацию о простой ошибке ( Modbus-клиент,
@@ -235,19 +233,19 @@ class base_error
 ///
 /// У простого устройства может быть только одна ошибка (ошибка обратной
 /// связи).
-class simple_error: public base_error
+class simple_error : public base_error
     {
-    friend class siren_lights_manager;
-    friend class errors_manager;
+        friend class siren_lights_manager;
+        friend class errors_manager;
 
     public:
         simple_error( i_simple_error* simple_error_owner );
         virtual ~simple_error() = default;
 
 
-        int save_as_Lua_str( char *str );
+        int save_as_Lua_str( char* str );
 
-        void evaluate( bool &is_new_state );
+        void evaluate( bool& is_new_state );
 
         /// @brief Отладочный вывод содержимого класса в консоль.
         void print() const;
@@ -262,41 +260,40 @@ class simple_error: public base_error
         int set_cmd( int cmd, int object_alarm_number );
 
     protected:
-        bool static is_any_error;        ///< Наличие тревоги.
-        bool static is_any_no_ack_error; ///< Наличие неподтвержденной тревоги.
-        bool static is_new_error;        ///< Наличие новой тревоги.
+        bool static is_any_error;  ///< Наличие тревоги.
+        bool static is_any_no_ack_error;  ///< Наличие неподтвержденной тревоги.
+        bool static is_new_error;  ///< Наличие новой тревоги.
 
     private:
-        i_simple_error* simple_error_owner;     ///< Владелец ошибки.
-        int prev_error_id = 0;                  ///< Предыдущая ошибка.
+        i_simple_error* simple_error_owner;  ///< Владелец ошибки.
+        int prev_error_id = 0;  ///< Предыдущая ошибка.
     };
 //-----------------------------------------------------------------------------
 /// @brief Содержит информацию об ошибке сложного устройства (танк,
 /// гребенка...).
 ///
 /// У сложного устройства может быть несколько ошибок (сообщение, ответ, ...).
-class tech_obj_error: public base_error
+class tech_obj_error : public base_error
     {
-    friend class errors_manager;
-    friend class siren_lights_manager;
+        friend class errors_manager;
+        friend class siren_lights_manager;
 
     public:
         // Интерфейс base_error.
-        tech_obj_error( tech_object* tech_dev ): tech_dev( tech_dev ),
-            prev_size( 0 ), was_set_cmd( false )
+        tech_obj_error( tech_object* tech_dev ) :
+            tech_dev( tech_dev ), prev_size( 0 ), was_set_cmd( false )
             {
             }
 
-        int save_as_Lua_str( char *str );
+        int save_as_Lua_str( char* str );
 
-        void evaluate( bool &is_new_state );
+        void evaluate( bool& is_new_state );
 
         void print() const
             {
 #ifdef DEBUG
-            printf( "%s\n",
-                tech_dev->get_name_in_Lua() );
-#endif // DEBUG
+            printf( "%s\n", tech_dev->get_name_in_Lua() );
+#endif  // DEBUG
             }
 
         unsigned char get_object_type() const
@@ -318,11 +315,11 @@ class tech_obj_error: public base_error
         int set_cmd( int cmd, int object_alarm_number );
 
     private:
-        tech_object* tech_dev; ///< Сложное устройство.
+        tech_object* tech_dev;  ///< Сложное устройство.
 
-        enum TECH_DEV_ERROR_CONST   ///< Константы.
+        enum TECH_DEV_ERROR_CONST  ///< Константы.
             {
-            TE_TYPE = 100,          ///< Тип ошибки.
+            TE_TYPE = 100,  ///< Тип ошибки.
             };
 
         u_int prev_size;
@@ -335,7 +332,6 @@ class tech_obj_error: public base_error
 /// объектов.
 class errors_manager
     {
-
     public:
         ~errors_manager();
 
@@ -345,7 +341,7 @@ class errors_manager
         ///
         /// @return < 0 - ошибка.
         /// @return   0 - ОК.
-        int save_as_Lua_str( char *str, u_int_2 &id );
+        int save_as_Lua_str( char* str, u_int_2& id );
 
         /// @brief Обновление состояния ошибок.
         void evaluate();
@@ -356,7 +352,7 @@ class errors_manager
         ///
         /// @return < 0 - ошибка.
         /// @return   0 - ОК.
-        int add_error( base_error *s_error );
+        int add_error( base_error* s_error );
 
         /// @brief Сброс параметров всех ошибок в значение по умолчанию (0).
         void reset_errors_params();
@@ -380,10 +376,10 @@ class errors_manager
             }
 
     private:
-        u_int_2 errors_id; // Состояние ошибок.
+        u_int_2 errors_id;  // Состояние ошибок.
 
         /// Единственный экземпляр класса.
-        static auto_smart_ptr < errors_manager > instance;
+        static auto_smart_ptr< errors_manager > instance;
 
         /// @param s_errors_cnt - количество ошибок.
         errors_manager();
@@ -393,7 +389,7 @@ class errors_manager
             DEM_MAX_ERRORS_CNT = 29,
             };
 
-        std::vector< base_error* > s_errors_vector;    ///< Массив ошибок.
+        std::vector< base_error* > s_errors_vector;  ///< Массив ошибок.
     };
 
 //Совместимость с предыдущей версией драйвера EasyDrv. FIXME.
@@ -401,7 +397,7 @@ class errors_manager
 //-----------------------------------------------------------------------------
 #define G_ERRORS_MANAGER errors_manager::get_instance()
 //-----------------------------------------------------------------------------
-class siren_lights_manager: public i_Lua_save_device
+class siren_lights_manager : public i_Lua_save_device
     {
     public:
         static siren_lights_manager* get_instance()
@@ -422,7 +418,7 @@ class siren_lights_manager: public i_Lua_save_device
             is_red_built_in_blink = type;
             }
 
-        int init( device *red, device *yellow, device *green, device *srn );
+        int init( device* red, device* yellow, device* green, device* srn );
 
         void eval();
 
@@ -431,9 +427,9 @@ class siren_lights_manager: public i_Lua_save_device
             P_MANUAL_MODE = 1,
             };
 
-        int save_device( char *buff ) const override;
+        int save_device( char* buff ) const override;
 
-        int set_cmd( const char *prop, u_int idx, double val );
+        int set_cmd( const char* prop, u_int idx, double val );
 
         /// @brief Отладочная печать объекта в консоль.
         const char* get_name_in_Lua() const override
@@ -450,16 +446,16 @@ class siren_lights_manager: public i_Lua_save_device
 
         run_time_params_u_int_4 par;
 
-        device *green;
-        device *red;
-        device *yellow;
+        device* green;
+        device* red;
+        device* yellow;
 
-        device *srn;
+        device* srn;
 
         ///Тип мигания (0 - реализуем сами, 0< - встроенный в сирену).
         int is_red_built_in_blink;
 
-        unsigned int  critical_error_n; // Номер текущей критической ошибки.
+        unsigned int critical_error_n;  // Номер текущей критической ошибки.
         uint32_t st_time;
 
         /// Единственный экземпляр класса.
@@ -468,6 +464,6 @@ class siren_lights_manager: public i_Lua_save_device
 //-----------------------------------------------------------------------------
 siren_lights_manager* G_SIREN_LIGHTS_MANAGER();
 //-----------------------------------------------------------------------------
-#endif // PAC
+#endif  // PAC
 
-#endif //ERRORS_H
+#endif  //ERRORS_H

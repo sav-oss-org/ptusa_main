@@ -40,8 +40,8 @@ namespace PtusaPLCnextEngineer
 
         if ( ptusaMainCmpnt.init_flag && !ptusaMainCmpnt.error_flag )
             {
-            G_LOG->info( "Program started (version %s).",
-                PRODUCT_VERSION_FULL_STR );
+            G_LOG->info(
+                "Program started (version %s).", PRODUCT_VERSION_FULL_STR );
 
             G_PROJECT_MANAGER->init_path( "/opt/main/" );
             G_PROJECT_MANAGER->init_sys_path( "/opt/main/sys/" );
@@ -50,9 +50,9 @@ namespace PtusaPLCnextEngineer
 
             int res = G_LUA_MANAGER->init( 0, "/opt/main/main.plua",
                 G_PROJECT_MANAGER->path.c_str(),
-                G_PROJECT_MANAGER->sys_path.c_str() );   //-Инициализация Lua.
+                G_PROJECT_MANAGER->sys_path.c_str() );  //-Инициализация Lua.
 
-            if ( res ) //-Ошибка инициализации.
+            if ( res )  //-Ошибка инициализации.
                 {
                 sprintf( G_LOG->msg, "Lua init returned error code %d!", res );
                 G_LOG->write_log( i_log::P_ALERT );
@@ -65,7 +65,8 @@ namespace PtusaPLCnextEngineer
                 UA_StatusCode retval = G_OPCUA_SERVER.init_all_and_start();
                 if ( retval != UA_STATUSCODE_GOOD )
                     {
-                    G_LOG->critical( "OPC UA server start failed. Returned error code %d!",
+                    G_LOG->critical(
+                        "OPC UA server start failed. Returned error code %d!",
                         retval );
                     return;
                     }
@@ -89,7 +90,7 @@ namespace PtusaPLCnextEngineer
             main_cycle();
             }
 
-            G_OPCUA_SERVER.shutdown();
+        G_OPCUA_SERVER.shutdown();
         }
 
-    } // end of namespace PtusaPLCnextEngineer
+    }  // end of namespace PtusaPLCnextEngineer
