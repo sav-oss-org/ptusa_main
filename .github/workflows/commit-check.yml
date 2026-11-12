@@ -83,9 +83,16 @@ jobs:
         continue-on-error: true
         run: |
           pipx install commit-check==2.20.5
+          # GitHub runner images redirect pipx binaries away
+          # from ~/.local/bin, so ask pipx where they went.
+          bin_dir="$(pipx environment --value PIPX_BIN_DIR)"
+          if [ ! -x "$bin_dir/commit-check" ]; then
+            echo "::error::commit-check missing from $bin_dir" >&2
+            exit 1
+          fi
           for c in $(git rev-list --no-merges \
               '${{ github.event.pull_request.base.sha }}..HEAD'); do
-            "$HOME/.local/bin/commit-check" -f --rev "$c"
+            "$bin_dir/commit-check" -f --rev "$c"
           done
 
   tag-check:
@@ -100,4 +107,9 @@ jobs:
       - name: 'Tag check'
         run: |
           pipx install commit-check==2.20.5
-          "$HOME/.local/bin/commit-check" --tag
+          bin_dir="$(pipx environment --value PIPX_BIN_DIR)"
+          if [ ! -x "$bin_dir/commit-check" ]; then
+            echo "::error::commit-check missing from $bin_dir" >&2
+            exit 1
+          fi
+          "$bin_dir/commit-check" --tag
