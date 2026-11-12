@@ -16,8 +16,10 @@ on:
     tags: ['**']
 
 permissions:
+  # Read-only at the top level; the write access to pull
+  # requests that the PR-comment step needs is scoped to that
+  # one job below, per Sonar S6622.
   contents: read
-  pull-requests: write
 
 env:
   # The policy is mirrored from .github/cchk.toml on purpose:
@@ -64,6 +66,9 @@ env:
 jobs:
   commit-check:
     if: github.event_name == 'pull_request'
+    permissions:
+      contents: read
+      pull-requests: write
     runs-on: ubuntu-latest
     steps:
       - name: 'Checkout repository'
