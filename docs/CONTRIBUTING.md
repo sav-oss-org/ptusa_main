@@ -20,10 +20,11 @@ Please note we have a code of conduct, please follow it in all your interactions
 
 - Keep each pull request focused on one concrete change.
 - Put unrelated improvements into separate pull requests.
-- Use concise pull request titles.
+- Use concise pull request titles. Write them in the imperative mood,
+  because a squash merge builds the commit message from the title.
 - Use Markdown backticks to highlight technical words when useful, for
   example:
-  ``Removes `DNS` reverse lookup from `TCP` logging``.
+  ``Remove `DNS` reverse lookup from `TCP` logging``.
 - Explain why the change is needed, what changed, expected risk and validation
   in the pull request description.
 
