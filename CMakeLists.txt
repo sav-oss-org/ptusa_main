@@ -712,6 +712,8 @@ set(MAIN_TEST_SHUFFLE_FILTER
     "valve_iolink_mix_proof.valve_iolink_mix_proof:"
     "valve_iolink_shut_off_sorio.save_device:"
     "valve_iolink_shut_off_thinktop.valve_iolink_shut_off_thinktop:"
+    "watchdog_bit.*:"
+    "watchdog_counter.*:"
     "wages_eth.direct_set_tcp_buff:"
     "wages_pxc_axl.direct_set_value:"
     "wages_RS232.get_value_from_wages:"
