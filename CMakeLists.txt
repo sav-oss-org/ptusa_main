@@ -727,18 +727,28 @@ set(MAIN_TEST_SHUFFLE_FILTER
 string(REPLACE ";" "" MAIN_TEST_SHUFFLE_FILTER_STR
     "${MAIN_TEST_SHUFFLE_FILTER}")
 
+# Отдельная пустая рабочая директория: штатные тесты оставляют в
+# build/ свои файлы (SRAM, профи, eeprom), а их наличие меняет
+# поведение тестов, поэтому прогон не должен зависеть от этого
+# осадка. При повторной конфигурации CMake эту директорию не
+# вычищает, поэтому перед каждым запуском ctest ее чистит
+# служебный тест фикстуры.
+add_test(NAME main_test.shuffle_order.setup
+    COMMAND ${CMAKE_COMMAND}
+        -Ddir=${CMAKE_BINARY_DIR}/shuffle_order_run
+        -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/CleanTestRunDir.cmake)
+
+set_tests_properties(main_test.shuffle_order.setup
+    PROPERTIES FIXTURES_SETUP shuffle_run_dir)
+
 add_test(NAME main_test.shuffle_order
     COMMAND $<TARGET_FILE:main_test>
         --gtest_shuffle
         --gtest_brief=1
         --gtest_filter=-${MAIN_TEST_SHUFFLE_FILTER_STR})
 
-# Отдельная пустая рабочая директория: штатные тесты оставляют в
-# build/ свои файлы (SRAM, профи, eeprom), а их наличие меняет
-# поведение тестов, поэтому прогон не должен зависеть от этого
-# осадка.
-file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/shuffle_order_run)
-
-set_tests_properties(main_test.shuffle_order PROPERTIES
-    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/shuffle_order_run
-    RUN_SERIAL TRUE)
+set_tests_properties(main_test.shuffle_order
+    PROPERTIES
+        WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/shuffle_order_run
+        RUN_SERIAL TRUE
+        FIXTURES_REQUIRED shuffle_run_dir)
