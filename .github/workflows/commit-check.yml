@@ -1,5 +1,6 @@
-# Checks every pull request's commit messages, authors, and title
-# against the policy in .github/cchk.toml.  https://commit-check.com/
+# Checks pull request commit messages, authors, title and touched
+# files, and newly pushed tags, against the policy mirrored below.
+# https://commit-check.com/
 name: 'Commit check'
 
 on:
@@ -8,13 +9,48 @@ on:
     # Edited titles matter because squash merges build the commit
     # message from them.
     types: [opened, synchronize, reopened, edited]
+  # GitHub runs this job from the base branch's copy of the
+  # workflow, so a tag gate cannot be influenced by the pull
+  # request that carries the tag.
+  push:
+    tags: ['**']
 
 permissions:
   contents: read
   pull-requests: write
 
+env:
+  # The policy is mirrored from .github/cchk.toml on purpose:
+  # CCHK_* values win over the checked-out file, so a pull
+  # request cannot weaken the rules it is checked against by
+  # editing that config. Keep the two copies in sync; touching
+  # cchk.toml stays visible in the pull request diff. Residual:
+  # the top-level warn list and inherit_from are read from the
+  # file only, so demotions through them remain a visible risk
+  # until the tool can pin a config to a trusted revision.
+  CCHK_CONVENTIONAL_COMMITS: 'false'
+  CCHK_SUBJECT_CAPITALIZED: 'true'
+  CCHK_SUBJECT_IMPERATIVE: 'true'
+  CCHK_SUBJECT_MAX_LENGTH: '50'
+  CCHK_ALLOW_WIP_COMMITS: 'false'
+  CCHK_ALLOW_EMPTY_COMMITS: 'false'
+  CCHK_ALLOW_MERGE_COMMITS: 'true'
+  # Empty on purpose: pins the skip-list so a checked-in or
+  # inherited config cannot exempt authors from the checks.
+  CCHK_IGNORE_AUTHORS: ''
+  CCHK_AI_ATTRIBUTION: 'disclose'
+  CCHK_AI_DISCLOSURE_TRAILERS: 'AI-assisted,Co-authored-by'
+  CCHK_CONVENTIONAL_BRANCH: 'false'
+  CCHK_FILES_MAX_SIZE: '1MB'
+  CCHK_FILES_PROHIBITED_PATTERNS: >-
+    *.pem,*.key,*.pfx,*.p12,.env,id_rsa*
+  CCHK_FILES_MAX_PATH_LENGTH: '250'
+  CCHK_TAG_REGEX: >-
+    ^\d{4}\.(?:(?:[13578]|1[02])\.(?:[1-9]|[12]\d|3[01])|(?:[469]|11)\.(?:[1-9]|[12]\d|30)|2\.(?:[1-9]|1\d|2[0-9]))(?:\.[1-9]\d*)?$
+
 jobs:
   commit-check:
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - name: 'Checkout repository'
@@ -25,45 +61,43 @@ jobs:
 
       - name: 'Commit check'
         uses: commit-check/commit-check-action@d68e05baf9511853193e2749f8a64bf2a221619a # v2.22.0
-        # The policy is mirrored here from .github/cchk.toml on
-        # purpose: CCHK_* values win over the checked-out file, so
-        # a pull request cannot weaken the rules it is checked
-        # against by editing that config. Keep the two copies in
-        # sync; tampering with cchk.toml stays visible in the
-        # pull request diff. Note: the top-level warn list is read
-        # from the file only, so demoting rules through it remains
-        # a (visible) residual risk until the action supports
-        # pinning a config from a trusted revision.
-        env:
-          CCHK_CONVENTIONAL_COMMITS: 'false'
-          CCHK_SUBJECT_CAPITALIZED: 'true'
-          CCHK_SUBJECT_IMPERATIVE: 'true'
-          CCHK_SUBJECT_MAX_LENGTH: '50'
-          CCHK_ALLOW_WIP_COMMITS: 'false'
-          CCHK_ALLOW_EMPTY_COMMITS: 'false'
-          CCHK_ALLOW_MERGE_COMMITS: 'true'
-          CCHK_AI_ATTRIBUTION: 'disclose'
-          CCHK_AI_DISCLOSURE_TRAILERS: 'AI-assisted,Co-authored-by'
-          CCHK_CONVENTIONAL_BRANCH: 'false'
-          CCHK_FILES_MAX_SIZE: '1MB'
-          CCHK_FILES_PROHIBITED_PATTERNS: >-
-            *.pem,*.key,*.pfx,*.p12,.env,id_rsa*
-          CCHK_FILES_MAX_PATH_LENGTH: '250'
-          CCHK_TAG_REGEX: >-
-            ^\d{4}\.(?:[1-9]|1[0-2])\.(?:[1-9]|[12][0-9]|3[01])(?:\.[1-9]\d*)?$
         with:
           message: true
-          # The branch rule is off in .github/cchk.toml; the house
-          # style is snake_case, not Conventional Branch.
+          # The branch rule is off in .github/cchk.toml; the
+          # house style is snake_case, not Conventional Branch.
           branch: false
           author-name: true
           author-email: true
           pr-title: true
           job-summary: true
-          # Skipped automatically on fork pull requests, which get
-          # a read-only token; the check run still works there.
+          # Skipped automatically on fork pull requests, which
+          # get a read-only token; the check run still works.
           pr-comments: true
           # Report-only while the control program is under heavy
-          # testing. Remove once the baseline is green, then make
-          # this check required in branch protection.
+          # testing. Remove once the baseline is green, then
+          # make this check required in branch protection.
           dry-run: true
+
+      - name: 'File checks'
+        # Remove continue-on-error together with dry-run above.
+        continue-on-error: true
+        run: |
+          pipx install commit-check==2.20.5
+          for c in $(git rev-list --no-merges \
+              '${{ github.event.pull_request.base.sha }}..HEAD'); do
+            "$HOME/.local/bin/commit-check" -f --rev "$c"
+          done
+
+  tag-check:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - name: 'Checkout tag'
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: 'Tag check'
+        run: |
+          pipx install commit-check==2.20.5
+          "$HOME/.local/bin/commit-check" --tag
