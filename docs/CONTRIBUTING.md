@@ -28,6 +28,16 @@ Please note we have a code of conduct, please follow it in all your interactions
 - Explain why the change is needed, what changed, expected risk and validation
   in the pull request description.
 
+## Branch Names
+
+- Use snake_case with a short leading verb for feature work:
+  `add_lua_test_error_counter`, `fix_pac_info_test_order`.
+- Start infrastructure work with the subsystem: `ci_test_order_shuffle`.
+- The `dependabot/` prefix is reserved for automated pull requests.
+- CI does not validate branch names: squash merges keep them out of
+  history, and commit-check only knows the Conventional Branch
+  format, which rejects every branch in this repository.
+
 ## Versioning and Tags
 
 - Release tags use CalVer: `YYYY.MM.DD`, or `YYYY.MM.DD.N` when a
