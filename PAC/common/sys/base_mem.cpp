@@ -39,8 +39,63 @@ SRAM::SRAM( const std::filesystem::path& file_name, u_int size ) :
     file_path = resolved.lexically_normal();
     tmp_path = file_path.string() + ".tmp";
 
+    // Каталог хранения подготавливается сразу, чтобы проверка свободного
+    // места в params_manager::evaluate() и первое сохранение не завершались
+    // с ошибкой из-за его отсутствия.
+    ensure_storage_dir();
+
     params_data = new std::byte[ total_size ];
     memset( params_data, 0, total_size );
+    }
+//-----------------------------------------------------------------------------
+void SRAM::ensure_storage_dir()
+    {
+    const std::filesystem::path directory = file_path.parent_path();
+
+    if ( directory.empty() )
+        {
+        return;
+        }
+
+    std::error_code ec;
+    if ( !std::filesystem::exists( directory, ec ) )
+        {
+        std::filesystem::create_directories( directory, ec );
+        if ( ec )
+            {
+            G_LOG->error( "SRAM() - ERROR: Can't create storage directory"
+                " (%s) : %s.\n", directory.string().c_str(),
+                strerror( ec.value() ) );
+            return;
+            }
+
+        G_LOG->notice( "SRAM() - Storage directory (%s) created.",
+            directory.string().c_str() );
+        }
+
+    // Права записи проверяются до создания файлов, чтобы причина отказа
+    // была видна в журнале до первой попытки сохранения.
+#ifdef WIN_OS
+    if ( _access( directory.string().c_str(), 2 ) != 0 )
+        {
+        G_LOG->error(
+            "SRAM() - ERROR: Can't write to storage directory (%s).",
+            directory.string().c_str() );
+        }
+#else
+    if ( access( directory.string().c_str(), W_OK | X_OK ) != 0 )
+        {
+        // errno нужно сохранить до обращения к другим функциям, иначе он
+        // может быть перезаписан.
+        const int err{ errno };
+
+        G_LOG->error(
+            "SRAM() - ERROR: Can't write to storage directory (%s) : %s"
+            " (uid=%d, gid=%d).\n", directory.string().c_str(),
+            strerror( err ), static_cast<int>( geteuid() ),
+            static_cast<int>( getegid() ) );
+        }
+#endif // WIN_OS
     }
 //-----------------------------------------------------------------------------
 SRAM::~SRAM()

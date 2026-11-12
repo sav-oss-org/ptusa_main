@@ -190,4 +190,28 @@ TEST( SRAM, get_directory )
     // не зависит от текущего каталога процесса.
     EXPECT_EQ( std::filesystem::current_path() / "subdir",
         sram.get_directory() );
+
+    std::filesystem::remove( sram.get_directory() );
+    }
+
+TEST( SRAM, storage_directory_created )
+    {
+    const std::filesystem::path directory{ "test_storage_dir/nested" };
+
+    std::filesystem::remove_all( "test_storage_dir" );
+
+    SRAM sram( directory / "test_sram6.bin", DATA_SIZE );
+
+    // Если каталог хранения отсутствует, то он создается автоматически,
+    // чтобы файлы параметров можно было разместить в новом каталоге без
+    // ручных действий на контроллере.
+    EXPECT_TRUE( std::filesystem::exists( sram.get_directory() ) );
+
+    // Перед созданием файлов права на запись в каталог проверяются, поэтому
+    // сохранение в созданный каталог должно завершиться успешно.
+    EXPECT_EQ( 0, sram.safe_save() );
+    EXPECT_TRUE(
+        std::filesystem::exists( directory / "test_sram6.bin" ) );
+
+    std::filesystem::remove_all( "test_storage_dir" );
     }
