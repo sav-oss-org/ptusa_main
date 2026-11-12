@@ -39,3 +39,10 @@ Issues and pull requests created by the agent start their body with:
 
 See `docs/CONTRIBUTING.md` and `.github/copilot-instructions.md` for the
 project contribution and style rules.
+
+## Response links
+
+When an agent reply mentions a GitHub pull request, issue, review
+thread, comment, commit, or CI run, render the reference as a
+Markdown link with the full URL so the reader can click through
+directly.
