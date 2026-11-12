@@ -25,6 +25,32 @@ jobs:
 
       - name: 'Commit check'
         uses: commit-check/commit-check-action@d68e05baf9511853193e2749f8a64bf2a221619a # v2.22.0
+        # The policy is mirrored here from .github/cchk.toml on
+        # purpose: CCHK_* values win over the checked-out file, so
+        # a pull request cannot weaken the rules it is checked
+        # against by editing that config. Keep the two copies in
+        # sync; tampering with cchk.toml stays visible in the
+        # pull request diff. Note: the top-level warn list is read
+        # from the file only, so demoting rules through it remains
+        # a (visible) residual risk until the action supports
+        # pinning a config from a trusted revision.
+        env:
+          CCHK_CONVENTIONAL_COMMITS: 'false'
+          CCHK_SUBJECT_CAPITALIZED: 'true'
+          CCHK_SUBJECT_IMPERATIVE: 'true'
+          CCHK_SUBJECT_MAX_LENGTH: '50'
+          CCHK_ALLOW_WIP_COMMITS: 'false'
+          CCHK_ALLOW_EMPTY_COMMITS: 'false'
+          CCHK_ALLOW_MERGE_COMMITS: 'true'
+          CCHK_AI_ATTRIBUTION: 'disclose'
+          CCHK_AI_DISCLOSURE_TRAILERS: 'AI-assisted,Co-authored-by'
+          CCHK_CONVENTIONAL_BRANCH: 'false'
+          CCHK_FILES_MAX_SIZE: '1MB'
+          CCHK_FILES_PROHIBITED_PATTERNS: >-
+            *.pem,*.key,*.pfx,*.p12,.env,id_rsa*
+          CCHK_FILES_MAX_PATH_LENGTH: '250'
+          CCHK_TAG_REGEX: >-
+            ^\d{4}\.(?:[1-9]|1[0-2])\.(?:[1-9]|[12][0-9]|3[01])(?:\.[1-9]\d*)?$
         with:
           message: true
           # The branch rule is off in .github/cchk.toml; the house

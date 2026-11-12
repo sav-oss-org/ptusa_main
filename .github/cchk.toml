@@ -48,5 +48,7 @@ prohibited_patterns = ["*.pem", "*.key", "*.pfx", "*.p12",
 max_path_length = 250
 
 [tag]
-# Releases are CalVer, see the Versioning section of CONTRIBUTING.md.
-regex = '^v?\d{4}\.\d{1,2}\.\d{1,2}(\.\d+)?$'
+# Releases are CalVer, see the Versioning section of CONTRIBUTING.md:
+# no `v` prefix, no leading zeroes, no serial `0`. Legacy tags are
+# never re-checked, so the pattern does not accept them.
+regex = '^\d{4}\.(?:[1-9]|1[0-2])\.(?:[1-9]|[12][0-9]|3[01])(?:\.[1-9]\d*)?$'

@@ -1,3 +1,9 @@
+# A plain `pre-commit install` must set up every stage this file
+# uses, including the commit-msg and pre-push commit-check hooks.
+default_install_hook_types:
+  - pre-commit
+  - commit-msg
+  - pre-push
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.5.0
