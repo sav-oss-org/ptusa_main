@@ -27,6 +27,18 @@ Please note we have a code of conduct, please follow it in all your interactions
 - Explain why the change is needed, what changed, expected risk and validation
   in the pull request description.
 
+## Versioning and Tags
+
+- Release tags use CalVer: `YYYY.MM.DD`, or `YYYY.MM.DD.N` when a
+  second release happens on the same day. `N` is a hotfix serial
+  number starting at 1.
+- Components carry no leading zeros (`2026.1.28`), and new tags carry
+  no leading `v`; the legacy `v2024.01.31` is a historical exception.
+- Tags carry no free-form suffixes such as `CP1251`; rule `CC401` in
+  `.github/cchk.toml` enforces the pattern.
+- Semantic Versioning is reserved for independently distributed
+  libraries or SDKs, should this repository ever publish them.
+
 ## AI-Assisted Commit Attribution
 
 - Commits whose substantive content was produced with AI assistance must
