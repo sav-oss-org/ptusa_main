@@ -45,11 +45,41 @@ TEST( dll, no_print_stack_traceback )
 TEST( dll, get_lua_error_count )
     {
     lua_manager::reset_lua_error_count();
+
     auto L = lua_open();
+    luaL_openlibs( L );
+    G_LUA_MANAGER->set_Lua( L );
+
+    // Нулевой вызов C-функции.
     EXPECT_EQ( 1, get_lua_error_count( L ) );
     EXPECT_EQ( LUA_TNUMBER, lua_type( L, -1 ) );
     EXPECT_EQ( 0, static_cast<int>( lua_tonumber( L, -1 ) ) );
-    lua_close( L );
+    lua_pop( L, 1 );
+
+    // Создаем реальную ошибку через lua_manager.
+    EXPECT_EQ( 0, luaL_dostring( L,
+        "function dll_error() error( 'dll error' ) end" ) );
+    EXPECT_NE( 0, G_LUA_MANAGER->void_exec_lua_method(
+        "", "dll_error", "get_lua_error_count" ) );
+    EXPECT_EQ( 1, lua_manager::get_lua_error_count() );
+
+    // Проверяем регистрацию функции в модуле ptusa_main.
+    EXPECT_EQ( 1, luaopen_ptusa_main( L ) );
+    EXPECT_TRUE( lua_istable( L, -1 ) );
+
+    lua_getfield( L, -1, "get_lua_error_count" );
+    EXPECT_EQ( LUA_TFUNCTION, lua_type( L, -1 ) );
+    EXPECT_EQ( 0, lua_pcall( L, 0, 1, 0 ) );
+    EXPECT_EQ( LUA_TNUMBER, lua_type( L, -1 ) );
+    EXPECT_EQ( 1, static_cast<int>( lua_tonumber( L, -1 ) ) );
+    lua_pop( L, 1 );
+
+    // В конце сбрасываем счетчик.
+    lua_manager::reset_lua_error_count();
+    EXPECT_EQ( 0, lua_manager::get_lua_error_count() );
+
+    lua_pop( L, 1 ); // Таблица модуля ptusa_main.
+    G_LUA_MANAGER->free_Lua();
     }
 
 TEST( dll, use_print_stack_traceback )
