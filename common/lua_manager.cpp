@@ -1,6 +1,8 @@
 #include <algorithm>
 #include <filesystem>
 #include <limits>
+#include <string>
+#include <vector>
 
 #include "fmt/format.h"
 
@@ -21,6 +23,16 @@
 auto_smart_ptr< lua_manager > lua_manager::instance;
 bool lua_manager::is_print_stack_traceback = true;
 int lua_manager::lua_error_count{ 0 };
+//-----------------------------------------------------------------------------
+namespace
+    {
+    // Тексты ошибок, которые уже записаны в журнал. Список нужен для того,
+    // чтобы не дублировать одинаковые сообщения.
+    std::vector< std::string > recorded_lua_errors;
+
+    // Текст ошибки, объект которой в Lua не является строкой.
+    const char non_string_lua_error[] = "non-string Lua error";
+    }
 //-----------------------------------------------------------------------------
 #ifdef PTUSA_TEST
 void lua_manager::set_Lua( lua_State* l )
@@ -186,6 +198,8 @@ int lua_manager::init( lua_State* lua_state, const char* script_name,
         package_path += "'";
         if ( luaL_dostring( L, ( cmd + package_path ).c_str() ) != 0 )
             {
+            count_lua_error();
+
             G_LOG->critical(
                 "Error during C++ call - \"lua_manager::init\" - %s",
                 lua_tostring( L, -1 ) );
@@ -253,6 +267,7 @@ int lua_manager::init( lua_State* lua_state, const char* script_name,
 
         if ( luaL_dofile( L, path ) != 0 )
             {
+            count_lua_error();
             G_LOG->critical( "%s", lua_tostring( L, -1 ) );
             lua_pop( L, 1 );
 
@@ -301,6 +316,7 @@ int lua_manager::init( lua_State* lua_state, const char* script_name,
 
     if( luaL_loadfile( L, script_name ) != 0 )
         {
+        count_lua_error();
         G_LOG->critical( "%s", lua_tostring( L, -1 ) );
         lua_pop( L, 1 );
         return 1;
@@ -308,6 +324,7 @@ int lua_manager::init( lua_State* lua_state, const char* script_name,
 
     if ( int i_line = lua_pcall(L, 0, LUA_MULTRET, 0); i_line != 0 )
         {
+        count_lua_error();
         G_LOG->critical( "%s", lua_tostring( L, -1 ) );
         lua_pop( L, 1 );
         return 1;
@@ -517,10 +534,7 @@ int lua_manager::exec_lua_method_var( const char* object_name,
         {
         // Учитывается любой неудачный вызов, а не только вызов
         // обработчика ошибок: Lua 5.1 не вызывает его при нехватке памяти.
-        if ( lua_error_count < ( std::numeric_limits< int >::max )() )
-            {
-            lua_error_count++;
-            }
+        count_lua_error();
 
         lua_settop( L, initial_stack_top );
         }
@@ -546,52 +560,81 @@ int lua_manager::exec_lua_method_var( const char* object_name,
     return res;
     }
 //-----------------------------------------------------------------------------
-int lua_manager::error_trace( lua_State * L )
+void lua_manager::count_lua_error()
     {
-    static std::vector< std::string > errors;
-
-    std::string err_str = lua_tostring( L, -1 );
-    lua_pop( L, 1 );
-
-    if ( std::binary_search( errors.begin(), errors.end(), err_str ) != true )
+    if ( lua_error_count < ( std::numeric_limits< int >::max )() )
         {
-        sprintf( G_LOG->msg, "Lua error: %s", err_str.c_str() );
-        if ( G_LOG->msg[ strlen( G_LOG->msg ) - 1 ] == '\n' )
+        lua_error_count++;
+        }
+    }
+//-----------------------------------------------------------------------------
+void lua_manager::note_lua_error( lua_State* L, const char* message )
+    {
+    const char* error_message{ message != nullptr ? message :
+        non_string_lua_error };
+
+    const std::string error_str{ error_message };
+    if ( std::binary_search( recorded_lua_errors.begin(),
+        recorded_lua_errors.end(), error_str ) )
+        {
+        //Такая ошибка уже записана в журнал, повторно ее не пишем.
+        return;
+        }
+
+    sprintf( G_LOG->msg, "Lua error: %s", error_str.c_str() );
+    if ( G_LOG->msg[ strlen( G_LOG->msg ) - 1 ] == '\n' )
+        {
+        //Удаляем последний CR
+        G_LOG->msg[ strlen( G_LOG->msg ) - 1 ] = 0;
+        }
+
+    G_LOG->write_log( i_log::P_ERR );
+
+    if ( is_print_stack_traceback )
+        {
+        int res{ sprintf( G_LOG->msg, "Lua stack traceback:" ) };
+
+        lua_Debug ar{};
+        int level{ 1 };
+
+        while ( lua_getstack( L, level, &ar ) &&
+            i_log::C_BUFF_SIZE - res > 0 )
             {
-            //Удаляем последний CR
-            G_LOG->msg[ strlen( G_LOG->msg ) - 1 ] = 0;
+            lua_getinfo( L, "Sln", &ar );
+
+            res += snprintf( G_LOG->msg + res, i_log::C_BUFF_SIZE - res,
+                "\n\t%s:%d: in function '%s' ('%s')",
+                ar.short_src, ar.currentline, ar.name, ar.namewhat );
+            level++;
             }
 
         G_LOG->write_log( i_log::P_ERR );
-
-        if ( is_print_stack_traceback )
-            {
-            int res = sprintf( G_LOG->msg, "Lua stack traceback:" );
-
-            lua_Debug ar;
-            int level = 1;
-
-            while ( lua_getstack( L, level, &ar ) && i_log::C_BUFF_SIZE - res > 0 )
-                {
-                lua_getinfo( L, "Sln", &ar );
-
-                res += snprintf( G_LOG->msg + res, i_log::C_BUFF_SIZE - res,
-                    "\n\t%s:%d: in function '%s' ('%s')",
-                    ar.short_src, ar.currentline, ar.name, ar.namewhat );
-                level++;
-                }
-
-            G_LOG->write_log( i_log::P_ERR );
-            }
-
-        errors.push_back( err_str );
-        if ( errors.size() > MAX_ERRORS )
-            {
-            errors.erase( errors.begin(), errors.end() - MAX_ERRORS / 2 );
-            }
-
-        std::sort( errors.begin(), errors.end() );
         }
+
+    recorded_lua_errors.push_back( error_str );
+    if ( recorded_lua_errors.size() > MAX_ERRORS )
+        {
+        recorded_lua_errors.erase( recorded_lua_errors.begin(),
+            recorded_lua_errors.end() - MAX_ERRORS / 2 );
+        }
+
+    std::sort( recorded_lua_errors.begin(), recorded_lua_errors.end() );
+    }
+//-----------------------------------------------------------------------------
+#ifdef PTUSA_TEST
+void lua_manager::reset_lua_error_count()
+    {
+    lua_error_count = 0;
+    recorded_lua_errors.clear();
+    }
+#endif
+//-----------------------------------------------------------------------------
+int lua_manager::error_trace( lua_State * L )
+    {
+    const char* error_message{ lua_tostring( L, -1 ) };
+    lua_pop( L, 1 );
+
+    note_lua_error( L, error_message );
 
     return 0;
     }
@@ -644,6 +687,8 @@ int lua_manager::exec_Lua_str( const char *Lua_str, const char *error_str,
     {
     if( int res = luaL_dostring(L, Lua_str); res != 0  )
         {
+        count_lua_error();
+
         if ( is_print_error_msg )
             {
             sprintf( G_LOG->msg, "Error during C++ call - \"%s\" - %s\n",
@@ -738,10 +783,13 @@ int lua_manager::reload_script( int script_n, const char* script_function_name,
     //-Выполнение скрипта.
     if ( luaL_dofile( L, path ) != 0 )
         {
+        count_lua_error();
         lua_pop( L, 1 );
         if ( luaL_dofile( L, FILES[ script_n ] ) != 0 )
             {
-            sprintf( G_LOG->msg, "Reload Lua script - %s", lua_tostring( L, -1 ) );
+            count_lua_error();
+            sprintf( G_LOG->msg, "Reload Lua script - %s",
+                lua_tostring( L, -1 ) );
             G_LOG->write_log( i_log::P_ERR );
 
             strncpy( res_str, G_LOG->msg + 1 /*не копируем первый \n*/,

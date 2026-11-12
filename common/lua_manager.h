@@ -56,10 +56,9 @@ class lua_manager
             return lua_error_count;
             }
 
-        static void reset_lua_error_count()
-            {
-            lua_error_count = 0;
-            }
+#ifdef PTUSA_TEST
+        static void reset_lua_error_count();
+#endif
 
         static lua_manager* get_instance();
 
@@ -115,6 +114,10 @@ class lua_manager
             }
 
         static int error_trace( lua_State * L );
+
+        static void count_lua_error();
+
+        static void note_lua_error( lua_State* L, const char* message );
 
         static auto_smart_ptr< lua_manager > instance;
 
