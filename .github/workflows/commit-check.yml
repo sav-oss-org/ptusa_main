@@ -40,6 +40,19 @@ env:
   CCHK_IGNORE_AUTHORS: ''
   CCHK_AI_ATTRIBUTION: 'disclose'
   CCHK_AI_DISCLOSURE_TRAILERS: 'AI-assisted,Co-authored-by'
+  # Empty on purpose: keeps the tool's built-in known-AI list;
+  # verified an empty value does not weaken CC014 detection.
+  CCHK_AI_DISCLOSURE_PATTERN: ''
+  # Pinned to the tool defaults these checks currently run with
+  # (fixup and revert commits are accepted today), so a config
+  # edit cannot flip them either way; verified env beats a
+  # config that sets allow_fixup_commits = true.
+  CCHK_ALLOW_FIXUP_COMMITS: 'true'
+  CCHK_ALLOW_REVERT_COMMITS: 'true'
+  # Opt-in checks are pinned to their off-by-default values for
+  # symmetry: they cannot weaken the gate from the config file,
+  # but pinning keeps the effective policy fully visible here.
+  CCHK_SUBJECT_MIN_LENGTH: '0'
   CCHK_CONVENTIONAL_BRANCH: 'false'
   CCHK_FILES_MAX_SIZE: '1MB'
   CCHK_FILES_PROHIBITED_PATTERNS: >-
@@ -90,10 +103,36 @@ jobs:
             echo "::error::commit-check missing from $bin_dir" >&2
             exit 1
           fi
-          for c in $(git rev-list --no-merges \
+          # No --no-merges: conflict resolutions in merges can
+          # introduce files too, and -f handles merge commits
+          # (verified against a real merge commit locally).
+          for c in $(git rev-list \
               '${{ github.event.pull_request.base.sha }}..HEAD'); do
             "$bin_dir/commit-check" -f --rev "$c"
           done
+
+      - name: 'AI trailer pair'
+        # commit-check ORs the two trailer names (CC015 needs
+        # Co-authored-by in its list), so the house AND rule is
+        # enforced here: a commit naming an AI tool or claiming
+        # AI assistance must carry both provenance trailers.
+        # Remove continue-on-error together with dry-run above.
+        continue-on-error: true
+        run: |
+          status=0
+          for c in $(git rev-list \
+              '${{ github.event.pull_request.base.sha }}..HEAD'); do
+            msg="$(git log -1 --format=%B "$c")"
+            if printf '%s\n' "$msg" | grep -qiE \
+                '^(AI-assisted:|Signed-off-by:.*(copilot|claude|chatgpt|openai|gemini|cursor|cline|devin|qoder|windsurf|zed ai))|Co-authored-by:.*(copilot|claude|chatgpt|openai|gemini|cursor|cline|devin|qoder|windsurf|zed ai)|generated (with|by)[^"]*(copilot|claude|chatgpt|openai|gemini|cursor|cline|devin|qoder|windsurf|zed ai| ai )'; then
+              if ! printf '%s\n' "$msg" | grep -q '^AI-assisted:' ||
+                 ! printf '%s\n' "$msg" | grep -q '^Co-authored-by:'; then
+                echo "::error::$(git log -1 --format=%h "$c"): AI commits need both AI-assisted and Co-authored-by trailers"
+                status=1
+              fi
+            fi
+          done
+          exit "$status"
 
   tag-check:
     if: github.event_name == 'push'
