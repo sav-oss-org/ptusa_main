@@ -100,20 +100,21 @@ jobs:
         # Remove continue-on-error together with dry-run above.
         continue-on-error: true
         run: |
-          pipx install commit-check==2.20.5
-          # GitHub runner images redirect pipx binaries away
-          # from ~/.local/bin, so ask pipx where they went.
-          bin_dir="$(pipx environment --value PIPX_BIN_DIR)"
-          if [ ! -x "$bin_dir/commit-check" ]; then
-            echo "::error::commit-check missing from $bin_dir" >&2
-            exit 1
-          fi
+          # Run only the sha256-pinned commit-check wheel: pip
+          # refuses a mismatched digest, so CI never executes an
+          # unverified package.  Dependabot bumps version and
+          # digest together in the pins file below.
+          python3 -m venv "$RUNNER_TEMP/cchk-venv"
+          "$RUNNER_TEMP/cchk-venv/bin/pip" install --no-deps \
+            --require-hashes --quiet \
+            -r "$GITHUB_WORKSPACE/.github/requirements-commit-check.txt"
+          cchk="$RUNNER_TEMP/cchk-venv/bin/commit-check"
           # No --no-merges: conflict resolutions in merges can
           # introduce files too, and -f handles merge commits
           # (verified against a real merge commit locally).
           for c in $(git rev-list \
               '${{ github.event.pull_request.base.sha }}..HEAD'); do
-            "$bin_dir/commit-check" -f --rev "$c"
+            "$cchk" -f --rev "$c"
           done
 
       - name: 'AI trailer pair'
@@ -150,10 +151,10 @@ jobs:
 
       - name: 'Tag check'
         run: |
-          pipx install commit-check==2.20.5
-          bin_dir="$(pipx environment --value PIPX_BIN_DIR)"
-          if [ ! -x "$bin_dir/commit-check" ]; then
-            echo "::error::commit-check missing from $bin_dir" >&2
-            exit 1
-          fi
-          "$bin_dir/commit-check" --tag
+          # Install from the same sha256 pins as the pull-request
+          # job above.
+          python3 -m venv "$RUNNER_TEMP/cchk-venv"
+          "$RUNNER_TEMP/cchk-venv/bin/pip" install --no-deps \
+            --require-hashes --quiet \
+            -r "$GITHUB_WORKSPACE/.github/requirements-commit-check.txt"
+          "$RUNNER_TEMP/cchk-venv/bin/commit-check" --tag
