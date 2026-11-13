@@ -30,10 +30,19 @@ Please note we have a code of conduct, please follow it in all your interactions
 
 ## Branch Names
 
-- Use snake_case with a short leading verb for feature work:
-  `add_lua_test_error_counter`, `fix_pac_info_test_order`.
-- Start infrastructure work with the subsystem: `ci_test_order_shuffle`.
+- Use snake_case. Prefixes form a closed set mapped from the issue
+  kind and the commit verb:
+  - `fix_` for bugs: `fix_pac_info_test_order`;
+  - `add_` for features and new devices, written as
+    `add_device_<name>` for devices:
+    `add_lua_test_error_counter`;
+  - `remove_` and `refactor_` for removals and refactoring;
+  - `ci_` for CI and test infrastructure: `ci_test_order_shuffle`;
+  - `docs_` for documentation.
 - The `dependabot/` prefix is reserved for automated pull requests.
+- Never use Conventional Branch slashes (`feat/`, `fix/`): the
+  branch vocabulary follows the commit verbs, not Conventional
+  Commit types.
 - CI does not validate branch names: squash merges keep them out of
   history, and commit-check only knows the Conventional Branch
   format, which rejects every branch in this repository.
