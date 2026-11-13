@@ -121,6 +121,17 @@ int tcp_communicator::get_master_socket()
 //------------------------------------------------------------------------------
 bool tcp_communicator::checkBuff( int s )
     {
+    // A descriptor at or above FD_SETSIZE does not fit into the fd_set
+    // bitmap, so reject it and report the same result as a failed select().
+    if ( s < 0 || s >= FD_SETSIZE )
+        {
+        G_LOG->warning(
+            "Network device : s%d is out of select() range"
+            " ( FD_SETSIZE = %d ).",
+            s, FD_SETSIZE );
+        return false;
+        }
+
     // Настраиваем  file descriptor set.
     fd_set fds;
     FD_ZERO( &fds );
