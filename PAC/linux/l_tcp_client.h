@@ -9,12 +9,12 @@
 class linux_tcp_client: public tcp_client
     {
     private:
-        uint32_t async_startconnnect;
-        timeval async_tv;
-        sockaddr_in async_sock_address;
-        unsigned int async_bytes_to_send;
-        uint32_t asyncReceiveTime;
-        bool newDataIsAvailable;
+        uint32_t async_startconnnect{};
+        timeval async_tv{};
+        sockaddr_in async_sock_address{};
+        unsigned int async_bytes_to_send{};
+        uint32_t asyncReceiveTime{};
+        bool newDataIsAvailable{ false };
     public:
         int Connect();
         int AsyncConnect() override;
