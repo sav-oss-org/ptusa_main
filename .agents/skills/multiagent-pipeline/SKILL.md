@@ -22,6 +22,10 @@ them only where they are missing:
   comment on the issue.
 - `agent:needs-input` — escalated; a human must act before continuing.
 
+A process holds `agent:claimed` only while it needs agent work: the
+pipeline removes the label when the PR goes to human review or the
+issue escalates to `agent:needs-input`.
+
 Concurrency limit: at most **5** issues with `agent:claimed`. Never
 claim an issue that is assigned to a human, already linked to an open
 non-agent PR, or missing `agent:ok`. Once a machine account such as
@@ -45,8 +49,13 @@ Labels").
      fixes. Max 3 rounds per thread, then `agent:needs-input` and a
      mention of the reviewer. Never resolve a thread opened by a human.
    - PR is green with open threads answered: comment "ready for human
-     review" once and stop touching it; merging is humans only.
-3. While `agent:claimed` count is below 5, take the oldest unclaimed
+     review" once, remove `agent:claimed` to free the slot, and stop
+     touching it; merging is humans only.
+3. GitHub has no atomic label compare-and-set, so serialize claiming
+   under an exclusive lock for this step: `mkdir ../ptusa-wt/tick.lock`
+   fails while another tick holds it (transient coordination, not
+   state); remove the lock on exit. Ticks run on one machine, so a
+   local lock suffices. While holding it, take the oldest unclaimed
    `agent:ok` issue. Before claiming, verify no human already works
    on it: no assignees, no entry in
    `closedByPullRequestsReferences` pointing at an open PR, and no
@@ -91,8 +100,9 @@ Include all of this in the sub-agent prompt:
   (`bug`, `enhancement`), then the template title prefix (`[BUG]: `,
   `[FEATURE]: `, `[DEVICE]: `) as mirror and fallback; the title-only
   submarkers `[DEVICE]` and `[DISCUSSION]` (the latter means humans
-  only) have no type or label equivalent yet. Branch prefixes are a closed set, mapped from
-  the issue kind and the commit verb: `fix_` (`bug`), `add_`
+  only) have no type or label equivalent yet. Branch prefixes are a
+  closed set, mapped from the issue kind and the commit verb: `fix_`
+  (`bug`), `add_`
   (`enhancement`, `[DEVICE]`, new devices as `add_device_<name>`),
   `remove_`, `refactor_`, `ci_` (CI and test infrastructure), `docs_`.
   Never use Conventional Branch slashes (`feat/`, `fix/`);
@@ -107,10 +117,16 @@ Include all of this in the sub-agent prompt:
   never wrapped.
 - The PR body starts with the AI-assistance marker, states scope, risk,
   and validation, and links the issue.
+- Once the PR is open, comment the PR URL on the issue
+  (`gh issue comment <issue> --repo sav-oss-org/ptusa_main --body
+  <pr-url>`): that comment is the claim signal the label protocol
+  promises.
 - Forbidden without a human decision: merging, approving, resolving
-  human threads, touching `deps/` submodules, editing workflows or
-  CI, adding labels, `git commit --amend` of pushed commits,
-  force-push.
+  human threads, touching `deps/` submodules, adding labels,
+  `git commit --amend` of pushed commits, force-push. Editing
+  workflows or CI files is allowed only for a claimed `ci_` issue,
+  only within its stated scope, and never to job permissions,
+  secrets, or the trusted-author CI gate.
 - Verification is scoped: prefer targeted `ctest -R` runs from the
   build directory; full builds only when the change needs them and the
   user allowed builds.
@@ -142,7 +158,8 @@ gh api repos/sav-oss-org/ptusa_main/pulls/N/comments \
   --jq '.[] | "\(.id) \(.path):\(.line) \(.user.login)"'
 ```
 
-Replace `N` with the issue or PR number. All state lives in GitHub
+`N` is the issue number in `gh issue` commands and the PR number in
+`gh pr` commands and `pulls/N` API paths. All state lives in GitHub
 labels, PR threads, and check results; never in local files.
 
 CI gotcha: required checks on fork PRs run the base branch's copy
