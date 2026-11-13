@@ -1901,6 +1901,121 @@ float temperature_e::get_value() const
         }
     }
 //-----------------------------------------------------------------------------
+temperature_e_virtual::temperature_e_virtual( const char* dev_name ) :
+    AI1( dev_name, DT_TE, DST_TE_VIRT, ADDITIONAL_PARAM_COUNT )
+    {
+    start_param_idx = AI1::get_params_count();
+    set_par_name( P_ERR, start_param_idx, "P_ERR" );
+    param_emulator( 20, 2 );    // Average room temperature.
+    }
+//-----------------------------------------------------------------------------
+void temperature_e_virtual::direct_set_value( float new_value )
+    {
+    device::direct_set_value( new_value );
+    }
+//-----------------------------------------------------------------------------
+float temperature_e_virtual::get_value() const
+    {
+    if ( get_state() < 0 )
+        {
+        return get_par( P_ERR, start_param_idx );
+        }
+
+    float temperature = 0.f;
+    if ( get_source_temperature( temperature ) )
+        {
+        return get_par( P_ZERO_ADJUST_COEFF, 0 ) + temperature;
+        }
+
+    return device::get_value();
+    }
+//-----------------------------------------------------------------------------
+void temperature_e_virtual::direct_set_state( int new_state )
+    {
+    device::direct_set_state( new_state );
+    }
+//-----------------------------------------------------------------------------
+int temperature_e_virtual::get_state() const
+    {
+    if ( source && source != G_DEVICE_MANAGER()->get_stub_device() )
+        {
+        return source->get_state();
+        }
+
+    return device::get_state();
+    }
+//-----------------------------------------------------------------------------
+void temperature_e_virtual::set_property( const char* field, device* dev )
+    {
+    if ( field && dev && dev != G_DEVICE_MANAGER()->get_stub_device() )
+        {
+        source = dev;
+        return;
+        }
+
+    device::set_property( field, dev );
+    }
+//-----------------------------------------------------------------------------
+void temperature_e_virtual::set_string_property( const char* field,
+    const char* value )
+    {
+    if ( !field )
+        {
+        return device::set_string_property( field, value );
+        }
+
+    if ( !value || value[ 0 ] == '\0' )
+        {
+        source = nullptr;
+        return;
+        }
+
+    auto source_device = G_DEVICE_MANAGER()->get_device( value );
+    if ( source_device != G_DEVICE_MANAGER()->get_stub_device() )
+        {
+        source = source_device;
+        return;
+        }
+
+    device::set_string_property( field, value );
+    }
+//-----------------------------------------------------------------------------
+bool temperature_e_virtual::get_source_temperature( float& temperature ) const
+    {
+    if ( !source || source == G_DEVICE_MANAGER()->get_stub_device() )
+        {
+        return false;
+        }
+
+    switch ( source->get_type() )
+        {
+        case DT_TE:
+            temperature = static_cast<i_AI_device*>( source )->get_value();
+            return true;
+
+        case DT_QT:
+            if ( auto qt = dynamic_cast<concentration_e_iolink*>( source ) )
+                {
+                temperature = qt->get_temperature();
+                return true;
+                }
+            break;
+
+        case DT_FQT:
+            if ( auto fqt = dynamic_cast<counter_iolink*>( source ) )
+                {
+                temperature = fqt->get_temperature();
+                return true;
+                }
+            break;
+
+        default:
+            break;
+        }
+
+    return false;
+    }
+//-----------------------------------------------------------------------------
 //-----------------------------------------------------------------------------
 temperature_e_analog::temperature_e_analog( const char* dev_name ) :
     AI1( dev_name, DT_TE, DST_TE_ANALOG, LAST_PARAM_IDX - 1 )

@@ -886,7 +886,8 @@ io_device* device_manager::add_io_device( int dev_type, int dev_sub_type,
                     break;
 
                 case device::DST_TE_VIRT:
-                    new_device = new virtual_device( dev_name, device::DT_TE, device::DST_TE_VIRT );
+                    new_device = new temperature_e_virtual( dev_name );
+                    new_io_device = (temperature_e_virtual*)new_device;
                     break;
 
                 case device::DST_TE_ANALOG:
