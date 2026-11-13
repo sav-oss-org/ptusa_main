@@ -2673,6 +2673,7 @@ valve_DO1::valve_DO1( const char* dev_name ) : valve( dev_name, DT_V, DST_V_DO1 
 //-----------------------------------------------------------------------------
 void valve_DO1::direct_on()
     {
+    set_fb_state( true, false );
     if ( G_PAC_INFO()->is_emulator() ) return valve::direct_on();
 
     set_DO( DO_INDEX, 1 );
@@ -2680,6 +2681,7 @@ void valve_DO1::direct_on()
 //-----------------------------------------------------------------------------
 void valve_DO1::direct_off()
     {
+    set_fb_state( false, true );
     if ( G_PAC_INFO()->is_emulator() ) return valve::direct_off();
 
     set_DO( DO_INDEX, 0 );
@@ -2689,16 +2691,11 @@ valve::VALVE_STATE valve_DO1::get_valve_state() const
     {
     if ( G_PAC_INFO()->is_emulator() )
         {
-        return (VALVE_STATE)digital_io_device::get_state();
+        return valve::get_valve_state();
         }
 
     return (VALVE_STATE)get_DO( DO_INDEX );
     };
-//-----------------------------------------------------------------------------
-bool valve_DO1::get_fb_state() const
-    {
-    return true;
-    }
 //-----------------------------------------------------------------------------
 //-----------------------------------------------------------------------------
 void virtual_motor::direct_off()
