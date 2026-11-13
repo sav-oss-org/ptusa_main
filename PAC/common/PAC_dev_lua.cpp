@@ -15527,6 +15527,7 @@ TOLUA_API int tolua_PAC_dev_open (lua_State* tolua_S)
    tolua_constant(tolua_S,"DST_G_IOL_8",device::DST_G_IOL_8);
    tolua_constant(tolua_S,"DST_WATCHDOG",device::DST_WATCHDOG);
    tolua_constant(tolua_S,"DST_CONV_AO2",device::DST_CONV_AO2);
+   tolua_constant(tolua_S,"DST_CONV_AI1",device::DST_CONV_AI1);
    tolua_constant(tolua_S,"DST_NODE",device::DST_NODE);
   tolua_endmodule(tolua_S);
   tolua_cclass(tolua_S,"i_wages","i_wages","",NULL);
