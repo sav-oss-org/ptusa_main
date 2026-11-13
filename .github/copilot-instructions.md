@@ -396,8 +396,18 @@ The project supports Phoenix Contact PLCnext controllers:
 
 ### Memory Analysis
 
-For memory analysis there is no CTest wrapper at the moment, so run Valgrind
-directly from the build directory:
+On Linux, configure with `-DMEMORY_CHECK=ON` to register the
+`main_test_memcheck` CTest case. It runs `main_test` under Valgrind
+memcheck and fails when Valgrind reports definite leaks. Without
+`MEMORY_CHECK=ON`, on non-Linux platforms, or without Valgrind, the
+case is not registered:
+
+```bash
+cd build
+ctest -R main_test_memcheck -C Release
+```
+
+A direct Valgrind run from the build directory stays possible:
 
 ```bash
 cd build
