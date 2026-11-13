@@ -80,6 +80,8 @@ experiment and measure before relying on it.
 
 Include all of this in the sub-agent prompt:
 
+- Timing bookends: first action `date -u +%s > "$WT/.agent_start"`,
+  final report must include wall-clock runtime computed from it.
 - Read `AGENTS.md`, `docs/CONTRIBUTING.md`, and
   `.github/copilot-instructions.md` before coding.
 - One issue, one branch (snake_case), one focused PR into
@@ -142,3 +144,9 @@ gh api repos/sav-oss-org/ptusa_main/pulls/N/comments \
 
 Replace `N` with the issue or PR number. All state lives in GitHub
 labels, PR threads, and check results; never in local files.
+
+CI gotcha: required checks on fork PRs run the base branch's copy
+of the workflow through `pull_request_target`, gated by trusted
+author (see the build job condition in `cmake.yml`). A workflow
+job added in a pull request therefore cannot run on its own PR;
+new jobs must mirror that gate and check out the PR head sha.
