@@ -1,0 +1,118 @@
+#
+# Baseline Valgrind memcheck suppressions for main_test.
+#
+# These entries hide known findings tracked as issues in
+# sav-oss-org/ptusa_main:
+#   #1524  Unit-test leaks under Valgrind (test fixtures)
+#   #1525  io_device::get_DO reads past the DO channels allocation
+#   #1526  AsyncReceive branches on an uninitialised stack value
+# Do not add new entries without a linked issue, and remove entries
+# as soon as the corresponding fix lands.  The tcp_communicator
+# checkBuff abort (#1527) cannot be suppressed, so that test stays
+# excluded in cmake/MemcheckTest.cmake until the fd guard lands.
+#
+# cmake/MemcheckTest.cmake passes this file to valgrind automatically.
+#
+
+# #1524: test fixtures allocate objects with new/new[] directly in
+# TestBody() and never free them.
+{
+   leak-test-fixture-alloc-in-test-body
+   Memcheck:Leak
+   match-leak-kinds: definite
+   fun:*
+   fun:*Test8TestBodyEv
+}
+
+# #1524: cipline_tech_object() allocates CIP buffers that nobody
+# releases afterwards.
+{
+   leak-cipline-tech-object-ctor
+   Memcheck:Leak
+   match-leak-kinds: definite
+   fun:*
+   fun:_ZN19cipline_tech_objectC1EPKcjjS1_jjjjjj
+}
+
+# #1524: init_and_alloc() allocates channel arrays that nobody
+# releases afterwards.
+{
+   leak-io-device-init-and-alloc
+   Memcheck:Leak
+   match-leak-kinds: definite
+   fun:*
+   fun:_ZN9io_device14init_and_allocEiiii
+}
+
+# #1524: cip_stats::deserialize() allocates arrays loaded from the
+# CIP stats file.
+{
+   leak-cip-stats-deserialize
+   Memcheck:Leak
+   match-leak-kinds: definite
+   fun:*
+   fun:_ZN9cip_stats11deserializeERSi
+}
+
+# #1524: cip_stats::get_obj_stats() allocates per-object stat
+# arrays that nobody releases afterwards.
+{
+   leak-cip-stats-get-obj-stats
+   Memcheck:Leak
+   match-leak-kinds: definite
+   fun:*
+   fun:_ZN9cip_stats13get_obj_statsEPc
+}
+
+# #1524: lua states opened by test fixtures are never closed.  Lua
+# heap blocks are allocated through luaM_realloc_, and the state
+# block itself is allocated inside lua_newstate.
+{
+   leak-lua-state-heap
+   Memcheck:Leak
+   match-leak-kinds: definite
+   fun:*
+   fun:luaM_realloc_
+}
+
+{
+   leak-lua-state-block
+   Memcheck:Leak
+   match-leak-kinds: definite
+   fun:*
+   fun:lua_newstate
+}
+
+# #1524: subhook_new() leaks its internal hook structure.
+{
+   leak-subhook-new
+   Memcheck:Leak
+   match-leak-kinds: definite
+   fun:*
+   fun:subhook_new
+}
+
+# #1524: ParamsRecipeManager::createAdapter() leaks adapter objects.
+{
+   leak-params-recipe-manager-create-adapter
+   Memcheck:Leak
+   match-leak-kinds: definite
+   fun:*
+   fun:_ZN19ParamsRecipeManager13createAdapterEP19ParamsRecipeStorage
+}
+
+# #1525: get_DO() reads one element past the end of the DO channels
+# array when the device reports more DO channels than allocated.
+{
+   oob-read-io-device-get-do
+   Memcheck:Addr8
+   fun:_ZNK9io_device6get_DOEj
+}
+
+# #1526: AsyncReceive() selects() with an fd_set built from an
+# uninitialised stack value.
+{
+   cond-linux-tcp-client-async-receive
+   Memcheck:Cond
+   fun:_ZN16linux_tcp_client12AsyncReceiveEv
+}

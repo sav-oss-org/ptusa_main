@@ -51,7 +51,10 @@ function(run_memcheck_test target)
     list(REMOVE_DUPLICATES _excludes)
     string(REPLACE ";" ":" _exclude_filter "${_excludes}")
 
-    # Print every leak kind, but fail the case only on definite leaks.
+    # Print every leak kind, but fail the case only on definite
+    # leaks.  The baseline suppression file in the repository root
+    # hides the known findings (issues #1524, #1525, #1526); remove
+    # entries there as the fixes land.
     add_test(NAME ${target}_memcheck
         COMMAND ${VALGRIND_EXECUTABLE}
             --tool=memcheck
@@ -62,6 +65,7 @@ function(run_memcheck_test target)
             --error-exitcode=1
             --num-callers=40
             --track-origins=yes
+            --suppressions=${PROJECT_SOURCE_DIR}/valgrind.supp
             "$<TARGET_FILE:${target}>"
             --gtest_filter=-${_exclude_filter})
 
