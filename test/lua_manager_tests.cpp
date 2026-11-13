@@ -757,8 +757,9 @@ TEST_F(LuaManagerTest, reload_script_luaL_dofile_failure)
 
     EXPECT_EQ(1, G_LUA_MANAGER->reload_script(
                  file_serial_number, "test_lua_func_str", ans, sizeof(ans)));
-    // Оба вызова luaL_dofile завершились ошибкой, поэтому обе учтены.
-    EXPECT_EQ(2, lua_manager::get_lua_error_count());
+    // Оба вызова luaL_dofile завершились ошибкой, но неудача учитывается
+    // один раз — по итоговой ошибке перезагрузки.
+    EXPECT_EQ(1, lua_manager::get_lua_error_count());
 
     subhook_remove(hook_lua_pcall);
     subhook_free(hook_lua_pcall);

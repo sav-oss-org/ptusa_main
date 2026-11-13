@@ -75,6 +75,11 @@ TEST( dll, get_lua_error_count )
     EXPECT_EQ( 1, static_cast<int>( lua_tonumber( L, -1 ) ) );
     lua_pop( L, 1 );
 
+    // Таблица модуля должна содержать и функцию текста последней ошибки.
+    lua_getfield( L, -1, "get_last_lua_error" );
+    EXPECT_EQ( LUA_TFUNCTION, lua_type( L, -1 ) );
+    lua_pop( L, 1 );
+
     // В конце сбрасываем счетчик.
     lua_manager::reset_lua_error_count();
     EXPECT_EQ( 0, lua_manager::get_lua_error_count() );
