@@ -19,14 +19,16 @@ class watchdog : public device
         inline static const float MAX_OUT_VALUE = 32'767;
 
         /// @param name - имя.
-        explicit watchdog( const char* name,
-            device::DEVICE_SUB_TYPE sub_type = device::DEVICE_SUB_TYPE::DST_WATCHDOG );
+        explicit watchdog(
+            const char* name, device::DEVICE_SUB_TYPE sub_type =
+                                  device::DEVICE_SUB_TYPE::DST_WATCHDOG );
 
         ~watchdog() override = default;
 
         void evaluate_io() override;
 
-        void set_string_property( const char* field, const char* value ) override;
+        void set_string_property(
+            const char* field, const char* value ) override;
         void set_property( const char* field, device* value ) override;
 
         const char* get_name_in_Lua() const override;

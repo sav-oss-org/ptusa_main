@@ -36,8 +36,7 @@ class test_uni_io_manager_PP_mode : public uni_io_manager
             {
             (void)node;
             (void)station;
-            if ( address == PHOENIX_STATUS_REGISTER_ADDRESS &&
-                quantity == 2 )
+            if ( address == PHOENIX_STATUS_REGISTER_ADDRESS && quantity == 2 )
                 {
                 buff[ 0 ] = static_cast<u_char>( status_register_value >> 8 );
                 buff[ 1 ] = static_cast<u_char>( status_register_value & 0xFF );
@@ -75,9 +74,8 @@ TEST( pp_mode_alarm, pp_mode_activation_deactivation )
     tcp_communicator::init_instance( "Тест", "Test" );
 
     G_IO_MANAGER()->init( 1 );
-    G_IO_MANAGER()->add_node( 0,
-        io_manager::io_node::TYPES::PHOENIX_BK_ETH, 1, "127.0.0.1", "A100",
-        0, 0, 0, 0, 0, 0 );
+    G_IO_MANAGER()->add_node( 0, io_manager::io_node::TYPES::PHOENIX_BK_ETH, 1,
+        "127.0.0.1", "A100", 0, 0, 0, 0, 0, 0 );
     auto node = G_IO_MANAGER()->get_node( 0 );
 
     test_uni_io_manager_PP_mode mngr;
@@ -86,8 +84,8 @@ TEST( pp_mode_alarm, pp_mode_activation_deactivation )
 
     u_int_2 err_id = 0;
     std::array<char, 300> lua_buff{};
-    PAC_critical_errors_manager::get_instance()->save_as_Lua_str( lua_buff.data(),
-        err_id );
+    PAC_critical_errors_manager::get_instance()->save_as_Lua_str(
+        lua_buff.data(), err_id );
     auto REF_STR = R"s(	{
 	description = "6-1-1 : Узел I/O 'A100' ('127.0.0.1', 'Тест') - активен PP mode (каналы управления заблокированы)",
 	type = AT_SPECIAL,
@@ -101,8 +99,8 @@ TEST( pp_mode_alarm, pp_mode_activation_deactivation )
 
     mngr.deactivate_error();
     mngr.read_phoenix_status_register( node );
-    PAC_critical_errors_manager::get_instance()->save_as_Lua_str( lua_buff.data(),
-        err_id );
+    PAC_critical_errors_manager::get_instance()->save_as_Lua_str(
+        lua_buff.data(), err_id );
     EXPECT_STREQ( lua_buff.data(), "" );        // Нет ошибки.
 
     // После потери связи ошибка должна быть только одна - "нет связи",
@@ -110,7 +108,7 @@ TEST( pp_mode_alarm, pp_mode_activation_deactivation )
     mngr.activate_error();
     mngr.read_phoenix_status_register( node );
     DeltaMilliSecSubHooker::set_millisec(
-        G_PAC_INFO()->par[ PAC_info::P_BK_ANSWER_MAX_WAIT_TIME ] + 100);
+        G_PAC_INFO()->par[ PAC_info::P_BK_ANSWER_MAX_WAIT_TIME ] + 100 );
     auto res = mngr.e_communicate( node, 1, 1 );
     EXPECT_NE( res, 0 );
     auto REF_STR_NO_CONNECTION = R"s(	{
@@ -122,8 +120,8 @@ TEST( pp_mode_alarm, pp_mode_activation_deactivation )
 	id_n = 1,
 	},
 )s";
-    PAC_critical_errors_manager::get_instance()->save_as_Lua_str( lua_buff.data(),
-        err_id );
+    PAC_critical_errors_manager::get_instance()->save_as_Lua_str(
+        lua_buff.data(), err_id );
     // Есть только ошибка связи.
     EXPECT_STREQ( lua_buff.data(), REF_STR_NO_CONNECTION );
 
@@ -136,8 +134,8 @@ TEST( pp_mode_alarm, pp_mode_activation_deactivation )
 // Test that PP mode alarm flag is initialized correctly.
 TEST( pp_mode_alarm, initialization )
     {
-    io_manager::io_node node( io_manager::io_node::TYPES::PHOENIX_BK_ETH,
-        1, "127.0.0.1", "A100", 0, 0, 0, 0, 0, 0 );
+    io_manager::io_node node( io_manager::io_node::TYPES::PHOENIX_BK_ETH, 1,
+        "127.0.0.1", "A100", 0, 0, 0, 0, 0, 0 );
 
     // Verify initial state.
     EXPECT_EQ( 0, node.status_register );
@@ -150,8 +148,8 @@ TEST( pp_mode_alarm, initialization )
 TEST( pp_mode_alarm, non_phoenix_node )
     {
     io_manager::io_node wago_node(
-        io_manager::io_node::TYPES::WAGO_750_XXX_ETHERNET,
-        1, "127.0.0.1", "W100", 0, 0, 0, 0, 0, 0 );
+        io_manager::io_node::TYPES::WAGO_750_XXX_ETHERNET, 1, "127.0.0.1",
+        "W100", 0, 0, 0, 0, 0, 0 );
 
     // Set error bits for Wago node.
     wago_node.status_register = 0x003F;
@@ -173,9 +171,8 @@ TEST( pp_mode_alarm, disable_node_no_alarm )
     tcp_communicator::init_instance( "Тест", "Test" );
 
     G_IO_MANAGER()->init( 1 );
-    G_IO_MANAGER()->add_node( 0,
-        io_manager::io_node::TYPES::PHOENIX_BK_ETH, 1, "127.0.0.1", "A100",
-        0, 0, 0, 0, 0, 0 );
+    G_IO_MANAGER()->add_node( 0, io_manager::io_node::TYPES::PHOENIX_BK_ETH, 1,
+        "127.0.0.1", "A100", 0, 0, 0, 0, 0, 0 );
     auto node = G_IO_MANAGER()->get_node( 0 );
 
     // No PP mode alarm active.
@@ -188,8 +185,8 @@ TEST( pp_mode_alarm, disable_node_no_alarm )
     EXPECT_TRUE( PAC_critical_errors_manager::get_instance()->is_any_error() );
     u_int_2 err_id = 0;
     std::array<char, 300> lua_buff{};
-    PAC_critical_errors_manager::get_instance()->save_as_Lua_str( lua_buff.data(),
-        err_id );
+    PAC_critical_errors_manager::get_instance()->save_as_Lua_str(
+        lua_buff.data(), err_id );
     auto REF_STR_1 = R"s(	{
 	description = "6-1-1 : Узел I/O 'A100' ('127.0.0.1', 'Тест') - активен PP mode (каналы управления заблокированы)",
 	type = AT_SPECIAL,
@@ -203,8 +200,8 @@ TEST( pp_mode_alarm, disable_node_no_alarm )
 
     EXPECT_EQ( 0, G_PAC_INFO()->set_cmd( "NODEENABLED", 1, 0 ) );
     EXPECT_TRUE( PAC_critical_errors_manager::get_instance()->is_any_error() );
-    PAC_critical_errors_manager::get_instance()->save_as_Lua_str( lua_buff.data(),
-        err_id );
+    PAC_critical_errors_manager::get_instance()->save_as_Lua_str(
+        lua_buff.data(), err_id );
     auto REF_STR_2 = R"s(	{
 	description = "5-1-1 : Узел I/O 'A100' ('127.0.0.1', 'Тест') - отключен для обслуживания",
 	type = AT_SPECIAL,
@@ -229,9 +226,8 @@ TEST( pp_mode_alarm, e_communicate )
     tcp_communicator::init_instance( "Тест", "Test" );
 
     G_IO_MANAGER()->init( 1 );
-    G_IO_MANAGER()->add_node( 0,
-        io_manager::io_node::TYPES::PHOENIX_BK_ETH, 1, "127.0.0.1", "A100",
-        0, 0, 0, 0, 0, 0 );
+    G_IO_MANAGER()->add_node( 0, io_manager::io_node::TYPES::PHOENIX_BK_ETH, 1,
+        "127.0.0.1", "A100", 0, 0, 0, 0, 0, 0 );
     auto node = G_IO_MANAGER()->get_node( 0 );
 
     test_uni_io_manager_PP_mode mngr;
@@ -267,9 +263,8 @@ TEST( pp_mode_alarm, cfg_bus_error_activation_deactivation )
     tcp_communicator::init_instance( "Тест", "Test" );
 
     G_IO_MANAGER()->init( 1 );
-    G_IO_MANAGER()->add_node( 0,
-        io_manager::io_node::TYPES::PHOENIX_BK_ETH, 1, "127.0.0.1", "A100",
-        0, 0, 0, 0, 0, 0 );
+    G_IO_MANAGER()->add_node( 0, io_manager::io_node::TYPES::PHOENIX_BK_ETH, 1,
+        "127.0.0.1", "A100", 0, 0, 0, 0, 0, 0 );
     auto node = G_IO_MANAGER()->get_node( 0 );
 
     test_uni_io_manager_PP_mode mngr;

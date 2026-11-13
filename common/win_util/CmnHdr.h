@@ -7,7 +7,7 @@ See Appendix A.
 ******************************************************************************/
 
 
-#pragma once   // Include this header file once per compilation unit
+#pragma once  // Include this header file once per compilation unit
 
 //////////////////////// Windows Version Build Option /////////////////////////
 
@@ -38,18 +38,19 @@ See Appendix A.
 ///////////////////////// Include Windows Definitions /////////////////////////
 
 
-#pragma warning(push, 3)
+#pragma warning( push, 3 )
 #include <Windows.h>
-#pragma warning(pop)
-#pragma warning(push, 4)
+#pragma warning( pop )
+#pragma warning( push, 4 )
 
 
 ///////////// Verify that the proper header files are being used //////////////
 
 
 #ifndef WT_EXECUTEINPERSISTENTTHREAD
-#pragma message("You are not using the latest Platform SDK header/library ")
-#pragma message("files. This may prevent the project from building correctly.")
+#pragma message( "You are not using the latest Platform SDK header/library " )
+#pragma message( \
+    "files. This may prevent the project from building correctly." )
 #endif
 
 
@@ -57,22 +58,22 @@ See Appendix A.
 
 
 /* nonstandard extension 'single line comment' was used */
-#pragma warning(disable:4001)
+#pragma warning( disable : 4001 )
 
 // unreferenced formal parameter
-#pragma warning(disable:4100)
+#pragma warning( disable : 4100 )
 
 // Note: Creating precompiled header
-#pragma warning(disable:4699)
+#pragma warning( disable : 4699 )
 
 // function not inlined
-#pragma warning(disable:4710)
+#pragma warning( disable : 4710 )
 
 // unreferenced inline function has been removed
-#pragma warning(disable:4514)
+#pragma warning( disable : 4514 )
 
 // assignment operator could not be generated
-#pragma warning(disable:4512)
+#pragma warning( disable : 4512 )
 
 
 ///////////////////////// Pragma message helper macro /////////////////////////
@@ -89,23 +90,24 @@ c:\CD\CmnHdr.h(82):Fix this later
 You can easily jump directly to this line and examine the surrounding code.
 */
 
-#define chSTR2(x)     #x
-#define chSTR(x)   chSTR2(x)
-#define chMSG(desc) message(__FILE__ "(" chSTR(__LINE__) "):" #desc)
+#define chSTR2( x )   #x
+#define chSTR( x )    chSTR2( x )
+#define chMSG( desc ) message( __FILE__ "(" chSTR( __LINE__ ) "):" #desc )
 
 
 ////////////////////////////// chINRANGE Macro ////////////////////////////////
 
 
 // This macro returns TRUE if a number is between two others.
-#define chINRANGE(low, Num, High) (((low) <= (Num)) && ((Num) <= (High)))
+#define chINRANGE( low, Num, High ) \
+    ( ( ( low ) <= ( Num ) ) && ( ( Num ) <= ( High ) ) )
 
 
 //////////////////////////////// chDIMOF Macro ////////////////////////////////
 
 
 // This macro evaluates to the number of elements in an array.
-#define chDIMOF(Array) (sizeof(Array) / sizeof(Array[0]))
+#define chDIMOF( Array ) ( sizeof( Array ) / sizeof( Array[ 0 ] ) )
 
 
 ///////////////////////////// chBEGINTHREADEX Macro ///////////////////////////
@@ -116,24 +118,20 @@ You can easily jump directly to this line and examine the surrounding code.
 // types such as HANDLE. This means that a Windows programmer needs to cast
 // values when using _beginthreadex. Since this is terribly inconvenient,
 // I created this macro to perform the casting.
-typedef unsigned (__stdcall *PTHREAD_START) (void *);
+typedef unsigned( __stdcall* PTHREAD_START )( void* );
 
-#define chBEGINTHREADEX(psa, cbStack, pfnStartAddr,     \
-    pvParam, fdwCreate, pdwThreadId)                    \
-    ((HANDLE)_beginthreadex(                        \
-    (void *)         (psa),                     \
-    (unsigned)       (cbStack),                 \
-    (PTHREAD_START) (pfnStartAddr),             \
-    (void *)         (pvParam),                 \
-    (unsigned)       (fdwCreate),               \
-    (unsigned *)     (pdwThreadId)))
+#define chBEGINTHREADEX(                                             \
+    psa, cbStack, pfnStartAddr, pvParam, fdwCreate, pdwThreadId )    \
+    ( (HANDLE)_beginthreadex( (void*)( psa ), (unsigned)( cbStack ), \
+        (PTHREAD_START)( pfnStartAddr ), (void*)( pvParam ),         \
+        (unsigned)( fdwCreate ), (unsigned*)( pdwThreadId ) ) )
 
 
 ////////////////// DebugBreak Improvement for x86 platforms ///////////////////
 
 
 #ifdef _X86_
-#define _DebugBreak()    _asm { int 3 }
+#define _DebugBreak() _asm { int 3 }
 #endif
 
 
@@ -141,54 +139,57 @@ typedef unsigned (__stdcall *PTHREAD_START) (void *);
 
 
 // Useful macro for creating your own software exception codes
-#define MAKESOFTWAREEXCEPTION(Severity, Facility, Exception) \
-    ((DWORD) ( \
-    /* Severity code    */  (Severity      ) |      \
-    /* MS(0) or Cust(1) */  (1        << 29) |      \
-    /* Reserved(0)      */  (0        << 28) |      \
-    /* Facility code    */  (Facility  << 16) |     \
-    /* Exception code   */  (Exception <<  0)))
+#define MAKESOFTWAREEXCEPTION( Severity, Facility, Exception ) \
+    ( (DWORD)( /* Severity code    */ ( Severity ) |           \
+               /* MS(0) or Cust(1) */ ( 1 << 29 ) |            \
+               /* Reserved(0)      */ ( 0 << 28 ) |            \
+               /* Facility code    */ ( Facility << 16 ) |     \
+               /* Exception code   */ ( Exception << 0 ) ) )
 
 
 /////////////////////////// Quick MessageBox Macro ////////////////////////////
 
 
-inline void chMB(PCSTR s) {
-    char szTMP[128];
-    GetModuleFileNameA(NULL, szTMP, chDIMOF(szTMP));
-    MessageBoxA(GetActiveWindow(), s, szTMP, MB_OK);
+inline void chMB( PCSTR s )
+    {
+    char szTMP[ 128 ];
+    GetModuleFileNameA( NULL, szTMP, chDIMOF( szTMP ) );
+    MessageBoxA( GetActiveWindow(), s, szTMP, MB_OK );
     }
 
 
 //////////////////////////// Assert/Verify Macros /////////////////////////////
 
 
-inline void chFAIL(PSTR szMsg) {
-    chMB(szMsg);
+inline void chFAIL( PSTR szMsg )
+    {
+    chMB( szMsg );
     }
 
 
 // Put up an assertion failure message box.
-inline void chASSERTFAIL(LPCSTR file, int line, PCSTR expr) {
-    char sz[128];
-    wsprintfA(sz, "File %s, line %d : %s", file, line, expr);
-    chFAIL(sz);
+inline void chASSERTFAIL( LPCSTR file, int line, PCSTR expr )
+    {
+    char sz[ 128 ];
+    wsprintfA( sz, "File %s, line %d : %s", file, line, expr );
+    chFAIL( sz );
     }
 
 
 // Put up a message box if an assertion fails in a debug build.
 #ifdef _DEBUG
-#define chASSERT(x) if (!(x)) chASSERTFAIL(__FILE__, __LINE__, #x)
+#define chASSERT( x ) \
+    if ( !( x ) ) chASSERTFAIL( __FILE__, __LINE__, #x )
 #else
-#define chASSERT(x)
+#define chASSERT( x )
 #endif
 
 
 // Assert in debug builds, but don't remove the code in retail builds.
 #ifdef _DEBUG
-#define chVERIFY(x) chASSERT(x)
+#define chVERIFY( x ) chASSERT( x )
 #else
-#define chVERIFY(x) (x)
+#define chVERIFY( x ) ( x )
 #endif
 
 
@@ -198,9 +199,10 @@ inline void chASSERTFAIL(LPCSTR file, int line, PCSTR expr) {
 // The normal HANDLE_MSG macro in WindowsX.h does not work properly for dialog
 // boxes because DlgProc return a BOOL instead of an LRESULT (like
 // WndProcs). This chHANDLE_DLGMSG macro corrects the problem:
-#define chHANDLE_DLGMSG(hwnd, message, fn)                  \
-    case (message): return (SetDlgMsgResult(hwnd, uMsg,     \
-    HANDLE_##message((hwnd), (wParam), (lParam), (fn))))
+#define chHANDLE_DLGMSG( hwnd, message, fn )  \
+    case ( message ):                         \
+        return ( SetDlgMsgResult( hwnd, uMsg, \
+            HANDLE_##message( ( hwnd ), ( wParam ), ( lParam ), ( fn ) ) ) )
 
 
 //////////////////////// Dialog Box Icon Setting Macro ////////////////////////
@@ -209,25 +211,27 @@ inline void chASSERTFAIL(LPCSTR file, int line, PCSTR expr) {
 // Sets the dialog box icons
 #ifdef GWLP_HINSTANCE
 
-inline void chSETDLGICONS(HWND hwnd, int idi) {
-    SendMessage(hwnd, WM_SETICON, TRUE, (LPARAM)
-        LoadIcon((HINSTANCE) GetWindowLongPtr(hwnd, GWLP_HINSTANCE),
-        MAKEINTRESOURCE(idi)));
-    SendMessage(hwnd, WM_SETICON, FALSE, (LPARAM)
-        LoadIcon((HINSTANCE) GetWindowLongPtr(hwnd, GWLP_HINSTANCE),
-        MAKEINTRESOURCE(idi)));
+inline void chSETDLGICONS( HWND hwnd, int idi )
+    {
+    SendMessage( hwnd, WM_SETICON, TRUE,
+        (LPARAM)LoadIcon( (HINSTANCE)GetWindowLongPtr( hwnd, GWLP_HINSTANCE ),
+            MAKEINTRESOURCE( idi ) ) );
+    SendMessage( hwnd, WM_SETICON, FALSE,
+        (LPARAM)LoadIcon( (HINSTANCE)GetWindowLongPtr( hwnd, GWLP_HINSTANCE ),
+            MAKEINTRESOURCE( idi ) ) );
     }
 
 #else
 
 /* this will work with old SDK */
-inline void chSETDLGICONS(HWND hwnd, int idi) {
-    SendMessage(hwnd, WM_SETICON, TRUE, (LPARAM)
-        LoadIcon((HINSTANCE) GetWindowLong(hwnd, GWL_HINSTANCE),
-        MAKEINTRESOURCE(idi)));
-    SendMessage(hwnd, WM_SETICON, FALSE, (LPARAM)
-        LoadIcon((HINSTANCE) GetWindowLong(hwnd, GWL_HINSTANCE),
-        MAKEINTRESOURCE(idi)));
+inline void chSETDLGICONS( HWND hwnd, int idi )
+    {
+    SendMessage( hwnd, WM_SETICON, TRUE,
+        (LPARAM)LoadIcon( (HINSTANCE)GetWindowLong( hwnd, GWL_HINSTANCE ),
+            MAKEINTRESOURCE( idi ) ) );
+    SendMessage( hwnd, WM_SETICON, FALSE,
+        (LPARAM)LoadIcon( (HINSTANCE)GetWindowLong( hwnd, GWL_HINSTANCE ),
+            MAKEINTRESOURCE( idi ) ) );
     }
 
 #endif
@@ -244,14 +248,18 @@ inline void chSETDLGICONS(HWND hwnd, int idi) {
 
 #ifdef UNICODE
 
-class CUnicodeSupported {
-public:
-    CUnicodeSupported() {
-        if (GetWindowsDirectoryW(NULL, 0) <= 0) {
-            chMB("This application requires an OS that supports Unicode.");
-            ExitProcess(0);
+class CUnicodeSupported
+    {
+    public:
+        CUnicodeSupported()
+            {
+            if ( GetWindowsDirectoryW( NULL, 0 ) <= 0 )
+                {
+                chMB(
+                    "This application requires an OS that supports Unicode." );
+                ExitProcess( 0 );
+                }
             }
-        }
     };
 
 // "static" stops the linker from complaining that multiple instances of the

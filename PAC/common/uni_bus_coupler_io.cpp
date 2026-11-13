@@ -17,8 +17,8 @@ int uni_io_manager::net_init( io_node* node ) const
     {
     if ( node == nullptr )
         {
-        auto res = fmt::format_to_n( G_LOG->msg, i_log::C_BUFF_SIZE,
-            "Не задан узел." );
+        auto res = fmt::format_to_n(
+            G_LOG->msg, i_log::C_BUFF_SIZE, "Не задан узел." );
         *res.out = '\0';
         G_LOG->write_log( i_log::P_CRIT );
 
@@ -78,11 +78,11 @@ int uni_io_manager::net_init( io_node* node ) const
     if (
 #ifdef WIN_OS
         setsockopt( sock, SOL_SOCKET, SO_REUSEADDR,
-            reinterpret_cast<char*>( &timeout ), vlen)
+            reinterpret_cast<char*>( &timeout ), vlen )
 #else
         setsockopt( sock, SOL_SOCKET, SO_REUSEADDR, &C_ON, sizeof( C_ON ) )
 #endif // WIN_OS
-        )
+    )
         {
         auto res = fmt::format_to_n( G_LOG->msg, i_log::C_BUFF_SIZE,
             "Network communication : can't setsockopt I/O node socket : {}",
@@ -136,7 +136,8 @@ int uni_io_manager::net_init( io_node* node ) const
     // Привязка сокета. Сразу возвращает управление в неблокирующем режиме.
     sockaddr s_address;
     static_assert( sizeof( sockaddr ) == sizeof( sockaddr_in ) );
-    std::memcpy( &s_address, &socket_remote_server, sizeof( socket_remote_server ) );
+    std::memcpy(
+        &s_address, &socket_remote_server, sizeof( socket_remote_server ) );
     connect( sock, &s_address, sizeof( socket_remote_server ) );
 
     fd_set rdevents;
@@ -201,11 +202,12 @@ int uni_io_manager::net_init( io_node* node ) const
 
         if ( getsockopt( sock, SOL_SOCKET, SO_ERROR,
 #ifdef WIN_OS
-            reinterpret_cast<char*>( &error ),
+                 reinterpret_cast<char*>( &error ),
 #else
-            &error,
+                 &error,
 #endif // WIN_OS
-            &err_len ) < 0 || error != 0 )
+                 &err_len ) < 0 ||
+             error != 0 )
             {
             if ( node->is_set_err == false )
                 {
@@ -234,7 +236,8 @@ int uni_io_manager::net_init( io_node* node ) const
     static u_long connect_time = 0;
     connect_time = get_delta_millisec( st_time );
 
-    G_LOG->debug( "uni_io_manager:net_init() : socket %d is successfully "
+    G_LOG->debug(
+        "uni_io_manager:net_init() : socket %d is successfully "
         R"(connected to "%s":"%s":%d (%lu ms).)",
         sock, node->name, node->ip_address, PORT, connect_time );
 
@@ -271,21 +274,22 @@ int uni_io_manager::write_outputs()
 
             if ( nd->DO_cnt > 0 )
                 {
-                u_int bytes_cnt = nd->DO_cnt / 8 + ( nd->DO_cnt % 8 > 0 ? 1 : 0 );
+                u_int bytes_cnt =
+                    nd->DO_cnt / 8 + ( nd->DO_cnt % 8 > 0 ? 1 : 0 );
 
                 buff[ 0 ] = 's';
                 buff[ 1 ] = 's';
                 buff[ 2 ] = 0;
                 buff[ 3 ] = 0;
                 buff[ 4 ] = 0;
-                buff[ 5 ] = static_cast <unsigned char>( 7u + bytes_cnt );
+                buff[ 5 ] = static_cast<unsigned char>( 7u + bytes_cnt );
                 buff[ 6 ] = 0; //nodes[ i ]->number;
                 buff[ 7 ] = 0x0F;
                 buff[ 8 ] = 0;
                 buff[ 9 ] = 0;
                 buff[ 10 ] = (unsigned char)nd->DO_cnt >> 7 >> 1;
                 buff[ 11 ] = (unsigned char)nd->DO_cnt & 0xFF;
-                buff[ 12 ] = static_cast <unsigned char>( bytes_cnt );
+                buff[ 12 ] = static_cast<unsigned char>( bytes_cnt );
 
                 for ( u_int j = 0, idx = 0; j < bytes_cnt; j++ )
                     {
@@ -294,7 +298,8 @@ int uni_io_manager::write_outputs()
                         {
                         if ( idx < nd->DO_cnt )
                             {
-                            b = b | static_cast <unsigned char>( ( nd->DO_[ idx ] & 1 ) << k );
+                            b = b | static_cast<unsigned char>(
+                                        ( nd->DO_[ idx ] & 1 ) << k );
                             idx++;
                             }
                         }
@@ -313,9 +318,10 @@ int uni_io_manager::write_outputs()
                         if ( !nd->flag_error_write_message )
                             {
                             // Есть какая-то ошибка на прикладном уровне.
-                            add_err_to_log( "Write DO", nd->name, nd->ip_address,
-                                static_cast<int>( buff[ 7 ] ), 0x0F,
-                                static_cast<int>( buff[ 8 ] ), bytes_cnt );
+                            add_err_to_log( "Write DO", nd->name,
+                                nd->ip_address, static_cast<int>( buff[ 7 ] ),
+                                0x0F, static_cast<int>( buff[ 8 ] ),
+                                bytes_cnt );
                             res = 1;
                             nd->flag_error_write_message = true;
                             }
@@ -340,14 +346,14 @@ int uni_io_manager::write_outputs()
                 buff[ 2 ] = 0;
                 buff[ 3 ] = 0;
                 buff[ 4 ] = 0;
-                buff[ 5 ] = static_cast <unsigned char>( 7u + bytes_cnt );
+                buff[ 5 ] = static_cast<unsigned char>( 7u + bytes_cnt );
                 buff[ 6 ] = 0; //nodes[ i ]->number;
                 buff[ 7 ] = 0x10;
                 buff[ 8 ] = 0;
                 buff[ 9 ] = 0;
-                buff[ 10 ] = static_cast <unsigned char>( bytes_cnt / 2 >> 8 );
+                buff[ 10 ] = static_cast<unsigned char>( bytes_cnt / 2 >> 8 );
                 buff[ 11 ] = bytes_cnt / 2 & 0xFF;
-                buff[ 12 ] = static_cast <unsigned char>( bytes_cnt );
+                buff[ 12 ] = static_cast<unsigned char>( bytes_cnt );
 
                 for ( unsigned int idx = 0, l = 0; idx < nd->AO_cnt; idx++ )
                     {
@@ -362,8 +368,10 @@ int uni_io_manager::write_outputs()
                             break;
 
                         default:
-                            buff[ 13 + l ] = (u_char)( ( nd->AO_[ idx ] >> 8 ) & 0xFF );
-                            buff[ 13 + l + 1 ] = (u_char)( nd->AO_[ idx ] & 0xFF );
+                            buff[ 13 + l ] =
+                                (u_char)( ( nd->AO_[ idx ] >> 8 ) & 0xFF );
+                            buff[ 13 + l + 1 ] =
+                                (u_char)( nd->AO_[ idx ] & 0xFF );
                             l += 2;
                             break;
                         }
@@ -380,9 +388,10 @@ int uni_io_manager::write_outputs()
                         {
                         if ( !nd->flag_error_write_message )
                             {
-                            add_err_to_log( "Write AO", nd->name, nd->ip_address,
-                                static_cast<int>( buff[ 7 ] ), 0x10,
-                                static_cast<int>( buff[ 8 ] ), bytes_cnt );
+                            add_err_to_log( "Write AO", nd->name,
+                                nd->ip_address, static_cast<int>( buff[ 7 ] ),
+                                0x10, static_cast<int>( buff[ 8 ] ),
+                                bytes_cnt );
                             }
                         continue;
                         }
@@ -417,10 +426,11 @@ int uni_io_manager::write_outputs()
             if ( nd->AO_cnt > 0 )
                 {
                 unsigned int start_register = 0;
-                unsigned int start_write_address = PHOENIX_HOLDINGREGISTERS_STARTADDRESS;
+                unsigned int start_write_address =
+                    PHOENIX_HOLDINGREGISTERS_STARTADDRESS;
                 unsigned int registers_count;
 
-                if (nd->AO_cnt > MAX_MODBUS_REGISTERS_PER_QUERY)
+                if ( nd->AO_cnt > MAX_MODBUS_REGISTERS_PER_QUERY )
                     {
                     registers_count = MAX_MODBUS_REGISTERS_PER_QUERY;
                     }
@@ -433,22 +443,24 @@ int uni_io_manager::write_outputs()
 
                 do
                     {
-                    for (u_int j = 0; j < registers_count * 2; j++)
+                    for ( u_int j = 0; j < registers_count * 2; j++ )
                         {
                         u_char b = 0;
-                        for (u_int k = 0; k < 8; k++)
+                        for ( u_int k = 0; k < 8; k++ )
                             {
-                            b = b | static_cast <unsigned char>( (nd->DO_[bit_src] & 1) << k );
+                            b = b | static_cast<unsigned char>(
+                                        ( nd->DO_[ bit_src ] & 1 ) << k );
                             bit_src++;
                             }
-                        writebuff[j] = b;
+                        writebuff[ j ] = b;
                         }
 
-                    for (unsigned int idx = start_register, l = 0; idx < start_register + registers_count; idx++)
+                    for ( unsigned int idx = start_register, l = 0;
+                        idx < start_register + registers_count; idx++ )
                         {
-                        if (nd->AO_types[idx] != ao_module_type)
+                        if ( nd->AO_types[ idx ] != ao_module_type )
                             {
-                            ao_module_type = nd->AO_types[idx];
+                            ao_module_type = nd->AO_types[ idx ];
                             ao_module_offset = 0;
                             }
                         else
@@ -456,39 +468,48 @@ int uni_io_manager::write_outputs()
                             ao_module_offset++;
                             }
 
-                        switch (ao_module_type)
+                        switch ( ao_module_type )
                             {
                             case 1027843:           //AXL F IOL8
                             case 1088132:           //AXL SE IOL4
-                                ao_module_offset %= 32;	   //if there are same modules one after other on bus
-                                if (ao_module_offset > 2)  //first 3 words (bytes 0-5) are reserved, 2nd byte is used for trigger discrete outputs.
+                                ao_module_offset %=
+                                    32;  //if there are same modules one after other on bus
+                                if (
+                                    ao_module_offset >
+                                    2 )  //first 3 words (bytes 0-5) are reserved, 2nd byte is used for trigger discrete outputs.
                                     {
-                                    memcpy(&writebuff[l], &nd->AO_[idx], 2);
+                                    memcpy(
+                                        &writebuff[ l ], &nd->AO_[ idx ], 2 );
                                     }
                                 l += 2;
                                 break;
 
-                            case 2688093:			//CNT2 INC2
-                                ao_module_offset %= 14;	   //if there are same modules one after other on bus
-                                if (0 == ao_module_offset) //assign start command and positive increment for both counters
+                            case 2688093:  //CNT2 INC2
+                                ao_module_offset %=
+                                    14;  //if there are same modules one after other on bus
+                                if (
+                                    0 ==
+                                    ao_module_offset )  //assign start command and positive increment for both counters
                                     {
-                                    writebuff[l] = 0x5;
-                                    writebuff[l + 1] = 0x5;
+                                    writebuff[ l ] = 0x5;
+                                    writebuff[ l + 1 ] = 0x5;
                                     }
                                 else
                                     {
-                                    writebuff[l] = 0;
-                                    writebuff[l + 1] = 0;
+                                    writebuff[ l ] = 0;
+                                    writebuff[ l + 1 ] = 0;
                                     }
                                 l += 2;
                                 break;
 
-                            case 2688527:       //AXL F AO4 1H
-                            case 2702072:       //AXL F AI2 AO2 1H
-                            case 1088123:       //AXL SE AO4 I 4-20
-                            case 2688666:       //AXL F RS UNI XC
-                                writebuff[l] = (u_char)((nd->AO_[idx] >> 8) & 0xFF);
-                                writebuff[l + 1] = (u_char)(nd->AO_[idx] & 0xFF);
+                            case 2688527:  //AXL F AO4 1H
+                            case 2702072:  //AXL F AI2 AO2 1H
+                            case 1088123:  //AXL SE AO4 I 4-20
+                            case 2688666:  //AXL F RS UNI XC
+                                writebuff[ l ] =
+                                    (u_char)( ( nd->AO_[ idx ] >> 8 ) & 0xFF );
+                                writebuff[ l + 1 ] =
+                                    (u_char)( nd->AO_[ idx ] & 0xFF );
                                 l += 2;
                                 break;
 
@@ -498,21 +519,29 @@ int uni_io_manager::write_outputs()
                             }
                         }
 
-                    if (write_holding_registers(nd, start_write_address + start_register, registers_count) >= 0)
+                    if ( write_holding_registers( nd,
+                             start_write_address + start_register,
+                             registers_count ) >= 0 )
                         {
-                        if (buff[7] == 0x10)
+                        if ( buff[ 7 ] == 0x10 )
                             {
-                            memcpy(&(nd->AO[start_register]), &(nd->AO_[start_register]), registers_count * 2);
-                            memcpy(&(nd->DO[start_register * 16]), &(nd->DO_[start_register * 16]), registers_count * 16);
+                            memcpy( &( nd->AO[ start_register ] ),
+                                &( nd->AO_[ start_register ] ),
+                                registers_count * 2 );
+                            memcpy( &( nd->DO[ start_register * 16 ] ),
+                                &( nd->DO_[ start_register * 16 ] ),
+                                registers_count * 16 );
                             nd->flag_error_write_message = false;
                             }
                         else
                             {
-                            if (!nd->flag_error_write_message)
+                            if ( !nd->flag_error_write_message )
                                 {
-                                add_err_to_log( "Write AO", nd->name, nd->ip_address,
+                                add_err_to_log( "Write AO", nd->name,
+                                    nd->ip_address,
                                     static_cast<int>( buff[ 7 ] ), 0x10,
-                                    static_cast<int>( buff[ 8 ] ), registers_count );
+                                    static_cast<int>( buff[ 8 ] ),
+                                    registers_count );
 
                                 nd->flag_error_write_message = true;
                                 }
@@ -526,28 +555,28 @@ int uni_io_manager::write_outputs()
 
                     start_register += registers_count;
                     registers_count = nd->AO_cnt - start_register;
-                    if (registers_count > MAX_MODBUS_REGISTERS_PER_QUERY)
+                    if ( registers_count > MAX_MODBUS_REGISTERS_PER_QUERY )
                         {
                         registers_count = MAX_MODBUS_REGISTERS_PER_QUERY;
                         }
 
-                    } while (start_register < nd->AO_cnt);
+                    } while ( start_register < nd->AO_cnt );
 
 
-                }// if ( nd->AO_cnt > 0 )
+                }  // if ( nd->AO_cnt > 0 )
 
-            }// if ( nd->type == io_node::T_750_341 || ...
-        }// for ( u_int i = 0; i < nodes_count; i++ )
+            }  // if ( nd->type == io_node::T_750_341 || ...
+        }  // for ( u_int i = 0; i < nodes_count; i++ )
 
     return res;
     }
 //-----------------------------------------------------------------------------
-int uni_io_manager::e_communicate( io_node* node, int bytes_to_send,
-    int bytes_to_receive )
+int uni_io_manager::e_communicate(
+    io_node* node, int bytes_to_send, int bytes_to_receive )
     {
     // Проверка связи с узлом I/O.
     if ( get_delta_millisec( node->last_poll_time ) >=
-        G_PAC_INFO()->par[ PAC_info::P_BK_ANSWER_MAX_WAIT_TIME ] )
+         G_PAC_INFO()->par[ PAC_info::P_BK_ANSWER_MAX_WAIT_TIME ] )
         {
         // Если связь была, но сейчас пропала, то выставляем ошибку связи.
         if ( false == node->is_set_err )
@@ -622,12 +651,13 @@ int uni_io_manager::e_communicate( io_node* node, int bytes_to_send,
 
     // Посылка данных.
 #ifdef WIN_OS
-    int res = send( node->sock, reinterpret_cast<char*>( buff ), bytes_to_send, 0 );
+    int res =
+        send( node->sock, reinterpret_cast<char*>( buff ), bytes_to_send, 0 );
 #else
-    int res = tcp_communicator_linux::sendall( node->sock, buff,
-        bytes_to_send, 0, io_node::C_RCV_TIMEOUT_US, node->ip_address,
-        node->name, &node->send_stat );
-#endif // WIN_OS
+    int res = tcp_communicator_linux::sendall( node->sock, buff, bytes_to_send,
+        0, io_node::C_RCV_TIMEOUT_US, node->ip_address, node->name,
+        &node->send_stat );
+#endif  // WIN_OS
 
     if ( res < 0 )
         {
@@ -637,8 +667,8 @@ int uni_io_manager::e_communicate( io_node* node, int bytes_to_send,
 
     // Получение данных.
     res = tcp_communicator::recvtimeout( node->sock, buff, bytes_to_receive,
-        io_node::C_RCV_TIMEOUT_SEC, io_node::C_RCV_TIMEOUT_US,
-        node->ip_address, node->name, &node->recv_stat );
+        io_node::C_RCV_TIMEOUT_SEC, io_node::C_RCV_TIMEOUT_US, node->ip_address,
+        node->name, &node->recv_stat );
 
     if ( res <= 0 ) /* read error */
         {
@@ -650,27 +680,27 @@ int uni_io_manager::e_communicate( io_node* node, int bytes_to_send,
     return 0;
     }
 
-int uni_io_manager::read_input_registers(io_node* node, unsigned int address,
-    unsigned int quantity, unsigned char station /*= 0*/)
+int uni_io_manager::read_input_registers( io_node* node, unsigned int address,
+    unsigned int quantity, unsigned char station /*= 0*/ )
     {
-    buff[0] = 's';
-    buff[1] = 's';
-    buff[2] = 0;
-    buff[3] = 0;
-    buff[4] = 0;
-    buff[5] = 6;
-    buff[6] = station;
-    buff[7] = 0x04;
-    buff[8] = (u_int_2)address >> 8;
-    buff[9] = (u_int_2)address & 0xFF;
-    buff[10] = (u_int_2)quantity >> 8;
-    buff[11] = (u_int_2)quantity & 0xFF;
+    buff[ 0 ] = 's';
+    buff[ 1 ] = 's';
+    buff[ 2 ] = 0;
+    buff[ 3 ] = 0;
+    buff[ 4 ] = 0;
+    buff[ 5 ] = 6;
+    buff[ 6 ] = station;
+    buff[ 7 ] = 0x04;
+    buff[ 8 ] = (u_int_2)address >> 8;
+    buff[ 9 ] = (u_int_2)address & 0xFF;
+    buff[ 10 ] = (u_int_2)quantity >> 8;
+    buff[ 11 ] = (u_int_2)quantity & 0xFF;
     unsigned int bytes_cnt = quantity * 2;
-    if (e_communicate(node, 12, bytes_cnt + 9) == 0)
+    if ( e_communicate( node, 12, bytes_cnt + 9 ) == 0 )
         {
-        if (buff[7] == 0x04 && buff[8] == bytes_cnt)
+        if ( buff[ 7 ] == 0x04 && buff[ 8 ] == bytes_cnt )
             {
-            resultbuff = &buff[9];
+            resultbuff = &buff[ 9 ];
             return 1;
             }
         else
@@ -681,26 +711,26 @@ int uni_io_manager::read_input_registers(io_node* node, unsigned int address,
     return -1;
     }
 
-int uni_io_manager::write_holding_registers(io_node* node,
-    unsigned int address, unsigned int quantity, unsigned char station)
+int uni_io_manager::write_holding_registers( io_node* node,
+    unsigned int address, unsigned int quantity, unsigned char station )
     {
     unsigned int bytes_cnt = quantity * 2;
-    buff[0] = 's';
-    buff[1] = 's';
-    buff[2] = 0;
-    buff[3] = 0;
-    buff[4] = 0;
-    buff[5] = static_cast <unsigned char>( 7 + bytes_cnt );
-    buff[6] = station;
-    buff[7] = 0x10;
-    buff[8] = (u_int_2)address >> 8;
-    buff[9] = (u_int_2)address & 0xFF;
-    buff[10] = (u_int_2)quantity >> 8;
-    buff[11] = (u_int_2)quantity & 0xFF;
-    buff[12] = static_cast <unsigned char>( bytes_cnt );
-    if (e_communicate(node, bytes_cnt + 13, 12) == 0)
+    buff[ 0 ] = 's';
+    buff[ 1 ] = 's';
+    buff[ 2 ] = 0;
+    buff[ 3 ] = 0;
+    buff[ 4 ] = 0;
+    buff[ 5 ] = static_cast<unsigned char>( 7 + bytes_cnt );
+    buff[ 6 ] = station;
+    buff[ 7 ] = 0x10;
+    buff[ 8 ] = (u_int_2)address >> 8;
+    buff[ 9 ] = (u_int_2)address & 0xFF;
+    buff[ 10 ] = (u_int_2)quantity >> 8;
+    buff[ 11 ] = (u_int_2)quantity & 0xFF;
+    buff[ 12 ] = static_cast<unsigned char>( bytes_cnt );
+    if ( e_communicate( node, bytes_cnt + 13, 12 ) == 0 )
         {
-        if (buff[7] == 0x10)
+        if ( buff[ 7 ] == 0x10 )
             {
             return 1;
             }
@@ -712,9 +742,9 @@ int uni_io_manager::write_holding_registers(io_node* node,
     return -1;
     }
 
-void uni_io_manager::add_err_to_log( const char* cmd,
-    const char* node_name, const char* node_ip_address,
-    int exp_fun_code, int rec_fun_code, int exp_size, int rec_size ) const
+void uni_io_manager::add_err_to_log( const char* cmd, const char* node_name,
+    const char* node_ip_address, int exp_fun_code, int rec_fun_code,
+    int exp_size, int rec_size ) const
     {
     auto result = fmt::format_to_n( G_LOG->msg, i_log::C_BUFF_SIZE,
         R"({}:bus coupler returned error. "{}":"{}" )"
@@ -733,11 +763,12 @@ int uni_io_manager::read_inputs()
         }
 
     auto res = 0;
-    for (u_int i = 0; i < nodes_count; i++ )
+    for ( u_int i = 0; i < nodes_count; i++ )
         {
         io_node* nd = nodes[ i ];
 
-        if ( nd->type == io_node::WAGO_750_XXX_ETHERNET ) // Ethernet I/O nodes.
+        if ( nd->type ==
+             io_node::WAGO_750_XXX_ETHERNET )  // Ethernet I/O nodes.
             {
             if ( !nd->is_active )
                 {
@@ -759,7 +790,8 @@ int uni_io_manager::read_inputs()
                 buff[ 10 ] = (unsigned char)nd->DI_cnt >> 7 >> 1;
                 buff[ 11 ] = (unsigned char)nd->DI_cnt & 0xFF;
 
-                u_int bytes_cnt = nd->DI_cnt / 8 + ( nd->DI_cnt % 8 > 0 ? 1 : 0 );
+                u_int bytes_cnt =
+                    nd->DI_cnt / 8 + ( nd->DI_cnt % 8 > 0 ? 1 : 0 );
 
                 if ( e_communicate( nd, 12, bytes_cnt + 9 ) == 0 )
                     {
@@ -774,14 +806,14 @@ int uni_io_manager::read_inputs()
                                     nd->DI[ idx ] = ( buff[ j + 9 ] >> k ) & 1;
 #ifdef DEBUG_KBUS
                                     printf( "%d -> %d, ", idx, nd->DI[ idx ] );
-#endif // DEBUG_KBUS
+#endif  // DEBUG_KBUS
                                     idx++;
                                     }
                                 }
                             }
 #ifdef DEBUG_KBUS
                         printf( "\n" );
-#endif // DEBUG_KBUS
+#endif  // DEBUG_KBUS
                         nd->read_io_error_flag = false;
                         nd->flag_error_read_message = false;
                         }
@@ -798,14 +830,14 @@ int uni_io_manager::read_inputs()
                         res = 1;
                         continue;
                         }
-                    } // if ( buff[ 7 ] == 0x02 && buff[ 8 ] == bytes_cnt )
+                    }  // if ( buff[ 7 ] == 0x02 && buff[ 8 ] == bytes_cnt )
                 else
                     {
                     nd->read_io_error_flag = true;
                     res = 1;
                     continue;
                     }
-                }// if ( nd->DI_cnt > 0 )
+                }  // if ( nd->DI_cnt > 0 )
 
             if ( nd->AI_cnt > 0 )
                 {
@@ -836,20 +868,20 @@ int uni_io_manager::read_inputs()
                                 {
                                 case 638:
                                     nd->AI[ l ] = 256 * buff[ 9 + idx + 2 ] +
-                                        buff[ 9 + idx + 3 ];
+                                                  buff[ 9 + idx + 3 ];
                                     idx += 4;
                                     break;
 
                                 default:
                                     nd->AI[ l ] = 256 * buff[ 9 + idx ] +
-                                        buff[ 9 + idx + 1 ];
+                                                  buff[ 9 + idx + 1 ];
                                     idx += 2;
                                     break;
                                 }
                             }
                         nd->read_io_error_flag = false;
                         nd->flag_error_read_message = false;
-                        } // if ( buff[ 7 ] == 0x04 && buff[ 8 ] == bytes_cnt )
+                        }  // if ( buff[ 7 ] == 0x04 && buff[ 8 ] == bytes_cnt )
                     else
                         {
                         if ( !nd->flag_error_read_message )
@@ -869,31 +901,31 @@ int uni_io_manager::read_inputs()
                     nd->read_io_error_flag = true;
                     res = 1;
                     continue;
-                    } // if ( e_communicate( nd, 12, bytes_cnt + 9 ) == 0 )
-                }// if ( nd->AI_cnt > 0 )
+                    }  // if ( e_communicate( nd, 12, bytes_cnt + 9 ) == 0 )
+                }  // if ( nd->AI_cnt > 0 )
 
-            }// if ( nd->type == io_node::T_750_341 || ...
-        }// for ( u_int i = 0; i < nodes_count; i++ )
+            }  // if ( nd->type == io_node::T_750_341 || ...
+        }  // for ( u_int i = 0; i < nodes_count; i++ )
 
     for ( u_int i = 0; i < nodes_count; i++ )
         {
         io_node* nd = nodes[ i ];
 
-        if ( nd->type == io_node::PHOENIX_BK_ETH ) // Ethernet I/O nodes.
+        if ( nd->type == io_node::PHOENIX_BK_ETH )  // Ethernet I/O nodes.
             {
-
             if ( !nd->is_active )
                 {
                 continue;
                 }
 
-            if (nd->AI_cnt > 0)
+            if ( nd->AI_cnt > 0 )
                 {
                 unsigned int start_register = 0;
-                unsigned int start_read_address = PHOENIX_INPUTREGISTERS_STARTADDRESS;
+                unsigned int start_read_address =
+                    PHOENIX_INPUTREGISTERS_STARTADDRESS;
                 unsigned int registers_count;
 
-                if (nd->AI_cnt > MAX_MODBUS_REGISTERS_PER_QUERY)
+                if ( nd->AI_cnt > MAX_MODBUS_REGISTERS_PER_QUERY )
                     {
                     registers_count = MAX_MODBUS_REGISTERS_PER_QUERY;
                     }
@@ -908,50 +940,67 @@ int uni_io_manager::read_inputs()
                 do
                     {
 #ifdef DEBUG_BK_MIN
-                    G_LOG->warning("Read %d node registers from %d", registers_count, start_read_address + start_register);
-#endif // DEBUG_BK_MIN
-                    int result = read_input_registers(nd, start_read_address + start_register, registers_count);
+                    G_LOG->warning( "Read %d node registers from %d",
+                        registers_count, start_read_address + start_register );
+#endif  // DEBUG_BK_MIN
+                    int result = read_input_registers( nd,
+                        start_read_address + start_register, registers_count );
 
 #ifdef TEST_NODE_IO
-                    printf("\n\r");
-                    for (int ideb = 0; ideb < registers_count; ideb++)
+                    printf( "\n\r" );
+                    for ( int ideb = 0; ideb < registers_count; ideb++ )
                         {
-                        printf("%d = %d, ", start_read_address + start_register + ideb, 256 * resultbuff[ideb * 2] + resultbuff[ideb * 2 + 1]);
+                        printf( "%d = %d, ",
+                            start_read_address + start_register + ideb,
+                            256 * resultbuff[ ideb * 2 ] +
+                                resultbuff[ ideb * 2 + 1 ] );
                         }
 #endif
 
-                    if (result >= 0)
+                    if ( result >= 0 )
                         {
-                        if (result)
+                        if ( result )
                             {
-                            for (int index_source = 0; analog_dest < start_register + registers_count; analog_dest++)
+                            for ( int index_source = 0;
+                                analog_dest < start_register + registers_count;
+                                analog_dest++ )
                                 {
-                                switch (nd->AI_types[analog_dest])
+                                switch ( nd->AI_types[ analog_dest ] )
                                     {
-                                    case 1027843:           //AXL F IOL8
-                                    case 1088132:           //AXL SE IOL4
-                                        memcpy(&nd->AI[analog_dest], resultbuff + index_source, 2);
+                                    case 1027843:  //AXL F IOL8
+                                    case 1088132:  //AXL SE IOL4
+                                        memcpy( &nd->AI[ analog_dest ],
+                                            resultbuff + index_source, 2 );
                                         index_source += 2;
                                         break;
 
                                     default:
-                                        nd->AI[analog_dest] = 256 * resultbuff[index_source] + resultbuff[index_source + 1];
+                                        nd->AI[ analog_dest ] =
+                                            256 * resultbuff[ index_source ] +
+                                            resultbuff[ index_source + 1 ];
                                         index_source += 2;
                                         break;
                                     }
 #ifdef DEBUG_BK
-                                G_LOG->warning("%d %u", analog_dest, nd->AI[analog_dest]);
-#endif // DEBUG_BK
+                                G_LOG->warning( "%d %u", analog_dest,
+                                    nd->AI[ analog_dest ] );
+#endif  // DEBUG_BK
                                 }
 
-                            for (int index_source = 0; bit_dest < (start_register + registers_count) * 2 * 8; index_source++)
+                            for ( int index_source = 0;
+                                bit_dest <
+                                ( start_register + registers_count ) * 2 * 8;
+                                index_source++ )
                                 {
-                                for (int k = 0; k < 8; k++)
+                                for ( int k = 0; k < 8; k++ )
                                     {
-                                    nd->DI[bit_dest] = (resultbuff[index_source] >> k) & 1;
+                                    nd->DI[ bit_dest ] =
+                                        ( resultbuff[ index_source ] >> k ) & 1;
 #ifdef DEBUG_BK
-                                    G_LOG->notice("%d %d", bit_dest, (resultbuff[index_source] >> k) & 1);
-#endif // DEBUG_BK
+                                    G_LOG->notice( "%d %d", bit_dest,
+                                        ( resultbuff[ index_source ] >> k ) &
+                                            1 );
+#endif  // DEBUG_BK
                                     bit_dest++;
                                     }
                                 }
@@ -960,9 +1009,11 @@ int uni_io_manager::read_inputs()
                             {
                             if ( !nd->flag_error_read_message )
                                 {
-                                add_err_to_log( "Read AI", nd->name, nd->ip_address,
+                                add_err_to_log( "Read AI", nd->name,
+                                    nd->ip_address,
                                     static_cast<int>( buff[ 7 ] ), 0x04,
-                                    static_cast<int>( buff[ 8 ] ), registers_count * 2 );
+                                    static_cast<int>( buff[ 8 ] ),
+                                    registers_count * 2 );
                                 nd->flag_error_read_message = true;
                                 }
                             nd->read_io_error_flag = true;
@@ -978,34 +1029,36 @@ int uni_io_manager::read_inputs()
                         }
                     start_register += registers_count;
                     registers_count = nd->AI_cnt - start_register;
-                    if (registers_count > MAX_MODBUS_REGISTERS_PER_QUERY)
+                    if ( registers_count > MAX_MODBUS_REGISTERS_PER_QUERY )
                         {
                         registers_count = MAX_MODBUS_REGISTERS_PER_QUERY;
                         }
                     nd->read_io_error_flag = false;
                     nd->flag_error_read_message = false;
-                    } while (start_register < nd->AI_cnt);
-                } // if (nd->AI_cnt > 0)
+                    } while ( start_register < nd->AI_cnt );
+                }  // if (nd->AI_cnt > 0)
 
             // Read Status Register (7996) for PP mode detection.
             read_phoenix_status_register( nd );
-            }// nd->type == io_node::PHOENIX_BK_ETH
-        }// for ( u_int i = 0; i < nodes_count; i++ )
+            }  // nd->type == io_node::PHOENIX_BK_ETH
+        }  // for ( u_int i = 0; i < nodes_count; i++ )
 
     return res;
     }
 //-----------------------------------------------------------------------------
 void uni_io_manager::read_phoenix_status_register( io_node* nd )
     {
-    if ( auto result = read_input_registers( nd, PHOENIX_STATUS_REGISTER_ADDRESS,
-        2 ); result <= 0 )
+    if ( auto result =
+             read_input_registers( nd, PHOENIX_STATUS_REGISTER_ADDRESS, 2 );
+        result <= 0 )
         {
 #ifdef DEBUG_BK
-        G_LOG->debug( "Failed to read status registers (%d, %d) "
+        G_LOG->debug(
+            "Failed to read status registers (%d, %d) "
             "for node \"%s\".",
             PHOENIX_STATUS_REGISTER_ADDRESS,
             PHOENIX_DIAGNOSTIC_STATUS_REGISTER_ADDRESS, nd->name );
-#endif // DEBUG_BK
+#endif  // DEBUG_BK
         return;
         }
 
@@ -1017,9 +1070,9 @@ void uni_io_manager::read_phoenix_status_register( io_node* nd )
     // Check for PP mode state changes.
     // PP mode has become active.
     if ( const auto is_err_mode_active =
-        ( nd->status_register & io_node::STATUS_REG_PP_MODE_MASK ) != 0,
-        was_err_mode_active =
-        ( nd->prev_status_register & io_node::STATUS_REG_PP_MODE_MASK ) != 0;
+             ( nd->status_register & io_node::STATUS_REG_PP_MODE_MASK ) != 0,
+        was_err_mode_active = ( nd->prev_status_register &
+                                  io_node::STATUS_REG_PP_MODE_MASK ) != 0;
         is_err_mode_active && !was_err_mode_active )
         {
         if ( !nd->is_err_mode_alarm_set )
@@ -1032,7 +1085,7 @@ void uni_io_manager::read_phoenix_status_register( io_node* nd )
         }
     // PP mode has become inactive.
     else if ( !is_err_mode_active && was_err_mode_active &&
-        nd->is_err_mode_alarm_set )
+              nd->is_err_mode_alarm_set )
         {
         nd->is_err_mode_alarm_set = false;
         PAC_critical_errors_manager::get_instance()->reset_global_error(
@@ -1042,12 +1095,12 @@ void uni_io_manager::read_phoenix_status_register( io_node* nd )
 
 
     if ( const auto is_cfg_bus_error_active =
-        ( nd->diagnostic_status_register &
-            io_node::DIAG_STATUS_REG_CFG_BUS_ERROR_MASK ) != 0,
+             ( nd->diagnostic_status_register &
+                 io_node::DIAG_STATUS_REG_CFG_BUS_ERROR_MASK ) != 0,
         was_cfg_bus_error_active =
-        ( nd->prev_diagnostic_status_register &
-            io_node::DIAG_STATUS_REG_CFG_BUS_ERROR_MASK ) != 0;
-            is_cfg_bus_error_active && !was_cfg_bus_error_active &&
+            ( nd->prev_diagnostic_status_register &
+                io_node::DIAG_STATUS_REG_CFG_BUS_ERROR_MASK ) != 0;
+        is_cfg_bus_error_active && !was_cfg_bus_error_active &&
         !nd->is_cfg_bus_error_alarm_set )
         {
         nd->is_cfg_bus_error_alarm_set = true;
@@ -1056,7 +1109,7 @@ void uni_io_manager::read_phoenix_status_register( io_node* nd )
             PAC_critical_errors_manager::AS_IO_COUPLER, nd->number );
         }
     else if ( !is_cfg_bus_error_active && was_cfg_bus_error_active &&
-        nd->is_cfg_bus_error_alarm_set )
+              nd->is_cfg_bus_error_alarm_set )
         {
         nd->is_cfg_bus_error_alarm_set = false;
         PAC_critical_errors_manager::get_instance()->reset_global_error(
@@ -1077,14 +1130,14 @@ void uni_io_manager::disconnect( io_node* node )
             SD_BOTH
 #else
             SHUT_RDWR
-#endif // WIN_OS
+#endif  // WIN_OS
         );
 
 #ifdef WIN_OS
         closesocket( node->sock );
 #else
         close( node->sock );
-#endif // WIN_OS
+#endif  // WIN_OS
 
         node->sock = 0;
         }

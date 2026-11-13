@@ -46,8 +46,8 @@ int main_cycle()
     G_TECH_OBJECT_MNGR()->evaluate();
     sleep_ms( G_PROJECT_MANAGER->sleep_time_ms );
 
-    if ( !G_NO_IO_NODES &&
-        !G_READ_ONLY_IO_NODES ) G_IO_MANAGER()->write_outputs();
+    if ( !G_NO_IO_NODES && !G_READ_ONLY_IO_NODES )
+        G_IO_MANAGER()->write_outputs();
     sleep_ms( G_PROJECT_MANAGER->sleep_time_ms );
 
     G_CMMCTR->evaluate();
@@ -104,19 +104,20 @@ int main_cycle()
 
         if ( TRESH_AVG < avg_time )
             {
-            G_LOG->alert( "Main control cycle avg time above threshold : "
+            G_LOG->alert(
+                "Main control cycle avg time above threshold : "
                 "%4lu > %4u ms (Lua mem = %d b).",
                 avg_time, TRESH_AVG,
                 lua_gc( G_LUA_MANAGER->get_Lua(), LUA_GCCOUNT, 0 ) * 1024 +
-                lua_gc( G_LUA_MANAGER->get_Lua(), LUA_GCCOUNTB, 0 ) );
+                    lua_gc( G_LUA_MANAGER->get_Lua(), LUA_GCCOUNTB, 0 ) );
             }
 
-        G_LOG->info( "Main control cycle performance : "
+        G_LOG->info(
+            "Main control cycle performance : "
             "avg = %lu, max = %4lu, tresh = %4u ms (%4u cycles, Lua mem = %d b).",
-            avg_time, max_iteration_cycle_time, TRESH_AVG,
-            cycles_per_period,
+            avg_time, max_iteration_cycle_time, TRESH_AVG, cycles_per_period,
             lua_gc( G_LUA_MANAGER->get_Lua(), LUA_GCCOUNT, 0 ) * 1024 +
-            lua_gc( G_LUA_MANAGER->get_Lua(), LUA_GCCOUNTB, 0 ) );
+                lua_gc( G_LUA_MANAGER->get_Lua(), LUA_GCCOUNTB, 0 ) );
 
         all_time = 0;
         cycles_cnt = 0;

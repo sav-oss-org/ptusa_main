@@ -17,36 +17,34 @@
 /// Предоставляет доступ к IP-адресу узла, состоянию узла и командам для
 /// управления пробросом портов.
 class node_dev : public device
-	{
-	public:
+    {
+    public:
+        /// @param name - имя устройства.
+        explicit node_dev( const char* name );
 
-		/// @param name - имя устройства.
-		explicit node_dev( const char* name );
+        void set_io_node( io_manager::io_node* io_node );
 
-        void set_io_node( io_manager::io_node *io_node );
+        ~node_dev() override = default;
 
-		~node_dev() override = default;
-
-		void evaluate_io() override;
+        void evaluate_io() override;
 
         int save_device( char* buff ) const override;
 
         int set_cmd( const char* prop, u_int idx, double val ) override;
 
-		const char* get_name_in_Lua() const override;
+        const char* get_name_in_Lua() const override;
 
-		/// @brief Получение IP-адреса узла.
-		///
-		/// @return - IP-адрес узла в виде строки.
-		const char* get_ip() const;
+        /// @brief Получение IP-адреса узла.
+        ///
+        /// @return - IP-адрес узла в виде строки.
+        const char* get_ip() const;
 
         /// @brief Получение IP-адреса контроллера (узел `А1`).
         ///
         /// @return - IP-адрес узла в виде строки.
         const char* get_controller_ip() const;
 
-        static int run_cmd_exit_code( const char* cmd,
-            int expected = 0 );
+        static int run_cmd_exit_code( const char* cmd, int expected = 0 );
 
 #ifdef LINUX_OS
         static bool check_sudo_available();
@@ -57,7 +55,7 @@ class node_dev : public device
         static const char* get_cmd_output();
 
 #ifndef PTUSA_TEST
-	private:
+    private:
 #endif
 
         int process_web_cmd( int new_web_value );
@@ -88,4 +86,4 @@ class node_dev : public device
         std::string masq_check{};
 
         inline static char res_msg[ i_log::C_BUFF_SIZE ]{};
-	};
+    };

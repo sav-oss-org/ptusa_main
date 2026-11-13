@@ -29,8 +29,8 @@
 #endif // LINUX_OS
 
 //-----------------------------------------------------------------------------
-typedef unsigned char     u_char;
-typedef unsigned int      u_int;
+typedef unsigned char u_char;
+typedef unsigned int u_int;
 typedef unsigned long int u_long;
 
 extern int G_DEBUG;

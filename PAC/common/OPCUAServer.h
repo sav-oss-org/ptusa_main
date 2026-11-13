@@ -44,8 +44,7 @@ class OPCUA_server
         static UA_StatusCode write_state( UA_Server* server,
             const UA_NodeId* sessionId, void* sessionContext,
             const UA_NodeId* nodeId, void* nodeContext,
-            const UA_NumericRange* range,
-            const UA_DataValue* value );
+            const UA_NumericRange* range, const UA_DataValue* value );
 
         static UA_StatusCode read_value( UA_Server* server,
             const UA_NodeId* sessionId, void* sessionContext,
@@ -56,41 +55,36 @@ class OPCUA_server
         static UA_StatusCode write_value( UA_Server* server,
             const UA_NodeId* sessionId, void* sessionContext,
             const UA_NodeId* nodeId, void* nodeContext,
-            const UA_NumericRange* range,
-            const UA_DataValue* value );
+            const UA_NumericRange* range, const UA_DataValue* value );
 
 
-        static UA_StatusCode read_PAC_info_value( UA_Server*, const UA_NodeId*, void*,
-            const UA_NodeId*, void*, UA_Boolean, const UA_NumericRange*,
+        static UA_StatusCode read_PAC_info_value( UA_Server*, const UA_NodeId*,
+            void*, const UA_NodeId*, void*, UA_Boolean, const UA_NumericRange*,
             UA_DataValue* dataValue );
 
         static UA_StatusCode method_set_state( UA_Server* server,
             const UA_NodeId* sessionId, void* sessionContext,
             const UA_NodeId* methodId, void* methodContext,
-            const UA_NodeId* objectId, void* objectContext,
-            size_t inputSize, const UA_Variant* input,
-            size_t outputSize, UA_Variant* output );
+            const UA_NodeId* objectId, void* objectContext, size_t inputSize,
+            const UA_Variant* input, size_t outputSize, UA_Variant* output );
 
         static UA_StatusCode method_set_value( UA_Server* server,
             const UA_NodeId* sessionId, void* sessionContext,
             const UA_NodeId* methodId, void* methodContext,
-            const UA_NodeId* objectId, void* objectContext,
-            size_t inputSize, const UA_Variant* input,
-            size_t outputSize, UA_Variant* output );
+            const UA_NodeId* objectId, void* objectContext, size_t inputSize,
+            const UA_Variant* input, size_t outputSize, UA_Variant* output );
 
         static UA_StatusCode method_on( UA_Server* server,
             const UA_NodeId* sessionId, void* sessionContext,
             const UA_NodeId* methodId, void* methodContext,
-            const UA_NodeId* objectId, void* objectContext,
-            size_t inputSize, const UA_Variant* input,
-            size_t outputSize, UA_Variant* output );
+            const UA_NodeId* objectId, void* objectContext, size_t inputSize,
+            const UA_Variant* input, size_t outputSize, UA_Variant* output );
 
         static UA_StatusCode method_off( UA_Server* server,
             const UA_NodeId* sessionId, void* sessionContext,
             const UA_NodeId* methodId, void* methodContext,
-            const UA_NodeId* objectId, void* objectContext,
-            size_t inputSize, const UA_Variant* input,
-            size_t outputSize, UA_Variant* output );
+            const UA_NodeId* objectId, void* objectContext, size_t inputSize,
+            const UA_Variant* input, size_t outputSize, UA_Variant* output );
 
         virtual ~OPCUA_server();
 

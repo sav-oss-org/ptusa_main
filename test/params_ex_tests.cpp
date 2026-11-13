@@ -43,10 +43,8 @@ namespace
         return nullptr;
         }
 
-    size_t bad_fread( [[maybe_unused]] void* ptr,
-        [[maybe_unused]] size_t size,
-        [[maybe_unused]] size_t count,
-        [[maybe_unused]] FILE* stream )
+    size_t bad_fread( [[maybe_unused]] void* ptr, [[maybe_unused]] size_t size,
+        [[maybe_unused]] size_t count, [[maybe_unused]] FILE* stream )
         {
         return 0;
         }

@@ -30,7 +30,8 @@
 #include "tcp_cmctr.h"
 #include "device/i_base.h"
 
-extern "C" {
+extern "C"
+    {
 #include "zlib.h"
     };
 
@@ -43,14 +44,15 @@ class device_communicator
     public:
         enum CMD
             {
-            CMD_GET_INFO_ON_CONNECT = 10, ///< Запрос инф. о PAC перед дальнейшей работой.
+            CMD_GET_INFO_ON_CONNECT =
+                10, ///< Запрос инф. о PAC перед дальнейшей работой.
 
             CMD_GET_DEVICES = 100,   ///< Запрос инф. об устройствах PAC.
             CMD_GET_DEVICES_STATES,  ///< Запрос инф. о состоянии устройств PAC.
-            CMD_EXEC_DEVICE_COMMAND, ///< Выполнение команды для устройства.
+            CMD_EXEC_DEVICE_COMMAND,  ///< Выполнение команды для устройства.
 
-            CMD_GET_PAC_ERRORS,      ///< Запрос инф. об ошибках PAC.
-            CMD_SET_PAC_ERROR_CMD,   ///< Выполнение команды для ошибки.
+            CMD_GET_PAC_ERRORS,  ///< Запрос инф. об ошибках PAC.
+            CMD_SET_PAC_ERROR_CMD,  ///< Выполнение команды для ошибки.
 
             // Резервное копирование параметров.
             ///@brief Получение параметров устройств.
@@ -67,14 +69,14 @@ class device_communicator
             CMD_GET_PARAMS_CRC,
             // Резервное копирование параметров. -!>
 
-            CMD_RM_GET_DEVICES = 200,   ///< Запрос устройств PAC от PAC-мастера.
+            CMD_RM_GET_DEVICES = 200,  ///< Запрос устройств PAC от PAC-мастера.
             CMD_RM_GET_DEVICES_STATES,  ///< Запрос состояния устройств PAC от PAC-мастера.
             };
 
 #ifndef DRIVER
     private:
         /// Единственный экземпляр класса.
-        static auto_smart_ptr < device_communicator > instance;
+        static auto_smart_ptr< device_communicator > instance;
         static char buff[ tcp_communicator::BUFSIZE ];
 
         inline static bool use_compression{ true };
@@ -103,7 +105,7 @@ class device_communicator
 
         enum CONSTANTS
             {
-            C_SERVICE_N = 1, ///< Номер сервиса коммуникатора.
+            C_SERVICE_N = 1,  ///< Номер сервиса коммуникатора.
             };
 
         /// @brief Устройства, информация о них и их состоянии передается на
@@ -115,11 +117,11 @@ class device_communicator
         void print() const;
 
         /// @brief Добавление устройства.
-        int add_device( i_Lua_save_device *dev );
+        int add_device( i_Lua_save_device* dev );
 
         /// @brief Сервис для работы с device_communicator.
-        static long write_devices_states_service( long len, u_char *data,
-            u_char *outdata );
+        static long write_devices_states_service(
+            long len, u_char* data, u_char* outdata );
 
         /// @brief Удаление устройств.
         void clear_devices();
@@ -132,13 +134,13 @@ class device_communicator
             {
             errors_id = 0;
             }
-#endif // PTUSA_TEST
+#endif  // PTUSA_TEST
 
-#endif // !DRIVER
+#endif  // !DRIVER
     };
 //-----------------------------------------------------------------------------
 #ifndef DRIVER
 #define G_DEVICE_CMMCTR device_communicator::get_instance()
-#endif // !DRIVER
+#endif  // !DRIVER
 
-#endif // DEVICES_H
+#endif  // DEVICES_H

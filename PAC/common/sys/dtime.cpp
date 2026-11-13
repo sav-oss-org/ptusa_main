@@ -46,15 +46,16 @@ inline auto get_duration()
 //-----------------------------------------------------------------------------
 uint32_t get_sec()
     {
-    auto s = std::chrono::duration_cast<std::chrono::seconds>(
-        get_duration() ).count();
+    auto s = std::chrono::duration_cast<std::chrono::seconds>( get_duration() )
+                 .count();
     return static_cast<uint32_t>( s );
     }
 //-----------------------------------------------------------------------------
 uint32_t get_millisec()
     {
-    auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(
-        get_duration() ).count();
+    auto ms =
+        std::chrono::duration_cast<std::chrono::milliseconds>( get_duration() )
+            .count();
 
     return static_cast<uint32_t>( ms );
     }

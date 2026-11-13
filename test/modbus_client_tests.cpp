@@ -4,7 +4,7 @@
 #include <memory>
 
 #include "tolua++.h"
-#include "PAC_dev_lua_tests.h" // содержит TOLUA_API int tolua_PAC_dev_open(lua_State*);
+#include "PAC_dev_lua_tests.h"  // содержит TOLUA_API int tolua_PAC_dev_open(lua_State*);
 #include "PAC_info.h"
 #include "lua_manager.h"
 
@@ -19,8 +19,8 @@ constexpr unsigned char kC = 0x68;
 constexpr unsigned char kD = 0xB1;
 
 // Вспомогательные функции для преобразования.
-static int_4 from_bytes( unsigned char b0, unsigned char b1,
-    unsigned char b2, unsigned char b3 )
+static int_4 from_bytes(
+    unsigned char b0, unsigned char b1, unsigned char b2, unsigned char b3 )
     {
     int_4 v = 0;
     unsigned char data[ 4 ] = { b0, b1, b2, b3 };
@@ -40,7 +40,8 @@ constexpr auto kBaseOff = kRWShift + kAddr * 2;
 static void preset_read_area( modbus_client& cli, unsigned int address,
     unsigned char a, unsigned char b, unsigned char c, unsigned char d )
     {
-    const int base = static_cast<int>( address ) * 2 - kRWShift; // (9 + addr*2) - 13
+    const int base =
+        static_cast<int>( address ) * 2 - kRWShift;  // (9 + addr*2) - 13
     cli.set_byte( base + 0, a );
     cli.set_byte( base + 1, b );
     cli.set_byte( base + 2, c );
@@ -99,8 +100,8 @@ class ModbusClientLuaTest : public ::testing::Test
             {
             L = lua_open();
             ASSERT_EQ( 1, tolua_PAC_dev_open( L ) );
-            ASSERT_EQ( 0, luaL_dostring( L,
-                "cli = modbus_client(1, '127.0.0.1')" ) );
+            ASSERT_EQ(
+                0, luaL_dostring( L, "cli = modbus_client(1, '127.0.0.1')" ) );
             }
 
         void TearDown() override
@@ -127,10 +128,14 @@ class ModbusClientLuaTest : public ::testing::Test
             {
             lua_pushnumber( L, static_cast<lua_Number>( kAddr ) );
             lua_setglobal( L, "ADDR" );
-            lua_pushnumber( L, kA ); lua_setglobal( L, "A" );
-            lua_pushnumber( L, kB ); lua_setglobal( L, "B" );
-            lua_pushnumber( L, kC ); lua_setglobal( L, "C" );
-            lua_pushnumber( L, kD ); lua_setglobal( L, "D" );
+            lua_pushnumber( L, kA );
+            lua_setglobal( L, "A" );
+            lua_pushnumber( L, kB );
+            lua_setglobal( L, "B" );
+            lua_pushnumber( L, kC );
+            lua_setglobal( L, "C" );
+            lua_pushnumber( L, kD );
+            lua_setglobal( L, "D" );
 
             // Предварительно настроим read-область через set_byte
             // (адрес = addr*2 - kRWShift + offset).
@@ -147,7 +152,8 @@ class ModbusClientLuaTest : public ::testing::Test
             EXPECT_EQ( static_cast<int_4>( res ), expected );
             }
 
-        void set_bytes( const char* cmd /*например, "cli:set_int4_cd_ab(ADDR, VAL)\n"*/ )
+        void set_bytes(
+            const char* cmd /*например, "cli:set_int4_cd_ab(ADDR, VAL)\n"*/ )
             {
             const int_4 val = from_bytes( kA, kB, kC, kD );
             lua_pushnumber( L, static_cast<lua_Number>( kAddr ) );
@@ -189,10 +195,10 @@ TEST_F( ModbusClientTest, set_int4_ab_cd )
     const int_4 val = from_bytes( kA, kB, kC, kD );
     cli.set_int4_ab_cd( kAddr, val );
 
-    EXPECT_EQ( cli.get_byte( kBaseOff + 0 ), kA ); // A
-    EXPECT_EQ( cli.get_byte( kBaseOff + 1 ), kB ); // B
-    EXPECT_EQ( cli.get_byte( kBaseOff + 2 ), kC ); // C
-    EXPECT_EQ( cli.get_byte( kBaseOff + 3 ), kD ); // D
+    EXPECT_EQ( cli.get_byte( kBaseOff + 0 ), kA );  // A
+    EXPECT_EQ( cli.get_byte( kBaseOff + 1 ), kB );  // B
+    EXPECT_EQ( cli.get_byte( kBaseOff + 2 ), kC );  // C
+    EXPECT_EQ( cli.get_byte( kBaseOff + 3 ), kD );  // D
     }
 
 TEST_F( ModbusClientTest, set_int4_cd_ab )
@@ -200,10 +206,10 @@ TEST_F( ModbusClientTest, set_int4_cd_ab )
     const int_4 val = from_bytes( kA, kB, kC, kD );
     cli.set_int4_cd_ab( kAddr, val );
 
-    EXPECT_EQ( cli.get_byte( kBaseOff + 0 ), kC ); // C
-    EXPECT_EQ( cli.get_byte( kBaseOff + 1 ), kD ); // D
-    EXPECT_EQ( cli.get_byte( kBaseOff + 2 ), kA ); // A
-    EXPECT_EQ( cli.get_byte( kBaseOff + 3 ), kB ); // B
+    EXPECT_EQ( cli.get_byte( kBaseOff + 0 ), kC );  // C
+    EXPECT_EQ( cli.get_byte( kBaseOff + 1 ), kD );  // D
+    EXPECT_EQ( cli.get_byte( kBaseOff + 2 ), kA );  // A
+    EXPECT_EQ( cli.get_byte( kBaseOff + 3 ), kB );  // B
     }
 
 TEST_F( ModbusClientTest, set_int4_dc_ba )
@@ -211,10 +217,10 @@ TEST_F( ModbusClientTest, set_int4_dc_ba )
     const int_4 val = from_bytes( kA, kB, kC, kD );
     cli.set_int4_dc_ba( kAddr, val );
 
-    EXPECT_EQ( cli.get_byte( kBaseOff + 0 ), kD ); // D
-    EXPECT_EQ( cli.get_byte( kBaseOff + 1 ), kC ); // C
-    EXPECT_EQ( cli.get_byte( kBaseOff + 2 ), kB ); // B
-    EXPECT_EQ( cli.get_byte( kBaseOff + 3 ), kA ); // A
+    EXPECT_EQ( cli.get_byte( kBaseOff + 0 ), kD );  // D
+    EXPECT_EQ( cli.get_byte( kBaseOff + 1 ), kC );  // C
+    EXPECT_EQ( cli.get_byte( kBaseOff + 2 ), kB );  // B
+    EXPECT_EQ( cli.get_byte( kBaseOff + 3 ), kA );  // A
     }
 
 TEST_F( ModbusClientTest, set_int4 )
@@ -222,10 +228,10 @@ TEST_F( ModbusClientTest, set_int4 )
     const int_4 val = from_bytes( kA, kB, kC, kD );
     cli.set_int4( kAddr, val );
 
-    EXPECT_EQ( cli.get_byte( kBaseOff + 0 ), kB ); // B
-    EXPECT_EQ( cli.get_byte( kBaseOff + 1 ), kA ); // A
-    EXPECT_EQ( cli.get_byte( kBaseOff + 2 ), kD ); // D
-    EXPECT_EQ( cli.get_byte( kBaseOff + 3 ), kC ); // C
+    EXPECT_EQ( cli.get_byte( kBaseOff + 0 ), kB );  // B
+    EXPECT_EQ( cli.get_byte( kBaseOff + 1 ), kA );  // A
+    EXPECT_EQ( cli.get_byte( kBaseOff + 2 ), kD );  // D
+    EXPECT_EQ( cli.get_byte( kBaseOff + 3 ), kC );  // C
     }
 
 // ------------------------------
@@ -338,7 +344,7 @@ TEST_F( ModbusClientLuaTest, set_int4_dc_ba )
 // ------------------------------
 // TEST_F: Lua — чтение (get_*) и проверка значений
 // ------------------------------
-TEST_F( ModbusClientLuaTest, get_int4 ) // B A D C
+TEST_F( ModbusClientLuaTest, get_int4 )  // B A D C
     {
     // Проверка некорректного вызова (без параметров).
     ASSERT_TRUE( luaL_dostring( L, "cli:get_int4()\n" ) );

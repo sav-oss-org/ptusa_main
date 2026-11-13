@@ -1,6 +1,5 @@
-#if !defined WIN_OS && \
-    !( defined LINUX_OS && defined PAC_PC ) && \
-	!( defined LINUX_OS && defined PAC_PLCNEXT )
+#if !defined WIN_OS && !( defined LINUX_OS && defined PAC_PC ) && \
+    !( defined LINUX_OS && defined PAC_PLCNEXT )
 #error You must define OS!
 #endif
 
@@ -22,7 +21,7 @@
 led* get_led()
     {
     // Статический экземпляр класса для вызова методов.
-    static auto_smart_ptr < led > led_instance;
+    static auto_smart_ptr< led > led_instance;
 
     if ( led_instance.is_null() )
         {

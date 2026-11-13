@@ -16,9 +16,9 @@
 #include "log.h"
 
 #ifndef PTUSA_TEST
-int G_DEBUG = 0;    //Вывод дополнительной отладочной информации.
+int G_DEBUG = 0;  //Вывод дополнительной отладочной информации.
 
-bool G_NO_IO_NODES = true; // По умолчанию обмен с модулями отключен.
+bool G_NO_IO_NODES = true;  // По умолчанию обмен с модулями отключен.
 bool G_READ_ONLY_IO_NODES = false;
 #endif
 
@@ -26,14 +26,14 @@ int lua_init( lua_State* L )
     {
     int top = lua_gettop( L );
     int p_size = !top ? 1 : top;
-    auto argv = new const char* [ p_size ] { nullptr };
+    auto argv = new const char*[ p_size ]{ nullptr };
 
     int argc = 0;
     for ( int i = 1; i <= top; i++ )
         {
         switch ( auto t = lua_type( L, 1 ); t )
             {
-            case LUA_TSTRING:   //Strings
+            case LUA_TSTRING:  //Strings
                 {
                 const char* str = lua_tostring( L, 1 );
                 char* tmp_str = new char[ strlen( str ) + 1 ];
@@ -43,7 +43,7 @@ int lua_init( lua_State* L )
                 break;
                 }
 
-            default:            //Other values.
+            default:  //Other values.
                 break;
             }
         lua_remove( L, 1 );
@@ -70,7 +70,7 @@ int lua_init( lua_State* L )
         G_PROJECT_MANAGER->path.c_str(), G_PROJECT_MANAGER->sys_path.c_str(),
         G_PROJECT_MANAGER->extra_paths.c_str() );
 
-    if ( res ) //-Ошибка инициализации.
+    if ( res )  //-Ошибка инициализации.
         {
         sprintf( G_LOG->msg, "Lua init returned error code %d!", 1 );
         G_LOG->write_log( i_log::P_CRIT );
@@ -102,7 +102,7 @@ int eval( lua_State* L )
 
     st_time = get_millisec();
     cycles_cnt++;
-#endif // TEST_SPEED
+#endif  // TEST_SPEED
 
     lua_gc( G_LUA_MANAGER->get_Lua(), LUA_GCSTEP, 200 );
 
@@ -144,8 +144,7 @@ int switch_off_verbose( lua_State* L )
     }
 
 //Регистрация реализованных в dll функций, что бы те стали доступны из lua.
-struct luaL_reg ls_lib[] =
-    {
+struct luaL_reg ls_lib[] = {
     { "init", lua_init },
     { "eval", eval },
     { "no_print_stack_traceback", no_print_stack_traceback },
@@ -153,11 +152,11 @@ struct luaL_reg ls_lib[] =
     { "switch_on_verbose", switch_on_verbose },
     { "switch_off_verbose", switch_off_verbose },
     { NULL, NULL },
-    };
+};
 
 extern "C" int
 #ifdef WIN32
-__declspec( dllexport )
+    __declspec( dllexport )
 #endif
     luaopen_ptusa_main( lua_State* L )
     {

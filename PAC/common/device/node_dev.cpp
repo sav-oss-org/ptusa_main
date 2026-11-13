@@ -41,12 +41,14 @@ std::string node_dev::get_A1_ipv4()
     return result;
     }
 //----------------------------------------------------------------------------
-node_dev::node_dev( const char* name ) : device( name,
-    device::DEVICE_TYPE::DT_NODE, device::DEVICE_SUB_TYPE::DST_NODE, 0 )
-    {}
+node_dev::node_dev( const char* name ) :
+    device( name, device::DEVICE_TYPE::DT_NODE,
+        device::DEVICE_SUB_TYPE::DST_NODE, 0 )
+    {
+    }
 //-----------------------------------------------------------------------------
-static std::string replace_action( const std::string& cmd,
-    std::string_view from, std::string_view to )
+static std::string replace_action(
+    const std::string& cmd, std::string_view from, std::string_view to )
     {
     std::string out{ cmd };
 
@@ -68,8 +70,8 @@ void node_dev::set_io_node( io_manager::io_node* io_node )
 
     if ( !io_node )
         {
-        G_LOG->warning( "Node '%s' - null pointer passed as I/O node.",
-            get_name() );
+        G_LOG->warning(
+            "Node '%s' - null pointer passed as I/O node.", get_name() );
         return;
         }
 
@@ -77,8 +79,8 @@ void node_dev::set_io_node( io_manager::io_node* io_node )
     if ( struct in_addr ipv4_addr;
         inet_pton( AF_INET, io_node->ip_address, &ipv4_addr ) != 1 )
         {
-        G_LOG->warning( "Node '%s' - invalid IPv4 address ('%s').",
-            get_name(), io_node->ip_address );
+        G_LOG->warning( "Node '%s' - invalid IPv4 address ('%s').", get_name(),
+            io_node->ip_address );
         return;
         }
 
@@ -96,8 +98,7 @@ void node_dev::set_io_node( io_manager::io_node* io_node )
     if ( struct in_addr ipv4_addr;
         inet_pton( AF_INET, controller_ip.c_str(), &ipv4_addr ) != 1 )
         {
-        G_LOG->warning(
-            "Node '%s' - invalid controller IPv4 address ('%s').",
+        G_LOG->warning( "Node '%s' - invalid controller IPv4 address ('%s').",
             get_name(), controller_ip.c_str() );
         controller_ip = "";
         return;
@@ -108,14 +109,15 @@ void node_dev::set_io_node( io_manager::io_node* io_node )
 
     const std::string IPTABLES = "sudo -n /usr/sbin/iptables";
     dnat = IPTABLES + " -t nat -A PREROUTING -p tcp -d " + controller_ip +
-        " --dport " + std::to_string( port_controller_web ) +
-        " -j DNAT --to-destination " + node->ip_address + ":" + PORT_NODE_WEB;
+           " --dport " + std::to_string( port_controller_web ) +
+           " -j DNAT --to-destination " + node->ip_address + ":" +
+           PORT_NODE_WEB;
 
-    forward_in = IPTABLES + " -A FORWARD -p tcp -d " +
-        node->ip_address + " --dport " + PORT_NODE_WEB + " -j ACCEPT";
+    forward_in = IPTABLES + " -A FORWARD -p tcp -d " + node->ip_address +
+                 " --dport " + PORT_NODE_WEB + " -j ACCEPT";
 
-    masq = IPTABLES + " -t nat -A POSTROUTING -p tcp -d " +
-        node->ip_address + " --dport " + PORT_NODE_WEB + " -j MASQUERADE";
+    masq = IPTABLES + " -t nat -A POSTROUTING -p tcp -d " + node->ip_address +
+           " --dport " + PORT_NODE_WEB + " -j MASQUERADE";
 
     dnat_delete = replace_action( dnat, " -A ", " -D " );
     forward_in_delete = replace_action( forward_in, " -A ", " -D " );
@@ -281,8 +283,8 @@ bool node_dev::check_ip_forward()
         return false;
         }
 
-    G_LOG->debug( "node_dev::check_ip_forward - net.ipv4.ip_forward=%d",
-        ip_forward );
+    G_LOG->debug(
+        "node_dev::check_ip_forward - net.ipv4.ip_forward=%d", ip_forward );
 
     if ( ip_forward != 1 )
         {
@@ -306,7 +308,7 @@ const char* node_dev::get_cmd_output()
 int node_dev::process_web_cmd( int new_web_value )
     {
     if ( dnat_delete.empty() || forward_in_delete.empty() ||
-        masq_delete.empty() )
+         masq_delete.empty() )
         {
         G_LOG->warning(
             "'%s': no iptables rules defined for web port forwarding.",
@@ -317,15 +319,15 @@ int node_dev::process_web_cmd( int new_web_value )
 #ifdef LINUX_OS
     if ( !check_sudo_available() )
         {
-        G_LOG->error( "'%s': web port command failed - %s.",
-            get_name(), node_dev::get_cmd_output() );
+        G_LOG->error( "'%s': web port command failed - %s.", get_name(),
+            node_dev::get_cmd_output() );
         return 1;
         }
 
     if ( !check_ip_forward() )
         {
-        G_LOG->error( "'%s': web port command failed - %s.",
-            get_name(), node_dev::get_cmd_output() );
+        G_LOG->error( "'%s': web port command failed - %s.", get_name(),
+            node_dev::get_cmd_output() );
         return 1;
         }
 #endif // LINUX_OS
@@ -339,7 +341,8 @@ int node_dev::process_web_cmd( int new_web_value )
             return 1;
             }
         if ( auto res =
-            ensure_rule( forward_in_check.c_str(), forward_in.c_str() ); !res )
+                 ensure_rule( forward_in_check.c_str(), forward_in.c_str() );
+            !res )
             {
             G_LOG->error( "'%s': failed to enable web port forwarding - %s.",
                 get_name(), node_dev::get_cmd_output() );
@@ -359,24 +362,27 @@ int node_dev::process_web_cmd( int new_web_value )
 
     else if ( new_web_value == 0 && web_value == 1 )
         {
-        if ( auto res = delete_all_matches( dnat_check.c_str(),
-            dnat_delete.c_str() ); !res )
+        if ( auto res =
+                 delete_all_matches( dnat_check.c_str(), dnat_delete.c_str() );
+            !res )
             {
             G_LOG->error(
                 "'%s': failed to disable web port forwarding (dnat) - %s.",
                 get_name(), node_dev::get_cmd_output() );
             return 1;
             }
-        if ( auto res = delete_all_matches( forward_in_check.c_str(),
-            forward_in_delete.c_str() ); !res )
+        if ( auto res = delete_all_matches(
+                 forward_in_check.c_str(), forward_in_delete.c_str() );
+            !res )
             {
             G_LOG->error(
                 "'%s': failed to disable web port forwarding (forward_in) - %s.",
                 get_name(), node_dev::get_cmd_output() );
             return 1;
             }
-        if ( auto res = delete_all_matches( masq_check.c_str(),
-            masq_delete.c_str() ); !res )
+        if ( auto res =
+                 delete_all_matches( masq_check.c_str(), masq_delete.c_str() );
+            !res )
             {
             G_LOG->error(
                 "'%s': failed to disable web port forwarding (masq) - %s.",
@@ -425,8 +431,8 @@ int node_dev::save_device( char* buff ) const
     {
     // LCOV_EXCL_START
     auto res_n = fmt::format_to_n( buff, MAX_COPY_SIZE,
-        "{}={{ST={}, WEB={}, STARTUP={}, IP='{}'}},\n",
-        get_name(), get_state(), web_value, startup_value, get_ip() );
+        "{}={{ST={}, WEB={}, STARTUP={}, IP='{}'}},\n", get_name(), get_state(),
+        web_value, startup_value, get_ip() );
     // LCOV_EXCL_STOP
 
     return static_cast<int>( res_n.size );

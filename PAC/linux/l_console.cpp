@@ -6,7 +6,7 @@
 #include <ctime>
 
 time_t current_time;
-struct tm *time_info;
+struct tm* time_info;
 
 #include "l_console.h"
 //-----------------------------------------------------------------------------

@@ -9,8 +9,8 @@ TEST( ao_node_state, analog_output_get_state_returns_error_on_bad_ao_node )
     auto prev_mngr = io_manager::replace_instance( &mngr );
 
     mngr.init( 1 );
-    mngr.add_node( 0, io_manager::io_node::TYPES::PHOENIX_BK_ETH,
-        1, "127.0.0.1", "A100", 1, 1, 1, 1, 1, 1 );
+    mngr.add_node( 0, io_manager::io_node::TYPES::PHOENIX_BK_ETH, 1,
+        "127.0.0.1", "A100", 1, 1, 1, 1, 1, 1 );
     mngr.init_node_AO( 0, 0, 555, 0 );
 
     G_PAC_INFO()->emulation_off();
@@ -43,8 +43,8 @@ TEST( ao_node_state, analog_valve_get_state_returns_error_on_bad_ao_node )
     auto prev_mngr = io_manager::replace_instance( &mngr );
 
     mngr.init( 1 );
-    mngr.add_node( 0, io_manager::io_node::TYPES::PHOENIX_BK_ETH,
-        1, "127.0.0.1", "A100", 1, 1, 1, 1, 1, 1 );
+    mngr.add_node( 0, io_manager::io_node::TYPES::PHOENIX_BK_ETH, 1,
+        "127.0.0.1", "A100", 1, 1, 1, 1, 1, 1 );
     mngr.init_node_AO( 0, 0, 555, 0 );
 
     G_PAC_INFO()->emulation_off();

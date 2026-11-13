@@ -10,13 +10,13 @@
 #include "log.h"
 
 #ifdef WIN_OS
-extern const char* WSA_Last_Err_Decode ();
+extern const char* WSA_Last_Err_Decode();
 #endif // WINDOWS_OS
 
-auto_smart_ptr < PAC_critical_errors_manager > PAC_critical_errors_manager::instance;
+auto_smart_ptr< PAC_critical_errors_manager >
+    PAC_critical_errors_manager::instance;
 //-----------------------------------------------------------------------------
-PAC_critical_errors_manager::~PAC_critical_errors_manager(
-    )
+PAC_critical_errors_manager::~PAC_critical_errors_manager()
     {
     reset_all_error();
     }
@@ -30,52 +30,52 @@ void PAC_critical_errors_manager::show_errors() const
         {
         switch ( show_step )
             {
-        case 0:
-            if ( get_delta_millisec( start_time ) > 500 )
-                {
-                show_step = 1;
-                get_led()->on( led::L_STATUS, led::C_RED );
-                start_time = get_millisec();
-                }
-            break;
+            case 0:
+                if ( get_delta_millisec( start_time ) > 500 )
+                    {
+                    show_step = 1;
+                    get_led()->on( led::L_STATUS, led::C_RED );
+                    start_time = get_millisec();
+                    }
+                break;
 
-        case 1:
-            if ( get_delta_millisec( start_time ) > 500 )
-                {
-                show_step = 0;
-                get_led()->off( led::L_STATUS );
-                start_time = get_millisec();
-                }
-            break;
+            case 1:
+                if ( get_delta_millisec( start_time ) > 500 )
+                    {
+                    show_step = 0;
+                    get_led()->off( led::L_STATUS );
+                    start_time = get_millisec();
+                    }
+                break;
             }
         }
     else                        // Нет ошибок.
         {
         switch ( show_step )
             {
-        case 0:
-            if ( get_delta_millisec( start_time ) > 500 )
-                {
-                show_step = 1;
-                get_led()->on( led::L_STATUS, led::C_GREEN );
-                start_time = get_millisec();
-                }
-            break;
+            case 0:
+                if ( get_delta_millisec( start_time ) > 500 )
+                    {
+                    show_step = 1;
+                    get_led()->on( led::L_STATUS, led::C_GREEN );
+                    start_time = get_millisec();
+                    }
+                break;
 
-        case 1:
-            if ( get_delta_millisec( start_time ) > 500 )
-                {
-                show_step = 0;
-                get_led()->off( led::L_STATUS );
-                start_time = get_millisec();
-                }
-            break;
+            case 1:
+                if ( get_delta_millisec( start_time ) > 500 )
+                    {
+                    show_step = 0;
+                    get_led()->off( led::L_STATUS );
+                    start_time = get_millisec();
+                    }
+                break;
             }
         }
     }
 //-----------------------------------------------------------------------------
-void PAC_critical_errors_manager::set_global_error( ALARM_CLASS eclass,
-    ALARM_SUBCLASS p1, unsigned int p2 )
+void PAC_critical_errors_manager::set_global_error(
+    ALARM_CLASS eclass, ALARM_SUBCLASS p1, unsigned int p2 )
     {
     int b = 0;
 
@@ -83,8 +83,8 @@ void PAC_critical_errors_manager::set_global_error( ALARM_CLASS eclass,
     for ( u_int i = 0; i < errors.size(); i++ )
         {
         if ( errors[ i ].err_class == eclass &&
-            static_cast<unsigned int>( p1 ) == errors[ i ].err_sub_class &&
-            p2 == errors[ i ].param )
+             static_cast<unsigned int>( p1 ) == errors[ i ].err_sub_class &&
+             p2 == errors[ i ].param )
             {
             b = 1;
             break;
@@ -93,11 +93,10 @@ void PAC_critical_errors_manager::set_global_error( ALARM_CLASS eclass,
 
     if ( b == 0 )
         {
-        G_LOG->error( "%s",
-            get_alarm_descr( eclass, p1, p2, true ) );
+        G_LOG->error( "%s", get_alarm_descr( eclass, p1, p2, true ) );
 
-        errors.emplace_back( eclass, p1, p2,
-            ALARM_CLASS_PRIORITY::P_ERR_CONNECTION );
+        errors.emplace_back(
+            eclass, p1, p2, ALARM_CLASS_PRIORITY::P_ERR_CONNECTION );
         errors_id++;
         }
     }
@@ -115,8 +114,8 @@ void PAC_critical_errors_manager::reset_global_error( ALARM_CLASS eclass,
     for ( u_int i = 0; i < errors.size(); i++ )
         {
         if ( errors[ i ].err_class == eclass &&
-            static_cast<unsigned int>( p1 ) == errors[ i ].err_sub_class &&
-            p2 == errors[ i ].param )
+             static_cast<unsigned int>( p1 ) == errors[ i ].err_sub_class &&
+             p2 == errors[ i ].param )
             {
             idx = i;
             break;
@@ -135,35 +134,41 @@ void PAC_critical_errors_manager::reset_global_error( ALARM_CLASS eclass,
         }
     }
 //-----------------------------------------------------------------------------
-int PAC_critical_errors_manager::save_as_Lua_str( char *str, u_int_2 &id )
+int PAC_critical_errors_manager::save_as_Lua_str( char* str, u_int_2& id )
     {
     int res = 0;
 
     std::for_each( errors.begin(), errors.end(),
         [ str, &res, this ]( const critical_error& err )
         {
-        res += fmt::format_to_n( str + res, MAX_COPY_SIZE, "\t{{\n" ).size;
+            res += fmt::format_to_n( str + res, MAX_COPY_SIZE, "\t{{\n" ).size;
 
-        res += fmt::format_to_n( str + res, MAX_COPY_SIZE,
-            "\tdescription = \"{}\",\n",
-            get_alarm_descr( static_cast<ALARM_CLASS>( err.err_class ),
-                static_cast<ALARM_SUBCLASS>( err.err_sub_class ),
-                err.param, true ) ).size;
+            res += fmt::format_to_n( str + res, MAX_COPY_SIZE,
+                "\tdescription = \"{}\",\n",
+                get_alarm_descr( static_cast<ALARM_CLASS>( err.err_class ),
+                    static_cast<ALARM_SUBCLASS>( err.err_sub_class ), err.param,
+                    true ) )
+                       .size;
 
-        res += fmt::format_to_n( str + res, MAX_COPY_SIZE,
-            "\ttype = AT_SPECIAL,\n" ).size;
-        res += fmt::format_to_n( str + res, MAX_COPY_SIZE,
-            "\tgroup = '{}',\n", get_alarm_group() ).size;
-        res += fmt::format_to_n( str + res, MAX_COPY_SIZE,
-            "\tpriority = {},\n", err.priority ).size;
-        res += fmt::format_to_n( str + res, MAX_COPY_SIZE,
-            "\tstate = AS_ALARM,\n" ).size;
+            res += fmt::format_to_n(
+                str + res, MAX_COPY_SIZE, "\ttype = AT_SPECIAL,\n" )
+                       .size;
+            res += fmt::format_to_n( str + res, MAX_COPY_SIZE,
+                "\tgroup = '{}',\n", get_alarm_group() )
+                       .size;
+            res += fmt::format_to_n(
+                str + res, MAX_COPY_SIZE, "\tpriority = {},\n", err.priority )
+                       .size;
+            res += fmt::format_to_n(
+                str + res, MAX_COPY_SIZE, "\tstate = AS_ALARM,\n" )
+                       .size;
 
-        //Для идентификации ошибок.
-        res += fmt::format_to_n( str + res, MAX_COPY_SIZE,
-            "\tid_n = {},\n", err.param ).size;
+            //Для идентификации ошибок.
+            res += fmt::format_to_n(
+                str + res, MAX_COPY_SIZE, "\tid_n = {},\n", err.param )
+                       .size;
 
-        res += fmt::format_to_n( str + res, MAX_COPY_SIZE, "\t}},\n" ).size;
+            res += fmt::format_to_n( str + res, MAX_COPY_SIZE, "\t}},\n" ).size;
         } );
 
     id = errors_id;
@@ -179,11 +184,11 @@ int PAC_critical_errors_manager::save_as_Lua_str( char *str, u_int_2 &id )
 bool PAC_critical_errors_manager::is_any_critical_error() const
     {
     return std::any_of( std::begin( errors ), std::end( errors ),
-        []( const critical_error& err ) {
-        return err.priority == ALARM_CLASS_PRIORITY::P_ERR_CONNECTION; } );
+        []( const critical_error& err )
+        { return err.priority == ALARM_CLASS_PRIORITY::P_ERR_CONNECTION; } );
     }
 //-----------------------------------------------------------------------------
-PAC_critical_errors_manager * PAC_critical_errors_manager::get_instance()
+PAC_critical_errors_manager* PAC_critical_errors_manager::get_instance()
     {
     if ( instance.is_null() )
         {
@@ -201,20 +206,22 @@ const char* PAC_critical_errors_manager::get_alarm_descr( ALARM_CLASS err_class,
     std::memset( tmp, 0, BUFF_SIZE );
 
     // LCOV_EXCL_START
-    auto res = fmt::format_to_n( tmp, BUFF_SIZE, "{}-{}-{} : ",
-        static_cast<int>( err_class ), static_cast<int>( err_sub_class ),
-        par ).size;
+    auto res = fmt::format_to_n( tmp, BUFF_SIZE,
+        "{}-{}-{} : ", static_cast<int>( err_class ),
+        static_cast<int>( err_sub_class ), par )
+                   .size;
     // LCOV_EXCL_STOP
 
     if ( err_sub_class == AS_IO_COUPLER &&
-        ( err_class == AC_SERVICE || err_class == AC_NO_CONNECTION ||
-            err_class == AC_PP_MODE || err_class == AC_CFG_BUS_ERROR ) )
+         ( err_class == AC_SERVICE || err_class == AC_NO_CONNECTION ||
+             err_class == AC_PP_MODE || err_class == AC_CFG_BUS_ERROR ) )
         {
         res += fmt::format_to_n( tmp + res, BUFF_SIZE - res,
             "Узел I/O '{}' ('{}', '{}') - ",
             G_IO_MANAGER()->get_node( par - 1 )->name,
             G_IO_MANAGER()->get_node( par - 1 )->ip_address,
-            G_CMMCTR->get_host_name_rus() ).size;
+            G_CMMCTR->get_host_name_rus() )
+                   .size;
         }
 
     switch ( err_class )
@@ -223,8 +230,8 @@ const char* PAC_critical_errors_manager::get_alarm_descr( ALARM_CLASS err_class,
             switch ( err_sub_class )
                 {
                 case AS_IO_COUPLER:
-                    fmt::format_to_n( tmp + res, BUFF_SIZE - res, "{}", is_set ?
-                        "отключен для обслуживания" : "включен" );
+                    fmt::format_to_n( tmp + res, BUFF_SIZE - res, "{}",
+                        is_set ? "отключен для обслуживания" : "включен" );
                     break;
                 }
             break;
@@ -233,9 +240,10 @@ const char* PAC_critical_errors_manager::get_alarm_descr( ALARM_CLASS err_class,
             switch ( err_sub_class )
                 {
                 case AS_IO_COUPLER:
-                    fmt::format_to_n( tmp + res, BUFF_SIZE - res, "{}", is_set ?
-                        "активен PP mode (каналы управления заблокированы)" :
-                        "обычный режим" );
+                    fmt::format_to_n( tmp + res, BUFF_SIZE - res, "{}",
+                        is_set
+                            ? "активен PP mode (каналы управления заблокированы)"
+                            : "обычный режим" );
                     break;
                 }
             break;
@@ -244,16 +252,17 @@ const char* PAC_critical_errors_manager::get_alarm_descr( ALARM_CLASS err_class,
             switch ( err_sub_class )
                 {
                 case AS_IO_COUPLER:
-                    fmt::format_to_n( tmp + res, BUFF_SIZE - res, "{}", is_set ?
-                        "ошибка конфигурации/шины" :
-                        "конфигурация и шина в норме" );
+                    fmt::format_to_n( tmp + res, BUFF_SIZE - res, "{}",
+                        is_set ? "ошибка конфигурации/шины"
+                               : "конфигурация и шина в норме" );
                     break;
                 }
             break;
 
         case AC_NO_CONNECTION:
-            res += fmt::format_to_n( tmp + res, BUFF_SIZE - res, "{}", is_set ?
-                "нет связи" : "есть связь" ).size;
+            res += fmt::format_to_n( tmp + res, BUFF_SIZE - res, "{}",
+                is_set ? "нет связи" : "есть связь" )
+                       .size;
 
             switch ( err_sub_class )
                 {
@@ -262,7 +271,8 @@ const char* PAC_critical_errors_manager::get_alarm_descr( ALARM_CLASS err_class,
                     break;
 
                 case AS_EASYSERVER:
-                    fmt::format_to_n( tmp + res, BUFF_SIZE - res, " EasyServer" );
+                    fmt::format_to_n(
+                        tmp + res, BUFF_SIZE - res, " EasyServer" );
                     break;
 
                 default:
@@ -272,29 +282,37 @@ const char* PAC_critical_errors_manager::get_alarm_descr( ALARM_CLASS err_class,
             break;
 
         case AC_NET:
-            res += fmt::format_to_n( tmp + res, BUFF_SIZE - res, "{}", is_set ?
-                " : Ошибка сетевой работы: " : " : Сетевая работа в норме : " ).size;
+            res += fmt::format_to_n( tmp + res, BUFF_SIZE - res, "{}",
+                is_set ? " : Ошибка сетевой работы: "
+                       : " : Сетевая работа в норме : " )
+                       .size;
 
             res += fmt::format_to_n( tmp + res, BUFF_SIZE - res, "{}",
-                par == 0 ? "Modbus-устройство 11 №{} : " :
-                    par == 1 ? "Мастер {} : " : "? {} : ", par ).size;
+                par == 0   ? "Modbus-устройство 11 №{} : "
+                : par == 1 ? "Мастер {} : "
+                           : "? {} : ",
+                par )
+                       .size;
 
             res += fmt::format_to_n( tmp + res, BUFF_SIZE - res, "{}",
-                err_sub_class == AS_SOCKET_F ? "вызов функции socket(...)" :
-                err_sub_class == AS_BIND_F ? "вызов функции bind(...)" :
-                err_sub_class == AS_SETSOCKOPT_F ? "вызов функции setsockopt(...)" :
-                err_sub_class == AS_LISTEN_F ? "вызов функции listen(...)" :
-                "неизвестная ошибка" ).size;
+                err_sub_class == AS_SOCKET_F ? "вызов функции socket(...)"
+                : err_sub_class == AS_BIND_F ? "вызов функции bind(...)"
+                : err_sub_class == AS_SETSOCKOPT_F
+                    ? "вызов функции setsockopt(...)"
+                : err_sub_class == AS_LISTEN_F ? "вызов функции listen(...)"
+                                               : "неизвестная ошибка" )
+                       .size;
 
-            fmt::format_to_n( tmp + res, BUFF_SIZE - res, "{}", is_set ?
+            fmt::format_to_n( tmp + res, BUFF_SIZE - res, "{}",
+                is_set ?
 #ifdef LINUX_OS
-                strerror( errno )
+                       strerror( errno )
 #endif // LINUX_OS
 
 #ifdef WIN_OS
-                WSA_Last_Err_Decode()
+                           WSA_Last_Err_Decode()
 #endif // WINDOWS_OS
-                : "." );
+                       : "." );
             break;
 
         default:
@@ -306,11 +324,11 @@ const char* PAC_critical_errors_manager::get_alarm_descr( ALARM_CLASS err_class,
     }
 //-----------------------------------------------------------------------------
 //-----------------------------------------------------------------------------
-PAC_critical_errors_manager::critical_error::critical_error( int err_class,
-    u_int err_sub_class,
-    u_int param,
-    int priority ) :err_class( err_class ),
-    err_sub_class( err_sub_class ), param( param ),
+PAC_critical_errors_manager::critical_error::critical_error(
+    int err_class, u_int err_sub_class, u_int param, int priority ) :
+    err_class( err_class ),
+    err_sub_class( err_sub_class ),
+    param( param ),
     priority( priority )
     {
     }
