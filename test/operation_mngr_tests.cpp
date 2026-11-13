@@ -282,7 +282,7 @@ TEST( step, set_tag )
 
 TEST( operation_state, print )
 	{
-	lua_State* L = lua_open();
+	lua_State* L = luaL_newstate();
 	ASSERT_EQ( 1, tolua_PAC_dev_open( L ) );
 	G_LUA_MANAGER->set_Lua( L );
 
@@ -323,7 +323,7 @@ TEST( operation_state, print )
 
 TEST( operation_state, is_empty )
 	{
-	lua_State* L = lua_open();
+	lua_State* L = luaL_newstate();
 	ASSERT_EQ( 1, tolua_PAC_dev_open( L ) );
 	G_LUA_MANAGER->set_Lua( L );
 
@@ -494,7 +494,7 @@ TEST( operation_state, to_next_step )
 
 TEST( operation_state, to_step )
     {
-    lua_State* L = lua_open();
+    lua_State* L = luaL_newstate();
     ASSERT_EQ( 1, tolua_PAC_dev_open( L ) );
     G_LUA_MANAGER->set_Lua( L );
 
@@ -603,7 +603,7 @@ TEST( operation, add_step )
 
 TEST( operation, check_max_step_time )
 	{
-	lua_State* L = lua_open();
+	lua_State* L = luaL_newstate();
 	ASSERT_EQ( 1, tolua_PAC_dev_open( L ) );
 	G_LUA_MANAGER->set_Lua( L );
 
@@ -665,7 +665,7 @@ TEST( operation, check_max_step_time_utf8_truncation )
 	// from different UTF-8 leading byte ranges (0xD0 and 0xD1).
 	// This tests the fix for the bug where long Cyrillic step names were
 	// incorrectly truncated, producing garbled output.
-	lua_State* L = lua_open();
+	lua_State* L = luaL_newstate();
 	ASSERT_EQ( 1, tolua_PAC_dev_open( L ) );
 	G_LUA_MANAGER->set_Lua( L );
 
@@ -710,7 +710,7 @@ TEST( operation, operator_at )
 	par_mock->init( 0 );
 	par_mock->final_init( 0, 0, 0 );
 
-	lua_State* L = lua_open();
+	lua_State* L = luaL_newstate();
 	ASSERT_EQ( 1, tolua_PAC_dev_open( L ) );
 	G_LUA_MANAGER->set_Lua( L );
 
@@ -727,7 +727,7 @@ TEST( operation, operator_at )
 
 TEST( operation, start )
 	{
-	lua_State* L = lua_open();
+	lua_State* L = luaL_newstate();
 	ASSERT_EQ( 1, tolua_PAC_dev_open( L ) );
 	G_LUA_MANAGER->set_Lua( L );
 
@@ -762,7 +762,7 @@ TEST( operation, start )
 
 TEST( operation, turn_off_active_step )
 	{
-	lua_State* L = lua_open();
+	lua_State* L = luaL_newstate();
 	ASSERT_EQ( 1, tolua_PAC_dev_open( L ) );
 	G_LUA_MANAGER->set_Lua( L );
 
@@ -784,7 +784,7 @@ TEST( operation, turn_off_active_step )
 
 TEST( operation, on_extra_step )
 	{
-	lua_State* L = lua_open();
+	lua_State* L = luaL_newstate();
 	ASSERT_EQ( 1, tolua_PAC_dev_open( L ) );
 	G_LUA_MANAGER->set_Lua( L );
 
@@ -835,7 +835,7 @@ TEST( operation, on_extra_step_debug_output )
 	{
 	// Test that on_extra_step outputs to stdout (console) when G_DEBUG is enabled,
 	// not to the system message log. This verifies the fix for issue #1126.
-	lua_State* L = lua_open();
+	lua_State* L = luaL_newstate();
 	ASSERT_EQ( 1, tolua_PAC_dev_open( L ) );
 	G_LUA_MANAGER->set_Lua( L );
 
@@ -906,7 +906,7 @@ TEST( operation, get_name )
 
 TEST( operation, evaluate )
 	{
-	lua_State* L = lua_open();
+	lua_State* L = luaL_newstate();
 	ASSERT_EQ( 1, tolua_PAC_dev_open( L ) );
 	G_LUA_MANAGER->set_Lua( L );
 
@@ -1238,7 +1238,7 @@ TEST( operation, evaluate )
 
 TEST( operation, evaluate_stop_to_idle )
     {
-    lua_State* L = lua_open();
+    lua_State* L = luaL_newstate();
     ASSERT_EQ( 1, tolua_PAC_dev_open( L ) );
     G_LUA_MANAGER->set_Lua( L );
 
@@ -1273,7 +1273,7 @@ TEST( operation, evaluate_PID )
 	//При переходе между шагами в пределах операции если ПИД-регулятор описан
 	//в данных шагах, то он должен продолжать свою работу, а на начинать с 0.
 
-	lua_State* L = lua_open();
+	lua_State* L = luaL_newstate();
 	ASSERT_EQ( 1, tolua_PAC_dev_open( L ) );
 	G_LUA_MANAGER->set_Lua( L );
 
@@ -1328,7 +1328,7 @@ TEST( operation, evaluate_PID )
 
 TEST( operation, evaluate_from_run_to_pause )
 	{
-	lua_State* L = lua_open();
+	lua_State* L = luaL_newstate();
 	ASSERT_EQ( 1, tolua_PAC_dev_open( L ) );
 	G_LUA_MANAGER->set_Lua( L );
 
@@ -1391,7 +1391,7 @@ TEST( operation, evaluate_from_run_to_pause )
 
 TEST( operation, evaluate_enable_step_by_signal )
     {
-    lua_State* L = lua_open();
+    lua_State* L = luaL_newstate();
     ASSERT_EQ( 1, tolua_PAC_dev_open( L ) );
     G_LUA_MANAGER->set_Lua( L );
 
@@ -1439,7 +1439,7 @@ TEST( operation, evaluate_enable_step_by_signal )
 
 TEST( operation, evaluate_off_last_step )
     {
-    lua_State* L = lua_open();
+    lua_State* L = luaL_newstate();
     ASSERT_EQ( 1, tolua_PAC_dev_open( L ) );
     G_LUA_MANAGER->set_Lua( L );
 

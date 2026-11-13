@@ -31,10 +31,10 @@ TEST(lua_manager_test, get_instance)
 	HOOKED:
 	LUALIB_API lua_State *(luaL_newstate) (void)
 	LUA_API int lua_gc (lua_State *L, int what, int data)
-	LUALIB_API void luaL_openlibs (lua_State *L)
+	LUALIB_API void luaL_openselectedlibs (lua_State *L, int load, int preload)
 	LUALIB_API int (luaL_loadstring) (lua_State *L, const char *s)
-	LUA_API int lua_pcall (lua_State *L, int nargs, int nresults, int errfunc)
-	LUALIB_API int luaL_loadfile (lua_State *L, const char *filename)
+	LUA_API int lua_pcallk (lua_State *L, int nargs, int nresults, int errfunc, lua_KContext ctx, lua_KFunction k)
+	LUALIB_API int luaL_loadfilex (lua_State *L, const char *filename, const char *mode)
 	TOLUA_API int tolua_PAC_dev_open (lua_State* tolua_S)
     LUA_API void lua_close (lua_State *L)
     LUA_API const char *lua_tolstring (lua_State *L, int idx, size_t *len)
@@ -135,7 +135,7 @@ TEST_F(LuaManagerTest, init_check_file_version_failure)
 TEST_F( LuaManagerTest, init_system_scripts_execution_failure )
 {
     subhook_t hook_luaL_loadfile =
-        subhook_new( (void*)&luaL_loadfile, (void*)&mock_luaL_loadfile_failure,
+        subhook_new( (void *) luaL_loadfilex, (void *) mock_luaL_loadfilex_failure,
         SUBHOOK_64BIT_OFFSET );
     subhook_install( hook_luaL_loadfile );
 
@@ -173,7 +173,7 @@ TEST_F(LuaManagerTest, init_lua_load_configuration_failure)
 TEST_F(LuaManagerTest, init_luaL_loadfile_failure)
 {
     subhook_t hook_luaL_loadfile =
-        subhook_new((void *)luaL_loadfile, (void *)mock_luaL_loadfile_failure_2, SUBHOOK_64BIT_OFFSET);
+        subhook_new((void *) luaL_loadfilex, (void *) mock_luaL_loadfilex_failure_2, SUBHOOK_64BIT_OFFSET);
     subhook_install(hook_luaL_loadfile);
     mock_project_manager* prj_mock = new mock_project_manager();
     mock_params_manager* par_mock = new mock_params_manager();
@@ -199,7 +199,7 @@ TEST_F(LuaManagerTest, init_luaL_loadfile_failure)
 TEST_F(LuaManagerTest, init_lua_pcall_failure)
 {
     subhook_t hook_lua_pcall =
-        subhook_new((void *)lua_pcall, (void *)mock_lua_pcall_failure, SUBHOOK_64BIT_OFFSET);
+        subhook_new((void *) lua_pcallk, (void *) mock_lua_pcallk_failure, SUBHOOK_64BIT_OFFSET);
     subhook_install(hook_lua_pcall);
     const int EXTRA_CALLS_COUNT = 1;
     set_lua_pcall_success_calls_before_failure(FILE_CNT + EXTRA_CALLS_COUNT);
@@ -269,7 +269,7 @@ TEST_F(LuaManagerTest, init_init_objects_failure)
 void test_PAC_name( int extra_calls_count )
     {
     subhook_t hook_lua_pcall =
-        subhook_new( (void*)lua_pcall, (void*)mock_lua_pcall_failure, SUBHOOK_64BIT_OFFSET );
+        subhook_new( (void *) lua_pcallk, (void *) mock_lua_pcallk_failure, SUBHOOK_64BIT_OFFSET );
     subhook_install( hook_lua_pcall );
 
     set_lua_pcall_success_calls_before_failure( FILE_CNT + extra_calls_count );
@@ -310,8 +310,9 @@ TEST_F( LuaManagerTest, init_PAC_name_eng_failure )
 	LUA_API void lua_pushcclosure (lua_State *L, lua_CFunction fn, int n)
 	LUA_API int lua_gettop (lua_State *L)
 	LUA_API void lua_getfield (lua_State *L, int idx, const char *k)
-	LUA_API void lua_remove (lua_State *L, int idx)
-	LUA_API int lua_pcall (lua_State *L, int nargs, int nresults, int errfunc)
+	LUA_API int lua_getglobal (lua_State *L, const char *name)
+	LUA_API void lua_rotate (lua_State *L, int idx, int n)
+	LUA_API int lua_pcallk (lua_State *L, int nargs, int nresults, int errfunc, lua_KContext ctx, lua_KFunction k)
 */
 
 TEST_F(LuaManagerTest, void_exec_lua_method_success)
@@ -324,7 +325,7 @@ TEST_F(LuaManagerTest, void_exec_lua_method_success)
 
 TEST_F(LuaManagerTest, void_exec_lua_method_failure)
 {
-    subhook_t hook_lua_pcall = subhook_new((void *)lua_pcall, (void *)mock_lua_pcall_failure, SUBHOOK_64BIT_OFFSET);
+    subhook_t hook_lua_pcall = subhook_new((void *) lua_pcallk, (void *) mock_lua_pcallk_failure, SUBHOOK_64BIT_OFFSET);
     subhook_install(hook_lua_pcall);
     set_lua_pcall_success_calls_before_failure(0);
 
@@ -346,8 +347,9 @@ TEST_F(LuaManagerTest, void_exec_lua_method_failure)
 	LUA_API void lua_pushcclosure (lua_State *L, lua_CFunction fn, int n)
 	LUA_API int lua_gettop (lua_State *L)
 	LUA_API void lua_getfield (lua_State *L, int idx, const char *k)
-	LUA_API void lua_remove (lua_State *L, int idx)
-	LUA_API int lua_pcall (lua_State *L, int nargs, int nresults, int errfunc)
+	LUA_API int lua_getglobal (lua_State *L, const char *name)
+	LUA_API void lua_rotate (lua_State *L, int idx, int n)
+	LUA_API int lua_pcallk (lua_State *L, int nargs, int nresults, int errfunc, lua_KContext ctx, lua_KFunction k)
 	TOLUA_API const char* tolua_tostring (lua_State* L, int narg, const char* def)
 */
 
@@ -362,7 +364,7 @@ TEST_F(LuaManagerTest, char_no_param_exec_lua_method_success)
 TEST_F(LuaManagerTest, char_no_param_exec_lua_method_failure)
 {
     subhook_t hook_lua_pcall =
-        subhook_new((void *)lua_pcall, (void *)mock_lua_pcall_failure, SUBHOOK_64BIT_OFFSET);
+        subhook_new((void *) lua_pcallk, (void *) mock_lua_pcallk_failure, SUBHOOK_64BIT_OFFSET);
     subhook_install(hook_lua_pcall);
     set_lua_pcall_success_calls_before_failure(0);
 
@@ -384,8 +386,9 @@ TEST_F(LuaManagerTest, char_no_param_exec_lua_method_failure)
 	LUA_API void lua_pushcclosure (lua_State *L, lua_CFunction fn, int n)
 	LUA_API int lua_gettop (lua_State *L)
 	LUA_API void lua_getfield (lua_State *L, int idx, const char *k)
-	LUA_API void lua_remove (lua_State *L, int idx)
-	LUA_API int lua_pcall (lua_State *L, int nargs, int nresults, int errfunc)
+	LUA_API int lua_getglobal (lua_State *L, const char *name)
+	LUA_API void lua_rotate (lua_State *L, int idx, int n)
+	LUA_API int lua_pcallk (lua_State *L, int nargs, int nresults, int errfunc, lua_KContext ctx, lua_KFunction k)
 	LUA_API void lua_pushnumber (lua_State *L, lua_Number n)
 	TOLUA_API const char* tolua_tostring (lua_State* L, int narg, const char* def)
 */
@@ -402,7 +405,7 @@ TEST_F(LuaManagerTest, char_exec_lua_method_success)
 TEST_F(LuaManagerTest, char_exec_lua_method_failure)
 {
     subhook_t hook_lua_pcall =
-        subhook_new((void *)lua_pcall, (void *)mock_lua_pcall_failure, SUBHOOK_64BIT_OFFSET);
+        subhook_new((void *) lua_pcallk, (void *) mock_lua_pcallk_failure, SUBHOOK_64BIT_OFFSET);
     subhook_install(hook_lua_pcall);
     set_lua_pcall_success_calls_before_failure(0);
 
@@ -426,8 +429,9 @@ TEST_F(LuaManagerTest, char_exec_lua_method_failure)
 	LUA_API void lua_pushcclosure (lua_State *L, lua_CFunction fn, int n)
 	LUA_API int lua_gettop (lua_State *L)
 	LUA_API void lua_getfield (lua_State *L, int idx, const char *k)
-	LUA_API void lua_remove (lua_State *L, int idx)
-	LUA_API int lua_pcall (lua_State *L, int nargs, int nresults, int errfunc)
+	LUA_API int lua_getglobal (lua_State *L, const char *name)
+	LUA_API void lua_rotate (lua_State *L, int idx, int n)
+	LUA_API int lua_pcallk (lua_State *L, int nargs, int nresults, int errfunc, lua_KContext ctx, lua_KFunction k)
 	LUA_API void lua_pushnumber (lua_State *L, lua_Number n)
 	TOLUA_API lua_Number tolua_tonumber (lua_State* L, int narg, lua_Number def)
 */
@@ -444,7 +448,7 @@ TEST_F(LuaManagerTest, int_exec_lua_method_success)
 TEST_F(LuaManagerTest, int_exec_lua_method_failure)
 {
     subhook_t hook_lua_pcall =
-        subhook_new((void *)lua_pcall, (void *)mock_lua_pcall_failure, SUBHOOK_64BIT_OFFSET);
+        subhook_new((void *) lua_pcallk, (void *) mock_lua_pcallk_failure, SUBHOOK_64BIT_OFFSET);
     subhook_install(hook_lua_pcall);
     set_lua_pcall_success_calls_before_failure(0);
 
@@ -468,8 +472,9 @@ TEST_F(LuaManagerTest, int_exec_lua_method_failure)
 	LUA_API void lua_pushcclosure (lua_State *L, lua_CFunction fn, int n)
 	LUA_API int lua_gettop (lua_State *L)
 	LUA_API void lua_getfield (lua_State *L, int idx, const char *k)
-	LUA_API void lua_remove (lua_State *L, int idx)
-	LUA_API int lua_pcall (lua_State *L, int nargs, int nresults, int errfunc)
+	LUA_API int lua_getglobal (lua_State *L, const char *name)
+	LUA_API void lua_rotate (lua_State *L, int idx, int n)
+	LUA_API int lua_pcallk (lua_State *L, int nargs, int nresults, int errfunc, lua_KContext ctx, lua_KFunction k)
 	LUA_API void lua_pushnumber (lua_State *L, lua_Number n)
 	TOLUA_API lua_Number tolua_tonumber (lua_State* L, int narg, lua_Number def)
 */
@@ -487,7 +492,7 @@ TEST_F(LuaManagerTest, int_2_exec_lua_method_success)
 TEST_F(LuaManagerTest, int_2_exec_lua_method_failure)
 {
     subhook_t hook_lua_pcall =
-        subhook_new((void *)lua_pcall, (void *)mock_lua_pcall_failure, SUBHOOK_64BIT_OFFSET);
+        subhook_new((void *) lua_pcallk, (void *) mock_lua_pcallk_failure, SUBHOOK_64BIT_OFFSET);
     subhook_install(hook_lua_pcall);
     set_lua_pcall_success_calls_before_failure(0);
 
@@ -511,8 +516,9 @@ TEST_F(LuaManagerTest, int_2_exec_lua_method_failure)
 	LUA_API void lua_pushcclosure (lua_State *L, lua_CFunction fn, int n)
 	LUA_API int lua_gettop (lua_State *L)
 	LUA_API void lua_getfield (lua_State *L, int idx, const char *k)
-	LUA_API void lua_remove (lua_State *L, int idx)
-	LUA_API int lua_pcall (lua_State *L, int nargs, int nresults, int errfunc)
+	LUA_API int lua_getglobal (lua_State *L, const char *name)
+	LUA_API void lua_rotate (lua_State *L, int idx, int n)
+	LUA_API int lua_pcallk (lua_State *L, int nargs, int nresults, int errfunc, lua_KContext ctx, lua_KFunction k)
 	LUA_API void lua_pushnumber (lua_State *L, lua_Number n)
 	TOLUA_API lua_Number tolua_tonumber (lua_State* L, int narg, lua_Number def)
 */
@@ -528,7 +534,7 @@ TEST_F(LuaManagerTest, int_no_param_exec_lua_method_success)
 TEST_F(LuaManagerTest, int_no_param_exec_lua_method_failure)
 {
     subhook_t hook_lua_pcall =
-        subhook_new((void *)lua_pcall, (void *)mock_lua_pcall_failure, SUBHOOK_64BIT_OFFSET);
+        subhook_new((void *) lua_pcallk, (void *) mock_lua_pcallk_failure, SUBHOOK_64BIT_OFFSET);
     subhook_install(hook_lua_pcall);
     set_lua_pcall_success_calls_before_failure(0);
 
@@ -551,8 +557,9 @@ TEST_F(LuaManagerTest, int_no_param_exec_lua_method_failure)
 	LUA_API void lua_pushcclosure (lua_State *L, lua_CFunction fn, int n)
 	LUA_API int lua_gettop (lua_State *L)
 	LUA_API void lua_getfield (lua_State *L, int idx, const char *k)
-	LUA_API void lua_remove (lua_State *L, int idx)
-	LUA_API int lua_pcall (lua_State *L, int nargs, int nresults, int errfunc)
+	LUA_API int lua_getglobal (lua_State *L, const char *name)
+	LUA_API void lua_rotate (lua_State *L, int idx, int n)
+	LUA_API int lua_pcallk (lua_State *L, int nargs, int nresults, int errfunc, lua_KContext ctx, lua_KFunction k)
 	LUA_API void lua_pushnumber (lua_State *L, lua_Number n)
 	TOLUA_API void* tolua_tousertype (lua_State* L, int narg, void* def)
 */
@@ -568,7 +575,7 @@ TEST_F(LuaManagerTest, user_object_exec_lua_method_success)
 
 TEST_F(LuaManagerTest, user_object_exec_lua_method_failure)
 {
-    subhook_t hook_lua_pcall = subhook_new((void *)lua_pcall, (void *)mock_lua_pcall_failure, SUBHOOK_64BIT_OFFSET);
+    subhook_t hook_lua_pcall = subhook_new((void *) lua_pcallk, (void *) mock_lua_pcallk_failure, SUBHOOK_64BIT_OFFSET);
     subhook_install(hook_lua_pcall);
     set_lua_pcall_success_calls_before_failure(0);
 
@@ -589,7 +596,7 @@ TEST_F(LuaManagerTest, user_object_exec_lua_method_failure)
 
 	HOOKED:
 	LUA_API int (luaL_loadstring) (lua_State *L, const char *s)
-	LUA_API int lua_pcall (lua_State *L, int nargs, int nresults, int errfunc)
+	LUA_API int lua_pcallk (lua_State *L, int nargs, int nresults, int errfunc, lua_KContext ctx, lua_KFunction k)
 */
 
 TEST_F(LuaManagerTest, exec_Lua_str_success)
@@ -600,7 +607,7 @@ TEST_F(LuaManagerTest, exec_Lua_str_success)
 TEST_F(LuaManagerTest, exec_Lua_str_failure)
 {
     subhook_t hook_lua_pcall =
-        subhook_new((void *)lua_pcall, (void *)mock_lua_pcall_failure, SUBHOOK_64BIT_OFFSET);
+        subhook_new((void *) lua_pcallk, (void *) mock_lua_pcallk_failure, SUBHOOK_64BIT_OFFSET);
     subhook_install(hook_lua_pcall);
     set_lua_pcall_success_calls_before_failure(0);
 
@@ -619,8 +626,9 @@ TEST_F(LuaManagerTest, exec_Lua_str_failure)
 	LUA_API void lua_pushcclosure (lua_State *L, lua_CFunction fn, int n)
 	LUA_API int lua_gettop (lua_State *L)
 	LUA_API void lua_getfield (lua_State *L, int idx, const char *k)
-	LUA_API void lua_remove (lua_State *L, int idx)
-	LUA_API int lua_pcall (lua_State *L, int nargs, int nresults, int errfunc)
+	LUA_API int lua_getglobal (lua_State *L, const char *name)
+	LUA_API void lua_rotate (lua_State *L, int idx, int n)
+	LUA_API int lua_pcallk (lua_State *L, int nargs, int nresults, int errfunc, lua_KContext ctx, lua_KFunction k)
 	LUA_API void lua_pushnumber (lua_State *L, lua_Number n)
 	TOLUA_API void* tolua_tousertype (lua_State* L, int narg, void* def)
 */
@@ -672,7 +680,7 @@ TEST_F(LuaManagerTest, reload_script_exceeded_script_number_failure)
 
 TEST( lua_manager, reload_script_negative_script_number_failure )
     {
-    auto L = lua_open();
+    auto L = luaL_newstate();
     G_LUA_MANAGER->set_Lua( L );
     char ans[ 100 ] = {};
     EXPECT_EQ( 1, G_LUA_MANAGER->reload_script( -1, "test_lua_func_str",
@@ -725,7 +733,7 @@ TEST_F(LuaManagerTest, reload_script_check_file_version_failure)
 TEST_F(LuaManagerTest, reload_script_luaL_dofile_failure)
 {
     subhook_t hook_lua_pcall =
-        subhook_new((void *)lua_pcall, (void *)mock_lua_pcall_failure, SUBHOOK_64BIT_OFFSET);
+        subhook_new((void *) lua_pcallk, (void *) mock_lua_pcallk_failure, SUBHOOK_64BIT_OFFSET);
     subhook_install(hook_lua_pcall);
     set_lua_pcall_success_calls_before_failure(0);
 
@@ -743,7 +751,7 @@ TEST_F(LuaManagerTest, reload_script_luaL_dofile_failure)
 
 TEST( lua_manager, error_trace )
     {
-    auto L = lua_open();
+    auto L = luaL_newstate();
     G_LUA_MANAGER->set_Lua( L );
     lua_manager::use_print_stack_traceback();
 
@@ -775,7 +783,7 @@ TEST( lua_manager, check_file )
 
 TEST( lua_manager, init )
     {
-    auto L = lua_open();
+    auto L = luaL_newstate();
     G_LUA_MANAGER->set_Lua( L );
 
     // Так как не загружен соответствующий модуль package, то init должен

@@ -6,7 +6,7 @@ void InitCipDevices();
 
 TEST( ModbusServ, ModbusService )
     {
-    auto L = lua_open();
+    auto L = luaL_newstate();
     G_LUA_MANAGER->set_Lua( L );
     const auto BUFSIZE = 100;
     u_char  buf[ BUFSIZE ] = { 0 };

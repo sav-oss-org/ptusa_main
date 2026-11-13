@@ -84,7 +84,7 @@ using namespace ::testing;
 
 TEST( project_manager, lua_load_configuration )
     {
-    auto L = lua_open();
+    auto L = luaL_newstate();
     G_LUA_MANAGER->set_Lua( L );
 
 
@@ -163,7 +163,7 @@ TEST( project_manager, proc_main_params )
     main_plua << "system = {}" << std::endl;
     main_plua.close();
 
-    auto L = lua_open();
+    auto L = luaL_newstate();
     G_LUA_MANAGER->set_Lua( L );
 
     auto res = G_PROJECT_MANAGER->proc_main_params( 1, nullptr );

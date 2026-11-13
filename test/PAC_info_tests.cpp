@@ -60,7 +60,7 @@ TEST( PAC_info, OPCUA_server_start_fail )
 
 TEST( PAC_info, reload_restrictions )
     {
-    auto L = lua_open();
+    auto L = luaL_newstate();
     G_LUA_MANAGER->set_Lua( L );
 
     const char* file_name = "main.restrictions.lua";
@@ -75,7 +75,7 @@ TEST( PAC_info, reload_restrictions )
         static_cast<double>( PAC_info::COMMANDS::RELOAD_RESTRICTIONS ) );
     EXPECT_EQ( 0, ret );
 
-    lua_getfield( L, LUA_GLOBALSINDEX, "restrictions" );
+    lua_getglobal( L, "restrictions" );
     ASSERT_TRUE( lua_istable( L, -1 ) );
     lua_getfield( L, -1, "reload_marker" );
     EXPECT_EQ( 1415, lua_tointeger( L, -1 ) );
@@ -87,7 +87,7 @@ TEST( PAC_info, reload_restrictions )
 
 TEST( PAC_info, set_cmd )
     {
-    auto L = lua_open();
+    auto L = luaL_newstate();
     G_LUA_MANAGER->set_Lua( L );
 
     PAC_critical_errors_manager::get_instance()->reset_all_error();
