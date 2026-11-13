@@ -242,6 +242,7 @@ int PAC_info::set_cmd( const char* prop, u_int idx, double val )
             {
             case COMMANDS::CLEAR_RESULT_CMD:
                 cmd = 0;
+                cmd_answer[ 0 ] = 0;
                 break;
 
             case COMMANDS::RELOAD_RESTRICTIONS:
