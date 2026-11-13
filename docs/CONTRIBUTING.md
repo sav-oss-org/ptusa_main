@@ -47,6 +47,26 @@ Please note we have a code of conduct, please follow it in all your interactions
   history, and commit-check only knows the Conventional Branch
   format, which rejects every branch in this repository.
 
+## Issue Types and Labels
+
+- The native GitHub issue type is the canonical classification:
+  `Bug`, `Feature`, or `Task`. Templates apply it automatically.
+- The `bug` and `enhancement` labels are GitHub's own mirror of the
+  native type: treat them as read-only reflections, not as a second
+  source of truth to keep in sync by hand.
+- The issue templates write title prefixes (`[BUG]: `,
+  `[FEATURE]: `, `[DEVICE]: `) as human-readable reflections of the
+  type. Edit a prefix only to fix a wrong reflection, never to
+  reclassify the issue.
+- `[DEVICE]` refines `[FEATURE]` for new device support and lives in
+  the title until the organization owns a Device type.
+- A `[DISCUSSION]` marker in the title means the issue is a design
+  discussion for humans, not something to implement directly.
+- Labels remain for workflow state beyond classification, such as
+  `urgent`, `help wanted`, and `iteration-plan`.
+- The `bug` label classifies issues while `bugfix` classifies pull
+  requests; they are separate axes, not duplicates.
+
 ## Versioning and Tags
 
 - Release tags use CalVer: `YYYY.MM.DD`, or `YYYY.MM.DD.N` when a
