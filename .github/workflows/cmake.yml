@@ -603,6 +603,69 @@ jobs:
         path: ./${{ matrix.config.artifact }}
         name: ${{ matrix.config.artifact }}
 
+  memcheck:
+    name: Valgrind memcheck (Linux GCC)
+    if: >-
+      ${{
+        github.repository == 'sav-oss-org/ptusa_main' &&
+          (
+          github.event_name == 'push' ||
+          github.event_name == 'schedule' ||
+          github.event_name == 'merge_group' ||
+          github.event_name == 'workflow_dispatch' ||
+            (
+            github.event_name == 'pull_request_target' &&
+            github.event.pull_request.head.repo.full_name != github.repository &&
+              (
+              contains(github.event.pull_request.labels.*.name, 'safe to test') ||
+              github.event.pull_request.author_association == 'MEMBER' ||
+              github.event.pull_request.author_association == 'OWNER'
+              )
+            ) ||
+              (
+              github.event_name == 'pull_request' &&
+              github.event.pull_request.head.repo.full_name == github.repository
+              )
+          )
+      }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+    - name: Harden the runner (Audit all outbound calls)
+      uses: step-security/harden-runner@1d88384fd173af6ecb012dfd0264a306b711241a # v2.22.4
+      with:
+        egress-policy: audit
+
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        # Trusted-author gating is in the job if; fetching the pull
+        # request head is deliberate so memcheck analyses the change.
+        ref: ${{ github.event.pull_request.head.sha }}
+        submodules: 'recursive'
+        allow-unsafe-pr-checkout: 'true'
+
+    - name: Install valgrind and Linux build dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y unixodbc-dev valgrind yasm
+
+    - name: Configure with memcheck enabled
+      shell: bash
+      run: >
+        cmake -S . -B build
+        -D CMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }}
+        -D MEMORY_CHECK=ON
+
+    - name: Build main_test
+      shell: bash
+      run: cmake --build build --target main_test --parallel
+
+    - name: Run memcheck test
+      shell: bash
+      working-directory: build
+      run: ctest -R main_test_memcheck --output-on-failure
+
   release:
     if: contains(github.ref, 'tags/v')
     runs-on: ubuntu-latest

@@ -660,3 +660,17 @@ gtest_discover_tests(main_test
 gtest_discover_tests(main_test
     DISCOVERY_TIMEOUT 30
     TEST_FILTER ${UNLOCKED_FILTER_STR})
+
+###############################################################################
+
+################# valgrind memcheck of the unit tests #########################
+
+# Run the unit-test binary under Valgrind memcheck when MEMORY_CHECK=ON.
+# The module registers no test on non-Linux platforms or without valgrind.
+include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/MemcheckTest.cmake")
+
+if(NOT ARP_DEVICE)
+    run_memcheck_test(main_test)
+endif()
+
+###############################################################################

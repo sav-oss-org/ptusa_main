@@ -396,13 +396,35 @@ The project supports Phoenix Contact PLCnext controllers:
 
 ### Memory Analysis
 
-For memory analysis there is no CTest wrapper at the moment, so run Valgrind
-directly from the build directory:
+On Linux, configure with `-DMEMORY_CHECK=ON` to register the
+`main_test_memcheck` CTest case. It runs `main_test` under Valgrind
+memcheck and fails when Valgrind reports definite leaks. Without
+`MEMORY_CHECK=ON`, on non-Linux platforms, or without Valgrind, the
+case is not registered:
+
+Known findings tracked as issues #1524, #1525 and #1526 are hidden
+by the baseline suppression file `valgrind.supp` in the repository
+root; remove entries as the fixes land. The `checkBuff` abort from
+issue #1527 cannot be suppressed, so that test stays excluded from
+memcheck by default.
 
 ```bash
 cd build
-valgrind --tool=memcheck --leak-check=full ./main_test
+ctest -R main_test_memcheck -C Release
 ```
+
+A direct Valgrind run from the build directory stays possible:
+
+```bash
+cd build
+valgrind --tool=memcheck --smc-check=all --leak-check=full \
+    --suppressions="$(git rev-parse --show-toplevel)/valgrind.supp" \n    ./Release/main_test
+```
+
+`--smc-check=all` is mandatory because the tests patch executable
+code through `subhook`. Note that snap-packaged Valgrind wrappers
+may swallow `--error-exitcode`, so check the `ERROR SUMMARY` line
+when a local memcheck run unexpectedly passes.
 
 ### Debug Builds
 
