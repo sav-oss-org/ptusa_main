@@ -4,11 +4,16 @@ using namespace ::testing;
 
 TEST( params_manager, was_successful_init )
     {
-    auto pm = params_manager::get_instance();
+    // Признак успешной инициализации - поле объекта, а не класса, поэтому он
+    // проверяется на собственном экземпляре. Иначе тест зависит от того,
+    // какие тесты вызывали params_manager::init() раньше него.
+    params_manager pm;
+    EXPECT_FALSE( pm.was_successful_init() );
 
-    // По умолчанию инициализация параметров считается неуспешной,
-    // так как не было вызова метода `init`.
-    EXPECT_FALSE( pm->was_successful_init() );
+    // Флаг должен повторять результат загрузки памяти независимо от того,
+    // есть ли ./eeprom.bin и ./nvram.bin в рабочем каталоге.
+    const int res = pm.init( 0 );
+    EXPECT_EQ( pm.was_successful_init(), res == 0 );
     }
 
 TEST( params_manager, evaluate )
