@@ -1,0 +1,15 @@
+# Revisions that git blame should skip.
+#
+# Each entry is the full 40-character SHA-1 of a merge or
+# squash-merge commit whose diff is whitespace-only, one SHA
+# per line. Comment lines start with a hash.
+#
+# Local clones enable the file with:
+#
+#   git config blame.ignoreRevsFile .git-blame-ignore-revs
+#
+# GitHub honors the file automatically in blame views.
+
+# Big-bang clang-format run of all C and C++ sources, PR #1511.
+# Before merging this pull request, replace this note with the
+# full 40-character SHA-1 of the squash-merge commit of #1511.
