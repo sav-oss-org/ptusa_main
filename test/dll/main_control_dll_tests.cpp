@@ -19,6 +19,7 @@ extern int G_DEBUG;
 extern "C" int luaopen_ptusa_main( lua_State* L );
 extern int no_print_stack_traceback( lua_State* L );
 extern int get_lua_error_count( lua_State* L );
+extern int get_last_lua_error( lua_State* L );
 extern int use_print_stack_traceback( lua_State* L );
 extern int switch_on_verbose( lua_State* L );
 extern int switch_off_verbose( lua_State* L );
@@ -80,6 +81,16 @@ TEST( dll, get_lua_error_count )
 
     lua_pop( L, 1 ); // Таблица модуля ptusa_main.
     G_LUA_MANAGER->free_Lua();
+    }
+
+TEST( dll, get_last_lua_error )
+    {
+    lua_manager::reset_lua_error_count();
+    auto L = lua_open();
+    EXPECT_EQ( 1, get_last_lua_error( L ) );
+    EXPECT_EQ( LUA_TSTRING, lua_type( L, -1 ) );
+    EXPECT_STREQ( "", lua_tostring( L, -1 ) );
+    lua_close( L );
     }
 
 TEST( dll, use_print_stack_traceback )

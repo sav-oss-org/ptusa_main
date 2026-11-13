@@ -23,6 +23,7 @@
 auto_smart_ptr< lua_manager > lua_manager::instance;
 bool lua_manager::is_print_stack_traceback = true;
 int lua_manager::lua_error_count{ 0 };
+std::string lua_manager::last_lua_error{};
 //-----------------------------------------------------------------------------
 namespace
     {
@@ -198,7 +199,7 @@ int lua_manager::init( lua_State* lua_state, const char* script_name,
         package_path += "'";
         if ( luaL_dostring( L, ( cmd + package_path ).c_str() ) != 0 )
             {
-            count_lua_error();
+            count_lua_error( lua_tostring( L, -1 ) );
 
             G_LOG->critical(
                 "Error during C++ call - \"lua_manager::init\" - %s",
@@ -267,7 +268,7 @@ int lua_manager::init( lua_State* lua_state, const char* script_name,
 
         if ( luaL_dofile( L, path ) != 0 )
             {
-            count_lua_error();
+            count_lua_error( lua_tostring( L, -1 ) );
             G_LOG->critical( "%s", lua_tostring( L, -1 ) );
             lua_pop( L, 1 );
 
@@ -316,7 +317,7 @@ int lua_manager::init( lua_State* lua_state, const char* script_name,
 
     if( luaL_loadfile( L, script_name ) != 0 )
         {
-        count_lua_error();
+        count_lua_error( lua_tostring( L, -1 ) );
         G_LOG->critical( "%s", lua_tostring( L, -1 ) );
         lua_pop( L, 1 );
         return 1;
@@ -324,7 +325,7 @@ int lua_manager::init( lua_State* lua_state, const char* script_name,
 
     if ( int i_line = lua_pcall(L, 0, LUA_MULTRET, 0); i_line != 0 )
         {
-        count_lua_error();
+        count_lua_error( lua_tostring( L, -1 ) );
         G_LOG->critical( "%s", lua_tostring( L, -1 ) );
         lua_pop( L, 1 );
         return 1;
@@ -560,8 +561,15 @@ int lua_manager::exec_lua_method_var( const char* object_name,
     return res;
     }
 //-----------------------------------------------------------------------------
-void lua_manager::count_lua_error()
+void lua_manager::count_lua_error( const char* message )
     {
+    //Запоминаем текст: по нему тесты и диагностика определяют, какая именно
+    //ошибка была погашена внутри lua_pcall.
+    if ( message != nullptr )
+        {
+        last_lua_error = message;
+        }
+
     if ( lua_error_count < ( std::numeric_limits< int >::max )() )
         {
         lua_error_count++;
@@ -574,6 +582,10 @@ void lua_manager::note_lua_error( lua_State* L, const char* message )
         non_string_lua_error };
 
     const std::string error_str{ error_message };
+
+    //Запоминаем текст последней ошибки и для повторяющихся сообщений.
+    last_lua_error = error_str;
+
     if ( std::binary_search( recorded_lua_errors.begin(),
         recorded_lua_errors.end(), error_str ) )
         {
@@ -625,6 +637,7 @@ void lua_manager::note_lua_error( lua_State* L, const char* message )
 void lua_manager::reset_lua_error_count()
     {
     lua_error_count = 0;
+    last_lua_error.clear();
     recorded_lua_errors.clear();
     }
 #endif
@@ -687,7 +700,7 @@ int lua_manager::exec_Lua_str( const char *Lua_str, const char *error_str,
     {
     if( int res = luaL_dostring(L, Lua_str); res != 0  )
         {
-        count_lua_error();
+        count_lua_error( lua_tostring( L, -1 ) );
 
         if ( is_print_error_msg )
             {
@@ -783,11 +796,11 @@ int lua_manager::reload_script( int script_n, const char* script_function_name,
     //-Выполнение скрипта.
     if ( luaL_dofile( L, path ) != 0 )
         {
-        count_lua_error();
+        count_lua_error( lua_tostring( L, -1 ) );
         lua_pop( L, 1 );
         if ( luaL_dofile( L, FILES[ script_n ] ) != 0 )
             {
-            count_lua_error();
+            count_lua_error( lua_tostring( L, -1 ) );
             sprintf( G_LOG->msg, "Reload Lua script - %s",
                 lua_tostring( L, -1 ) );
             G_LOG->write_log( i_log::P_ERR );

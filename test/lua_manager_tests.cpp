@@ -912,6 +912,39 @@ TEST( lua_manager, exec_lua_method_preserves_caller_stack )
     G_LUA_MANAGER->free_Lua();
     }
 
+TEST( lua_manager, last_lua_error )
+    {
+    auto L = lua_open();
+    luaL_openlibs( L );
+    G_LUA_MANAGER->set_Lua( L );
+
+    lua_manager::reset_lua_error_count();
+    EXPECT_STREQ( "", lua_manager::get_last_lua_error() );
+
+    EXPECT_EQ( 0, luaL_dostring( L,
+        "t = {} function t.fail() error( 'boom' ) end" ) );
+    EXPECT_EQ( 0, lua_gettop( L ) );
+
+    EXPECT_NE( 0, G_LUA_MANAGER->void_exec_lua_method(
+        "t", "fail", "last_lua_error" ) );
+    EXPECT_THAT( lua_manager::get_last_lua_error(), HasSubstr( "boom" ) );
+    EXPECT_EQ( 0, lua_gettop( L ) );
+
+    //Нестроковый объект ошибки не должен ронять программу.
+    EXPECT_EQ( 0, luaL_dostring( L,
+        "function t.fail_table() error( {} ) end" ) );
+    EXPECT_NE( 0, G_LUA_MANAGER->void_exec_lua_method(
+        "t", "fail_table", "last_lua_error" ) );
+    EXPECT_THAT( lua_manager::get_last_lua_error(),
+        HasSubstr( "non-string Lua error" ) );
+    EXPECT_EQ( 0, lua_gettop( L ) );
+
+    lua_manager::reset_lua_error_count();
+    EXPECT_STREQ( "", lua_manager::get_last_lua_error() );
+
+    G_LUA_MANAGER->free_Lua();
+    }
+
 TEST( lua_manager, check_file )
     {
     auto FILE_VERSION = 10;
