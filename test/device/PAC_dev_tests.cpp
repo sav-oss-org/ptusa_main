@@ -7216,6 +7216,190 @@ TEST_F( iolink_dev_test, converter_iolink_ao_get_state )
     }
 
 
+TEST( converter_ai_iolink, constructor )
+    {
+    converter_ai_iolink Y1( "Y1" );
+    EXPECT_STREQ( Y1.get_name(), "Y1" );
+    EXPECT_EQ( Y1.get_type(), device::DT_EY );
+    EXPECT_EQ( Y1.get_sub_type(), device::DST_CONV_AI1 );
+    }
+
+TEST_F( iolink_dev_test, converter_ai_iolink_evaluate_io )
+    {
+    converter_ai_iolink Y1( "Y1" );
+    EXPECT_EQ( Y1.get_value(), .0f );
+
+    G_PAC_INFO()->emulation_off();
+    init_channels( Y1 );
+    set_iol_state_to_OK( Y1 );
+
+    // Выделяем 4 байта входных данных процесса как 2 значения int_2.
+    Y1.AI_channels.int_read_values[ 0 ] = new int_2[ 2 ]{};
+
+    // Ток 12.000 мА (12000 = 0x2EE0, BigEndian), ключ OUT1 активен.
+    std::byte data[] = { B{0x01}, B{0x00}, B{0x2E}, B{0xE0} };
+    std::memcpy( Y1.AI_channels.int_read_values[ 0 ], data, sizeof( data ) );
+    Y1.evaluate_io();
+    EXPECT_EQ( Y1.info.out1, 1u );
+    EXPECT_EQ( Y1.info.current, 12000 );
+
+    delete[] Y1.AI_channels.int_read_values[ 0 ];
+    G_PAC_INFO()->emulation_on();
+    }
+
+TEST_F( iolink_dev_test, converter_ai_iolink_get_value )
+    {
+    converter_ai_iolink Y1( "Y1" );
+    EXPECT_EQ( Y1.get_value(), .0f );
+
+    G_PAC_INFO()->emulation_off();
+
+    auto err_value = -100.f;
+    Y1.set_par( static_cast<u_int> ( converter_ai_iolink::CONSTANTS::P_ERR ),
+        Y1.start_param_idx, err_value );
+
+    // Есть привязка к модулям ввода/вывода, но IO-Link не подключен -
+    // должны получить аварийное значение.
+    init_channels( Y1 );
+    EXPECT_EQ( Y1.get_value(), err_value );
+
+    // Диапазон 4..20 мА масштабируется в диапазон [P_MIN_V; P_MAX_V].
+    Y1.set_par( static_cast<u_int> ( converter_ai_iolink::CONSTANTS::P_MIN_V ),
+        Y1.start_param_idx, 10.0f );
+    Y1.set_par( static_cast<u_int> ( converter_ai_iolink::CONSTANTS::P_MAX_V ),
+        Y1.start_param_idx, 110.0f );
+
+    set_iol_state_to_OK( Y1 );
+    Y1.AI_channels.int_read_values[ 0 ] = new int_2[ 2 ]{};
+
+    std::byte data[] = { B{0x00}, B{0x00}, B{0x0F}, B{0xA0} };   // 4.000 мА.
+    std::memcpy( Y1.AI_channels.int_read_values[ 0 ], data, sizeof( data ) );
+    Y1.evaluate_io();
+    EXPECT_FLOAT_EQ( Y1.get_value(), 10.0f );
+
+    data[ 2 ] = B{0x2E}; data[ 3 ] = B{0xE0};                    // 12.000 мА.
+    std::memcpy( Y1.AI_channels.int_read_values[ 0 ], data, sizeof( data ) );
+    Y1.evaluate_io();
+    EXPECT_FLOAT_EQ( Y1.get_value(), 60.0f );
+
+    data[ 2 ] = B{0x4E}; data[ 3 ] = B{0x20};                    // 20.000 мА.
+    std::memcpy( Y1.AI_channels.int_read_values[ 0 ], data, sizeof( data ) );
+    Y1.evaluate_io();
+    EXPECT_FLOAT_EQ( Y1.get_value(), 110.0f );
+
+    // Специальные значения тока -> аварийное значение.
+    data[ 2 ] = B{0x7F}; data[ 3 ] = B{0xFC};                    // NoData.
+    std::memcpy( Y1.AI_channels.int_read_values[ 0 ], data, sizeof( data ) );
+    Y1.evaluate_io();
+    EXPECT_EQ( Y1.get_value(), err_value );
+
+    data[ 2 ] = B{0x80}; data[ 3 ] = B{0x08};                    // UL.
+    std::memcpy( Y1.AI_channels.int_read_values[ 0 ], data, sizeof( data ) );
+    Y1.evaluate_io();
+    EXPECT_EQ( Y1.get_value(), err_value );
+
+    data[ 2 ] = B{0x7F}; data[ 3 ] = B{0xF8};                    // OL.
+    std::memcpy( Y1.AI_channels.int_read_values[ 0 ], data, sizeof( data ) );
+    Y1.evaluate_io();
+    EXPECT_EQ( Y1.get_value(), err_value );
+
+    delete[] Y1.AI_channels.int_read_values[ 0 ];
+    G_PAC_INFO()->emulation_on();
+    }
+
+TEST_F( iolink_dev_test, converter_ai_iolink_get_state )
+    {
+    converter_ai_iolink Y1( "Y1" );
+
+    // В режиме эмуляции возвращается состояние устройства.
+    G_PAC_INFO()->emulation_on();
+    EXPECT_EQ( Y1.get_state(), 1 );
+
+    G_PAC_INFO()->emulation_off();
+    init_channels( Y1 );
+
+    // IO-Link не подключено.
+    EXPECT_EQ( Y1.get_state(), -io_device::IOLINKSTATE::NOTCONNECTED );
+
+    // Подключено, но данные не валидны.
+    *Y1.AI_channels.int_module_read_values[ 0 ] = 0b1;
+    EXPECT_EQ( Y1.get_state(), -io_device::IOLINKSTATE::DEVICEERROR );
+
+    // IO-Link в состоянии OK.
+    set_iol_state_to_OK( Y1 );
+    Y1.AI_channels.int_read_values[ 0 ] = new int_2[ 2 ]{};
+
+    // Нет данных (NoData).
+    std::byte data[] = { B{0x00}, B{0x00}, B{0x7F}, B{0xFC} };
+    std::memcpy( Y1.AI_channels.int_read_values[ 0 ], data, sizeof( data ) );
+    Y1.evaluate_io();
+    EXPECT_EQ( Y1.get_state(), -1 );
+
+    // UL - underload.
+    data[ 2 ] = B{0x80}; data[ 3 ] = B{0x08};
+    std::memcpy( Y1.AI_channels.int_read_values[ 0 ], data, sizeof( data ) );
+    Y1.evaluate_io();
+    EXPECT_EQ( Y1.get_state(), -2 );
+
+    // OL - overload.
+    data[ 2 ] = B{0x7F}; data[ 3 ] = B{0xF8};
+    std::memcpy( Y1.AI_channels.int_read_values[ 0 ], data, sizeof( data ) );
+    Y1.evaluate_io();
+    EXPECT_EQ( Y1.get_state(), -3 );
+
+    // Нормальное значение тока (12.000 мА).
+    data[ 2 ] = B{0x2E}; data[ 3 ] = B{0xE0};
+    std::memcpy( Y1.AI_channels.int_read_values[ 0 ], data, sizeof( data ) );
+    Y1.evaluate_io();
+    EXPECT_EQ( Y1.get_state(), 1 );
+
+    delete[] Y1.AI_channels.int_read_values[ 0 ];
+    G_PAC_INFO()->emulation_on();
+    }
+
+TEST_F( iolink_dev_test, converter_ai_iolink_get_error_description )
+    {
+    converter_ai_iolink Y1( "Y1" );
+    EXPECT_EQ( Y1.get_state(), 1 );
+    EXPECT_STREQ( Y1.get_error_description(), "нет ошибок" );
+
+    G_PAC_INFO()->emulation_off();
+    init_channels( Y1 );
+
+    // IO-Link не подключено.
+    EXPECT_EQ( Y1.get_state(), -io_device::IOLINKSTATE::NOTCONNECTED );
+    EXPECT_STREQ( Y1.get_error_description(), "IOL-устройство не подключено" );
+
+    // Подключено, но данные не валидны.
+    *Y1.AI_channels.int_module_read_values[ 0 ] = 0b1;
+    EXPECT_EQ( Y1.get_state(), -io_device::IOLINKSTATE::DEVICEERROR );
+    EXPECT_STREQ( Y1.get_error_description(), "ошибка IOL-устройства" );
+
+    // Специальные значения тока.
+    set_iol_state_to_OK( Y1 );
+    Y1.AI_channels.int_read_values[ 0 ] = new int_2[ 2 ]{};
+
+    std::byte data[] = { B{0x00}, B{0x00}, B{0x7F}, B{0xFC} };   // NoData.
+    std::memcpy( Y1.AI_channels.int_read_values[ 0 ], data, sizeof( data ) );
+    Y1.evaluate_io();
+    EXPECT_STREQ( Y1.get_error_description(), "нет данных (NoData)" );
+
+    data[ 2 ] = B{0x80}; data[ 3 ] = B{0x08};                    // UL.
+    std::memcpy( Y1.AI_channels.int_read_values[ 0 ], data, sizeof( data ) );
+    Y1.evaluate_io();
+    EXPECT_STREQ( Y1.get_error_description(),
+        "underload - значение ниже диапазона измерения" );
+
+    data[ 2 ] = B{0x7F}; data[ 3 ] = B{0xF8};                    // OL.
+    std::memcpy( Y1.AI_channels.int_read_values[ 0 ], data, sizeof( data ) );
+    Y1.evaluate_io();
+    EXPECT_STREQ( Y1.get_error_description(),
+        "overload - значение выше диапазона измерения" );
+
+    delete[] Y1.AI_channels.int_read_values[ 0 ];
+    G_PAC_INFO()->emulation_on();
+    }
+
 TEST_F( iolink_dev_test, analog_valve_iolink_get_error_description_and_state )
     {
     analog_valve_iolink VC1( "VC1" );
@@ -7284,6 +7468,27 @@ TEST( device_manager, get_EY )
     EXPECT_EQ( STUB(), dynamic_cast<dev_stub*>( non_existent ) );
     }
 
+
+TEST( device_manager, add_io_device_conv_ai1 )
+    {
+    // Cleanup before test.
+    G_DEVICE_MANAGER()->clear_io_devices();
+
+    // Add an AI -> IO-Link converter device (IFM DP2200).
+    auto* Y1 = G_DEVICE_MANAGER()->add_io_device(
+        device::DT_EY, device::DST_CONV_AI1, "CAB1EY11", "", "IFM.DP2200" );
+
+    EXPECT_NE( Y1, nullptr );
+
+    // Test accessor function.
+    auto* retrieved_Y1 = EY( "CAB1EY11" );
+    EXPECT_NE( STUB(), dynamic_cast<dev_stub*>( retrieved_Y1 ) );
+
+    // Test created device class.
+    EXPECT_NE( nullptr, dynamic_cast<converter_ai_iolink*>( retrieved_Y1 ) );
+
+    G_DEVICE_MANAGER()->clear_io_devices();
+    }
 
 class node_dev_set_cmd_test : public ::testing::Test
     {

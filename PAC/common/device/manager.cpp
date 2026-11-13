@@ -1453,6 +1453,11 @@ io_device* device_manager::add_io_device( int dev_type, int dev_sub_type,
                     new_io_device = (converter_iolink_ao*)new_device;
                     break;
 
+                case device::DST_CONV_AI1:
+                    new_device = new converter_ai_iolink( dev_name );
+                    new_io_device = (converter_ai_iolink*)new_device;
+                    break;
+
                 default:
                     if ( G_DEBUG )
                         {

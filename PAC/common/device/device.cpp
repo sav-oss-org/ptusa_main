@@ -4660,6 +4660,109 @@ const char* converter_iolink_ao::get_error_description()
         }
     }
 
+//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
+converter_ai_iolink::converter_ai_iolink( const char* dev_name ) :
+    AI1( dev_name, device::DT_EY, device::DST_CONV_AI1,
+    static_cast<u_int>( CONSTANTS::ADDITIONAL_PARAM_COUNT ) )
+    {
+    start_param_idx = AI1::get_params_count();
+    set_par_name( static_cast<u_int>( CONSTANTS::P_MIN_V ),
+        start_param_idx, "P_MIN_V" );
+    set_par_name( static_cast<u_int>( CONSTANTS::P_MAX_V ),
+        start_param_idx, "P_MAX_V" );
+    set_par_name( static_cast<u_int>( CONSTANTS::P_ERR ),
+        start_param_idx, "P_ERR" );
+    }
+//-----------------------------------------------------------------------------
+float converter_ai_iolink::get_value() const
+    {
+    if ( G_PAC_INFO()->is_emulator() ) return AI1::get_value();
+
+    if ( get_AI_IOLINK_state( C_AI_INDEX ) != io_device::IOLINKSTATE::OK ||
+        info.current == C_CURRENT_NO_DATA ||
+        info.current == C_CURRENT_UL ||
+        info.current == C_CURRENT_OL )
+        {
+        return get_par( static_cast<u_int>( CONSTANTS::P_ERR ),
+            start_param_idx );
+        }
+
+    auto min = get_par( static_cast<u_int>( CONSTANTS::P_MIN_V ),
+        start_param_idx );
+    auto max = get_par( static_cast<u_int>( CONSTANTS::P_MAX_V ),
+        start_param_idx );
+
+    // Линейное преобразование диапазона 4..20 мА в диапазон [P_MIN_V; P_MAX_V].
+    auto cur_ma = static_cast<float>( info.current ) / 1000.0f;
+    auto v = min + ( cur_ma - C_MIN_CURRENT ) * ( max - min ) /
+        ( C_MAX_CURRENT - C_MIN_CURRENT );
+
+    return get_par( P_ZERO_ADJUST_COEFF, 0 ) + v;
+    }
+//-----------------------------------------------------------------------------
+int converter_ai_iolink::get_state() const
+    {
+    if ( G_PAC_INFO()->is_emulator() ) return device::get_state();
+
+    if ( auto st = get_AI_IOLINK_state( C_AI_INDEX );
+        st != io_device::IOLINKSTATE::OK )
+        {
+        return -st;
+        }
+
+    if ( info.current == C_CURRENT_NO_DATA )
+        {
+        return -static_cast<int>( ERRORS::ERR_NO_DATA );
+        }
+
+    if ( info.current == C_CURRENT_UL )
+        {
+        return -static_cast<int>( ERRORS::ERR_UNDERLOAD );
+        }
+
+    if ( info.current == C_CURRENT_OL )
+        {
+        return -static_cast<int>( ERRORS::ERR_OVERLOAD );
+        }
+
+    return 1;
+    }
+//-----------------------------------------------------------------------------
+void converter_ai_iolink::evaluate_io()
+    {
+    if ( G_PAC_INFO()->is_emulator() ) return;
+
+    auto data = reinterpret_cast<std::byte*>( get_AI_data( C_AI_INDEX ) );
+    if ( !data ) return; // Return, if data is nullptr (in debug mode).
+
+    std::memcpy( &info, data, sizeof( process_data_in ) );
+
+    // Устройство передает данные в формате BigEndian (согласно IODD), поэтому
+    // разворачиваем байты 16-разрядного значения `Current` вручную.
+    auto bytes = reinterpret_cast<std::byte*>( &info );
+    std::swap( bytes[ 2 ], bytes[ 3 ] );
+    }
+//-----------------------------------------------------------------------------
+const char* converter_ai_iolink::get_error_description()
+    {
+    auto err_id = get_error_id();
+    switch ( err_id )
+        {
+        case -static_cast<int>( ERRORS::ERR_NO_DATA ) :
+            return "нет данных (NoData)";
+
+        case -static_cast<int>( ERRORS::ERR_UNDERLOAD ) :
+            return "underload - значение ниже диапазона измерения";
+
+        case -static_cast<int>( ERRORS::ERR_OVERLOAD ) :
+            return "overload - значение выше диапазона измерения";
+
+        default:
+            return iol_dev.get_error_description( err_id );
+        }
+    }
+
 #ifdef WIN_OS
 #pragma warning(pop)
 #endif // WIN_OS
