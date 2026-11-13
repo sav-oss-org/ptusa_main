@@ -761,6 +761,152 @@ TEST_F( iolink_dev_test, signal_column_iolink_get_error_description )
     test_dev_err( test_dev, test_dev, 0 );
     }
 
+/// @brief Выдача буфера канала AO для проверки данных процесса колонны.
+///
+/// @param dev - колонна с одним каналом аналогового вывода.
+/// @return указатель на байты буфера записи канала.
+static uint8_t* init_signal_column_ao( signal_column_iolink& dev )
+    {
+    dev.init( 0, 0, 1, 1 );
+    dev.AO_channels.int_write_values[ 0 ] = new int_2[ 2 ]{ 0 };
+    return reinterpret_cast<uint8_t*>( dev.AO_channels.int_write_values[ 0 ] );
+    }
+
+TEST( signal_column, set_article )
+    {
+    signal_column_iolink test_dev( "test_HL1" );
+
+    EXPECT_EQ( signal_column_iolink::ARTICLE::DEFAULT,
+        test_dev.get_article_n() );
+
+    // Пустой артикул описывает универсальную колонну.
+    test_dev.set_article( "" );
+    EXPECT_EQ( signal_column_iolink::ARTICLE::DEFAULT,
+        test_dev.get_article_n() );
+
+    // Прежний модуль сигнальной колонны IO-Link.
+    test_dev.set_article( "PXC.1191993" );
+    EXPECT_EQ( signal_column_iolink::ARTICLE::DEFAULT,
+        test_dev.get_article_n() );
+
+    // Колонна PSD-SC IOL S9 AE.
+    test_dev.set_article( "PXC.1801971" );
+    EXPECT_EQ( signal_column_iolink::ARTICLE::PXC_PSD_SC_IOL_S9_AE,
+        test_dev.get_article_n() );
+
+    // Неизвестный артикул оставляет универсальные данные процесса.
+    test_dev.set_article( "UNKNOWN.0" );
+    EXPECT_EQ( signal_column_iolink::ARTICLE::DEFAULT,
+        test_dev.get_article_n() );
+    }
+
+TEST( signal_column, psd_sc_iol_signal_tower_process_data )
+    {
+    signal_column_iolink test_dev( "test_HL1" );
+    auto* bytes = init_signal_column_ao( test_dev );
+
+    test_dev.set_article( "PXC.1801971" );
+    test_dev.set_string_property( "SIGNALS_SEQUENCE", "GYRA" );
+
+    G_PAC_INFO()->emulation_off();
+    test_dev.evaluate_io();
+
+    // Зеленый - ярус 1, бит 0 младшего байта оптической функции.
+    test_dev.turn_on_green();
+    EXPECT_EQ( 0, bytes[ 0 ] );
+    EXPECT_EQ( 0b0000'0001, bytes[ 2 ] );
+
+    // Красный - ярус 3, без влияния на другие ярусы.
+    test_dev.turn_on_red();
+    EXPECT_EQ( 0b0000'0101, bytes[ 2 ] );
+
+    // Сирена - тон по умолчанию в байте акустической функции, оптические
+    // данные без изменений.
+    test_dev.turn_on_siren();
+    EXPECT_EQ( 1, bytes[ 0 ] );
+    EXPECT_EQ( 0b0000'0101, bytes[ 2 ] );
+    EXPECT_EQ( 1, test_dev.get_state() );
+
+    test_dev.turn_off_green();
+    EXPECT_EQ( 0b0000'0100, bytes[ 2 ] );
+
+    test_dev.turn_off_siren();
+    EXPECT_EQ( 0, bytes[ 0 ] );
+
+    // Выключение всех сигналов очищает данные процесса.
+    test_dev.direct_off();
+    EXPECT_EQ( 0, bytes[ 0 ] );
+    EXPECT_EQ( 0, bytes[ 2 ] );
+
+    G_PAC_INFO()->emulation_on();
+    }
+
+TEST( signal_column, psd_sc_iol_blink_yellow )
+    {
+    signal_column_iolink test_dev( "test_HL1" );
+    auto* bytes = init_signal_column_ao( test_dev );
+
+    test_dev.set_article( "PXC.1801971" );
+    test_dev.set_string_property( "SIGNALS_SEQUENCE", "GYRA" );
+
+    G_PAC_INFO()->emulation_off();
+    test_dev.evaluate_io();
+
+    // Мигание желтого управляется программно битами ярусов.
+    test_dev.normal_blink_yellow();
+
+    DeltaMilliSecSubHooker::set_millisec( get_millisec() + 251UL );
+    test_dev.normal_blink_yellow();
+    EXPECT_EQ( 0b0000'0010, bytes[ 2 ] );
+
+    DeltaMilliSecSubHooker::set_millisec( get_millisec() + 251UL );
+    test_dev.normal_blink_yellow();
+    EXPECT_EQ( 0, bytes[ 2 ] );
+
+    G_PAC_INFO()->emulation_on();
+    DeltaMilliSecSubHooker::set_default_time();
+    }
+
+TEST( signal_column, iolink_generic_process_data )
+    {
+    signal_column_iolink test_dev( "test_HL1" );
+    init_signal_column_ao( test_dev );
+
+    test_dev.set_article( "PXC.1191993" );
+    test_dev.set_string_property( "SIGNALS_SEQUENCE", "GYRA" );
+
+    G_PAC_INFO()->emulation_off();
+    test_dev.evaluate_io();
+
+    // Зеркальное описание универсальных данных процесса колонны. Размещение
+    // битовых полей определяется компилятором, поэтому проверка читает те же
+    // самые поля, а не отдельные байты.
+    struct out_data
+        {
+        uint16_t unused1 : 8;
+        bool switch_ch1 : 1;
+        bool switch_ch2 : 1;
+        bool switch_ch3 : 1;
+        bool switch_ch4 : 1;
+        bool switch_ch5 : 1;
+        uint16_t unused2 : 3;
+        };
+
+    auto* out = reinterpret_cast<out_data*>(
+        test_dev.AO_channels.int_write_values[ 0 ] );
+
+    // Зеленый - канал 1 последовательности "GYRA".
+    test_dev.turn_on_green();
+    EXPECT_TRUE( out->switch_ch1 );
+
+    // Сирена - канал 4 последовательности "GYRA".
+    test_dev.turn_on_siren();
+    EXPECT_TRUE( out->switch_ch4 );
+    EXPECT_TRUE( out->switch_ch1 );
+
+    G_PAC_INFO()->emulation_on();
+    }
+
 
 TEST( valve_iol_terminal, get_state_data )
     {
@@ -1129,6 +1275,8 @@ TEST( device_manager, add_io_device )
     check_dev<i_AI_device>( "PT1", device::DT_PT, device::DST_PT, PT, PT );
     check_dev<i_DO_AO_device>( "F1", device::DT_F, device::DST_F, F, F );
     check_dev<signal_column>( "HLA1", device::DT_HLA, device::DST_HLA, HLA );
+    check_dev<signal_column>( "HLA2", device::DT_HLA, device::DST_HLA_IOLINK,
+        HLA );
     check_dev<>( "GS1", device::DT_GS, device::DST_GS, GS );
     check_dev<>( "GS2", device::DT_GS, device::DST_GS_INVERSE, GS );
     check_dev<i_DI_device, i_DI_device>(
