@@ -571,7 +571,11 @@ jobs:
         token: ${{ secrets.CODECOV_TOKEN }}
 
     - name: Store benchmark result (Linux only)
-      if: runner.os == 'Linux' && !matrix.config.preset
+      # github-action-benchmark cannot resolve the temporary
+      # merge queue ref (gh-readonly-queue/*), so skip queue runs.
+      if: >-
+        runner.os == 'Linux' && !matrix.config.preset &&
+        github.event_name != 'merge_group'
       uses: benchmark-action/github-action-benchmark@4322e5726e6334590d251fc4f92bec0efafc45dc # v1.22.2
       with:
         name: C++ Benchmark
