@@ -46,7 +46,10 @@ int io_device::get_DO( u_int index ) const
         printf( "io_device->get_DO(...) - error! " );
         printf( "index = %d, count = %u, char_write_values = %p",
             index, DO_channels.count, DO_channels.char_write_values );
-        if ( DO_channels.char_write_values )
+
+        // Print the element pointer only when the index is valid,
+        // otherwise reading it would be an out-of-bounds access.
+        if ( index < DO_channels.count && DO_channels.char_write_values )
             {
             printf( ", char_write_values[ index ]=%p",
                 DO_channels.char_write_values[ index ] );
