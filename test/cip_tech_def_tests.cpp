@@ -790,7 +790,6 @@ TEST( cipline_tech_object, save_device )
 
     InitCipDevices();
     cipline_tech_object cip1( "CIP1", 1, 1, "CIP1", 1, 1, 200, 200, 200, 200 );
-    lua_manager::get_instance()->set_Lua( lua_open() );
 
     cip1.initline();
     InitStationParams();
@@ -920,7 +919,6 @@ TEST( cipline_tech_object, set_cmd )
 
     InitCipDevices();
     cipline_tech_object cip1( "CIP1", 1, 1, "CIP1", 1, 1, 200, 200, 200, 200 );
-    lua_manager::get_instance()->set_Lua( lua_open() );
 
     cip1.initline();
     InitStationParams();
@@ -1010,7 +1008,6 @@ TEST( cipline_tech_object, SCInitPumping )
     InitCipDevices();
     cipline_tech_object cip1( "CIP1", 1, TECH_TYPE_SELF_CLEAN,
         "CIP1", 1, 1, 200, 200, 200, 200 );
-    lua_manager::get_instance()->set_Lua( lua_open() );
 
     cip1.initline();
     InitStationParams();
@@ -1029,7 +1026,6 @@ TEST( cipline_tech_object, InitFilRR )
     InitCipDevices();
     cipline_tech_object cip1( "CIP1", 1, TECH_TYPE_SELF_CLEAN,
         "CIP1", 1, 1, 200, 200, 200, 200 );
-    lua_manager::get_instance()->set_Lua( lua_open() );
 
     cip1.initline();
     InitStationParams();
@@ -1048,7 +1044,6 @@ TEST( cipline_tech_object, InitCircRR )
     InitCipDevices();
     cipline_tech_object cip1( "CIP1", 1, TECH_TYPE_SELF_CLEAN,
         "CIP1", 1, 1, 200, 200, 200, 200 );
-    lua_manager::get_instance()->set_Lua( lua_open() );
 
     cip1.initline();
     InitStationParams();
@@ -1067,7 +1062,6 @@ TEST( cipline_tech_object, CircRR )
     InitCipDevices();
     cipline_tech_object cip1( "CIP1", 1, TECH_TYPE_SELF_CLEAN,
         "CIP1", 1, 1, 200, 200, 200, 200 );
-    lua_manager::get_instance()->set_Lua( lua_open() );
 
     cip1.initline();
     InitStationParams();
@@ -1086,7 +1080,6 @@ TEST( cipline_tech_object, timeIsOut )
     InitCipDevices();
     cipline_tech_object cip1( "CIP1", 1, TECH_TYPE_SELF_CLEAN,
         "CIP1", 1, 1, 200, 200, 200, 200 );
-    lua_manager::get_instance()->set_Lua( lua_open() );
 
     cip1.initline();
     InitStationParams();
@@ -1105,7 +1098,6 @@ TEST( cipline_tech_object, InitCheckConc )
     InitCipDevices();
     cipline_tech_object cip1( "CIP1", 1, TECH_TYPE_SELF_CLEAN,
         "CIP1", 1, 1, 200, 200, 200, 200 );
-    lua_manager::get_instance()->set_Lua( lua_open() );
 
     cip1.initline();
     InitStationParams();
@@ -1124,7 +1116,6 @@ TEST( cipline_tech_object, InitAddRR )
     InitCipDevices();
     cipline_tech_object cip1( "CIP1", 1, TECH_TYPE_SELF_CLEAN,
         "CIP1", 1, 1, 200, 200, 200, 200 );
-    lua_manager::get_instance()->set_Lua( lua_open() );
 
     cip1.initline();
     InitStationParams();
@@ -1143,7 +1134,6 @@ TEST( cipline_tech_object, InitOpolRR )
     InitCipDevices();
     cipline_tech_object cip1( "CIP1", 1, TECH_TYPE_SELF_CLEAN,
         "CIP1", 1, 1, 200, 200, 200, 200 );
-    lua_manager::get_instance()->set_Lua( lua_open() );
 
     cip1.initline();
     InitStationParams();
@@ -1162,7 +1152,6 @@ TEST( cipline_tech_object, _InitToObject )
     InitCipDevices();
     cipline_tech_object cip1( "CIP1", 1, TECH_TYPE_SELF_CLEAN,
         "CIP1", 1, 1, 200, 200, 200, 200 );
-    lua_manager::get_instance()->set_Lua( lua_open() );
 
     cip1.initline();
     InitStationParams();
@@ -1181,7 +1170,6 @@ TEST( cipline_tech_object, _InitFromObject )
     InitCipDevices();
     cipline_tech_object cip1( "CIP1", 1, TECH_TYPE_SELF_CLEAN,
         "CIP1", 1, 1, 200, 200, 200, 200 );
-    lua_manager::get_instance()->set_Lua( lua_open() );
 
     cip1.initline();
     InitStationParams();
@@ -1203,7 +1191,6 @@ TEST( cipline_tech_object, _InitOporCIP )
     InitCipDevices();
     cipline_tech_object cip1( "CIP1", 1, TECH_TYPE_SELF_CLEAN,
         "CIP1", 1, 1, 200, 200, 200, 200 );
-    lua_manager::get_instance()->set_Lua( lua_open() );
 
     cip1.initline();
     InitStationParams();
@@ -1222,7 +1209,6 @@ TEST( cipline_tech_object, _InitFilCirc )
     InitCipDevices();
     cipline_tech_object cip1( "CIP1", 1, TECH_TYPE_SELF_CLEAN,
         "CIP1", 1, 1, 200, 200, 200, 200 );
-    lua_manager::get_instance()->set_Lua( lua_open() );
 
     cip1.initline();
     InitStationParams();
@@ -1241,7 +1227,6 @@ TEST( cipline_tech_object, _InitOporCirc )
     InitCipDevices();
     cipline_tech_object cip1( "CIP1", 1, TECH_TYPE_SELF_CLEAN,
         "CIP1", 1, 1, 200, 200, 200, 200 );
-    lua_manager::get_instance()->set_Lua( lua_open() );
 
     cip1.initline();
     InitStationParams();
@@ -1260,7 +1245,6 @@ TEST( cipline_tech_object, _InitCirc )
     InitCipDevices();
     cipline_tech_object cip1( "CIP1", 1, TECH_TYPE_SELF_CLEAN,
         "CIP1", 1, 1, 200, 200, 200, 200 );
-    lua_manager::get_instance()->set_Lua( lua_open() );
 
     cip1.initline();
     InitStationParams();
@@ -1291,7 +1275,6 @@ TEST( cipline_tech_object, _InitDoseRR )
     InitCipDevices();
     cipline_tech_object cip1( "CIP1", 1, TECH_TYPE_SELF_CLEAN,
         "CIP1", 1, 1, 200, 200, 200, 200 );
-    lua_manager::get_instance()->set_Lua( lua_open() );
 
     cip1.initline();
     InitStationParams();
