@@ -641,7 +641,8 @@ void lua_manager::note_lua_error( lua_State* L, const char* message )
         return;
         }
 
-    sprintf( G_LOG->msg, "Lua error: %s", error_str.c_str() );
+    snprintf( G_LOG->msg, i_log::C_BUFF_SIZE, "Lua error: %s",
+        error_str.c_str() );
     if ( G_LOG->msg[ strlen( G_LOG->msg ) - 1 ] == '\n' )
         {
         //Удаляем последний CR
@@ -652,7 +653,8 @@ void lua_manager::note_lua_error( lua_State* L, const char* message )
 
     if ( is_print_stack_traceback )
         {
-        int res{ sprintf( G_LOG->msg, "Lua stack traceback:" ) };
+        int res{ snprintf( G_LOG->msg, i_log::C_BUFF_SIZE,
+            "Lua stack traceback:" ) };
 
         lua_Debug ar{};
         int level{ 1 };
@@ -853,7 +855,8 @@ int lua_manager::reload_script( int script_n, const char* script_function_name,
             const char* error_message{ lua_error_text( L, -1 ) };
 
             count_lua_error( error_message );
-            sprintf( G_LOG->msg, "Reload Lua script - %s", error_message );
+            snprintf( G_LOG->msg, i_log::C_BUFF_SIZE,
+                "Reload Lua script - %s", error_message );
             G_LOG->write_log( i_log::P_ERR );
 
             strncpy( res_str, G_LOG->msg + 1 /*не копируем первый \n*/,
