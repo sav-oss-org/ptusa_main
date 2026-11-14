@@ -1,3 +1,9 @@
+# A plain `pre-commit install` must set up every stage this file
+# uses, including the commit-msg and pre-push commit-check hooks.
+default_install_hook_types:
+  - pre-commit
+  - commit-msg
+  - pre-push
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.5.0
@@ -5,3 +11,11 @@ repos:
       - id: trailing-whitespace
       - id: end-of-file-fixer
       - id: check-yaml
+  # Same policy as CI, applied before the commit exists.
+  # https://commit-check.com/
+  - repo: https://github.com/commit-check/commit-check
+    rev: v2.20.5
+    hooks:
+      - id: check-message
+      - id: check-files
+      - id: check-tag

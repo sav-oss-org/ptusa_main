@@ -1,0 +1,56 @@
+# Commit policy for ptusa_main, enforced by commit-check.
+# Rule IDs: https://commit-check.com/rules/
+# Options:  https://commit-check.com/configuration/
+
+# Reported in full but never fail the run during the rollout.
+# Drop a rule from this list once the habit settles.
+warn = ["CC003"]
+
+[commit]
+# House style is a capitalized sentence, not Conventional Commits.
+conventional_commits = false
+# AGENTS.md: capitalize the subject line.
+subject_capitalized = true
+# AGENTS.md: use the imperative mood in the subject line.
+# The history is mostly third person ("Adds", "Fixes"), so CC003
+# only warns (see the warn list) until the team settles the style.
+subject_imperative = true
+# AGENTS.md: limit the subject line to 50 characters.
+subject_max_length = 50
+# Draft commits should never reach a pull request.
+allow_wip_commits = false
+# Empty messages cannot be searched or bisected.
+allow_empty_commits = false
+# Merge commits are routine when syncing feature branches.
+allow_merge_commits = true
+# CONTRIBUTING.md: AI-assisted commits carry provenance trailers.
+# "disclose" also rejects an AI tool in Signed-off-by (CC016) and
+# as a commit author (CC017). Only known tools (Claude, Copilot,
+# Cursor, ...) are detected; other assistants stay a review matter.
+ai_attribution = "disclose"
+# Accept the project's own `AI-assisted:` line and keep CC015 from
+# rejecting the required `Co-authored-by:` agent line.
+ai_disclosure_trailers = ["AI-assisted", "Co-authored-by"]
+
+[branch]
+# Branches here are snake_case (add_lua_test_error_counter), which
+# is not Conventional Branch; CC201 would reject all of them.
+conventional_branch = false
+
+[files]
+# The largest tracked file today is about 100 KB; 1 MB catches
+# accidents without touching legitimate committed data.
+max_size = "1MB"
+# Secrets and credentials must never reach the repository.
+prohibited_patterns = ["*.pem", "*.key", "*.pfx", "*.p12",
+                       ".env", "id_rsa*"]
+# Windows builds hit MAX_PATH at 260 characters.
+max_path_length = 250
+
+[tag]
+# Releases are CalVer, see the Versioning section of CONTRIBUTING.md:
+# no `v` prefix, no leading zeroes, no serial `0`, and every month
+# carries only its real day count (Feb 29 is accepted as a leap-year
+# approximation). Legacy tags are never re-checked, so the pattern
+# does not accept them.
+regex = '^\d{4}\.(?:(?:[13578]|1[02])\.(?:[1-9]|[12]\d|3[01])|(?:[469]|11)\.(?:[1-9]|[12]\d|30)|2\.(?:[1-9]|1\d|2[0-9]))(?:\.[1-9]\d*)?$'

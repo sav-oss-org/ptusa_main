@@ -1,6 +1,7 @@
 .*
 !/.agents/
 !/.agents/skills/
+!/.github/
 *.user
 *.aps
 intermediate
