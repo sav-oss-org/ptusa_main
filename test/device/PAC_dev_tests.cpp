@@ -17,6 +17,77 @@
 using namespace ::testing;
 using B = std::byte;
 
+/// Frees the channel value cells allocated by io_device::init_and_alloc().
+/// ~io_device() frees only the channel pointer arrays, so the per-channel
+/// cells that tests allocated must be freed explicitly. The freed slots
+/// are nulled, so ~io_device() and repeated calls stay safe.
+///
+/// Call only for devices whose cells can come solely from
+/// io_device::init_and_alloc(). io_device::init_channel() replaces a slot
+/// with a pointer into io_manager-owned node buffers, and deleting such a
+/// slot corrupts the heap. Never call this helper on devices whose channels
+/// were bound by io_device::init_channel(), directly or via a fixture
+/// helper such as init_channels() or test_dev_err().
+static void free_channel_cells( io_device& io_dev )
+    {
+    io_device::IO_channels& do_ch = io_dev.DO_channels;
+    for ( u_int i{ 0 }; i < do_ch.count; ++i )
+        {
+        if ( nullptr != do_ch.char_read_values )
+            {
+            delete do_ch.char_read_values[ i ];
+            do_ch.char_read_values[ i ] = nullptr;
+            }
+        if ( nullptr != do_ch.char_write_values )
+            {
+            delete do_ch.char_write_values[ i ];
+            do_ch.char_write_values[ i ] = nullptr;
+            }
+        }
+    io_device::IO_channels& di_ch = io_dev.DI_channels;
+    for ( u_int i{ 0 }; i < di_ch.count; ++i )
+        {
+        if ( nullptr != di_ch.char_read_values )
+            {
+            delete di_ch.char_read_values[ i ];
+            di_ch.char_read_values[ i ] = nullptr;
+            }
+        }
+    io_device::IO_channels& ao_ch = io_dev.AO_channels;
+    for ( u_int i{ 0 }; i < ao_ch.count; ++i )
+        {
+        if ( nullptr != ao_ch.int_read_values )
+            {
+            delete ao_ch.int_read_values[ i ];
+            ao_ch.int_read_values[ i ] = nullptr;
+            }
+        if ( nullptr != ao_ch.int_module_read_values )
+            {
+            delete ao_ch.int_module_read_values[ i ];
+            ao_ch.int_module_read_values[ i ] = nullptr;
+            }
+        if ( nullptr != ao_ch.int_write_values )
+            {
+            delete ao_ch.int_write_values[ i ];
+            ao_ch.int_write_values[ i ] = nullptr;
+            }
+        }
+    io_device::IO_channels& ai_ch = io_dev.AI_channels;
+    for ( u_int i{ 0 }; i < ai_ch.count; ++i )
+        {
+        if ( nullptr != ai_ch.int_read_values )
+            {
+            delete ai_ch.int_read_values[ i ];
+            ai_ch.int_read_values[ i ] = nullptr;
+            }
+        if ( nullptr != ai_ch.int_module_read_values )
+            {
+            delete ai_ch.int_module_read_values[ i ];
+            ai_ch.int_module_read_values[ i ] = nullptr;
+            }
+        }
+    }
+
 class iolink_dev_test : public ::testing::Test
     {
     protected:
@@ -2276,6 +2347,7 @@ TEST( DI_signal, get_state )
 
     DeltaMilliSecSubHooker::set_default_time();
     G_PAC_INFO()->emulation_on();
+    free_channel_cells( DI1 );
     }
 
 
@@ -2603,6 +2675,7 @@ TEST( valve_DO1_DI2, get_fb_state )
     check_fb( &V1 );
 
     G_PAC_INFO()->emulation_on();
+    free_channel_cells( V1 );
     }
 
 TEST( valve_DO2_DI2, valve_DO2_DI2 )
@@ -2654,6 +2727,7 @@ TEST( valve_DO2_DI2, get_fb_state )
     EXPECT_EQ( valve::VALVE_STATE::V_ON, V1.get_valve_state() );
 
     G_PAC_INFO()->emulation_on();
+    free_channel_cells( V1 );
     }
 
 
@@ -2679,6 +2753,7 @@ TEST( valve_DO1, get_fb_state )
     EXPECT_FALSE( V1.get_on_fb_value() );
 
     G_PAC_INFO()->emulation_on();
+    free_channel_cells( V1 );
     }
 
 
@@ -2700,6 +2775,7 @@ TEST( valve_DO1_DI1_off, get_fb_state )
     EXPECT_TRUE( V1.get_off_fb_value() );
 
     G_PAC_INFO()->emulation_on();
+    free_channel_cells( V1 );
     }
 
 TEST( valve_DO1_DI1_off, direct_off )
@@ -2727,6 +2803,7 @@ TEST( valve_DO1_DI1_off, direct_off )
     EXPECT_EQ( V1.get_state(), valve::VALVE_STATE::V_OFF );
 
     G_PAC_INFO()->emulation_on();
+    free_channel_cells( V1 );
     }
 
 TEST( valve_DO1_DI1_off, get_on_fb_value )
@@ -2759,6 +2836,7 @@ TEST( valve_DO1_DI1_on, get_fb_state )
     EXPECT_TRUE( V1.get_on_fb_value() );
 
     G_PAC_INFO()->emulation_on();
+    free_channel_cells( V1 );
     }
 
 TEST( valve_DO1_DI1_on, direct_off )
@@ -2787,6 +2865,7 @@ TEST( valve_DO1_DI1_on, direct_off )
     EXPECT_EQ( V1.get_state(), valve::VALVE_STATE::V_OFF );
 
     G_PAC_INFO()->emulation_on();
+    free_channel_cells( V1 );
     }
 
 TEST( valve_DO1_DI1_on, get_on_fb_value )
@@ -2836,6 +2915,7 @@ TEST( valve_mix_proof, get_fb_state )
     EXPECT_TRUE( V1.get_fb_state() );
 
     G_PAC_INFO()->emulation_on();
+    free_channel_cells( V1 );
     }
 
 TEST( valve_mix_proof, direct_set_state )
@@ -2862,6 +2942,7 @@ TEST( valve_mix_proof, direct_set_state )
     EXPECT_EQ( V1.get_state(), valve::VALVE_STATE::V_ON );
 
     G_PAC_INFO()->emulation_on();
+    free_channel_cells( V1 );
     }
 
 
@@ -3048,6 +3129,7 @@ TEST( valve_bottom_mix_proof, get_fb_state )
     EXPECT_TRUE( V1.get_fb_state() );
 
     G_PAC_INFO()->emulation_on();
+    free_channel_cells( V1 );
     }
 
 TEST( valve_bottom_mix_proof, is_switching_off_finished )
@@ -3086,6 +3168,7 @@ TEST( valve_bottom_mix_proof, on )
     EXPECT_TRUE( V1.get_fb_state() );
 
     G_PAC_INFO()->emulation_on();
+    free_channel_cells( V1 );
     }
 
 
@@ -3126,6 +3209,7 @@ TEST( valve_mini_flushing, get_fb_state )
     EXPECT_FALSE( V1.get_on_fb_value() );
 
     G_PAC_INFO()->emulation_on();
+    free_channel_cells( V1 );
     }
 
 
@@ -3158,6 +3242,7 @@ TEST( valve_DO2_DI2_bistable, get_fb_state )
     EXPECT_FALSE( V1.get_off_fb_value() );
 
     G_PAC_INFO()->emulation_on();
+    free_channel_cells( V1 );
     }
 
 
@@ -4633,6 +4718,7 @@ TEST( motor, direct_off )
     EXPECT_EQ( M1.get_state(), 0 );
 
     G_PAC_INFO()->emulation_on();
+    free_channel_cells( M1 );
     }
 
 TEST( motor, direct_set_state )
