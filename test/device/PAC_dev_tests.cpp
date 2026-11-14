@@ -4766,6 +4766,23 @@ TEST( motor_altivar, set_string_property )
     EXPECT_NE( nullptr, M1.get_atv() );
     }
 
+TEST( motor_altivar, set_string_property_with_port )
+    {
+    motor_altivar_linear M2( "M2" );
+    EXPECT_EQ( nullptr, M2.get_atv() );
+    M2.set_string_property( "IP", "127.0.0.2:5021" );
+    EXPECT_NE( nullptr, M2.get_atv() );
+
+    // Второй двигатель на том же адресе использует тот же узел.
+    motor_altivar_linear M2b( "M2b" );
+    M2b.set_string_property( "IP", "127.0.0.2:5021" );
+    EXPECT_NE( nullptr, M2b.get_atv() );
+
+    motor_altivar_linear M3( "M3" );
+    M3.set_string_property( "IP", "127.0.0.3:abc" );
+    EXPECT_EQ( nullptr, M3.get_atv() );
+    }
+
 TEST( motor_altivar_linear, get_linear_speed )
     {
     motor_altivar_linear m1( "M1" );
@@ -4809,6 +4826,14 @@ TEST( camera, set_string_property )
 
     test_dev.set_string_property( "IP", "127.0.0.1" );
     EXPECT_EQ( "127.0.0.1", test_dev.ip );
+
+    test_dev.set_string_property( "IP", "192.168.1.10:8080" );
+    EXPECT_EQ( "192.168.1.10", test_dev.ip );
+
+    // Порт вне допустимого диапазона - адрес не принимается,
+    // предыдущее значение сохраняется.
+    test_dev.set_string_property( "IP", "192.168.1.10:70000" );
+    EXPECT_EQ( "192.168.1.10", test_dev.ip );
     }
 
 TEST( camera, get_result )
@@ -5870,12 +5895,31 @@ TEST( wages_eth, parse_ip_address )
     EXPECT_FALSE( wages_eth::parse_ip_address( "192.168.1.1:65536", ip, port ) );
     EXPECT_FALSE( wages_eth::parse_ip_address( "192.168.1.1:abc", ip, port ) );
     EXPECT_FALSE( wages_eth::parse_ip_address( "192.168.1.1:8888:1", ip, port ) );
+
+    // Парсер в базовом классе device принимает порт по умолчанию.
+    ASSERT_TRUE( device::parse_ip_address( "10.0.0.1", ip, port, 502 ) );
+    EXPECT_EQ( "10.0.0.1", ip );
+    EXPECT_EQ( 502u, port );
+
+    ASSERT_TRUE( device::parse_ip_address( "10.0.0.1:8888", ip, port, 502 ) );
+    EXPECT_EQ( 8888u, port );
     }
 
 TEST( wages_eth, set_ip_with_port )
     {
     wages_eth w1( "W1" );
     w1.set_string_property( "IP", "192.168.1.1:8888" );
+    w1.evaluate_io();
+    EXPECT_EQ( 0.0f, w1.get_value() );
+    }
+
+TEST( wages_eth, set_invalid_ip )
+    {
+    wages_eth w1( "W1" );
+
+    // Некорректный адрес не создает узел, evaluate_io работает
+    // и без узла.
+    w1.set_string_property( "IP", "192.168.1.1:0" );
     w1.evaluate_io();
     EXPECT_EQ( 0.0f, w1.get_value() );
     }

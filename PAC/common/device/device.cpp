@@ -264,7 +264,22 @@ void camera::set_string_property( const char* field, const char* value )
 
     if ( strcmp( field, "IP" ) == 0 )
         {
-        ip = std::string( value );
+        if ( value == nullptr || value[ 0 ] == '\0' )
+            {
+            ip.clear();
+            return;
+            }
+
+        std::string host;
+        unsigned int port = 0;
+        if ( !parse_ip_address( value, host, port ) )
+            {
+            G_LOG->error( "%s: invalid camera IP address '%s'",
+                get_name(), value );
+            return;
+            }
+
+        ip = host;
         }
     }
 
@@ -2239,37 +2254,6 @@ wages_eth::wages_eth( const char* dev_name ) :
         static_cast< int >( CONSTANTS::LAST_PARAM_IDX ) - 1 )
     {
     set_par_name( static_cast<int>( CONSTANTS::P_CZ ), 0, "P_CZ" );
-    }
-
-bool wages_eth::parse_ip_address( const char* address, std::string& ip,
-    unsigned int& port )
-    {
-    if ( !address ) return false;
-
-    const std::string endpoint( address );
-    const auto separator = endpoint.find( ':' );
-    const auto host = endpoint.substr( 0, separator );
-    if ( host.empty() || host.size() > 15 ) return false;
-
-    unsigned int parsed_port = 1001;
-    if ( separator != std::string::npos )
-        {
-        if ( separator + 1 == endpoint.size() ) return false;
-        parsed_port = 0;
-        for ( auto i = separator + 1; i < endpoint.size(); ++i )
-            {
-            const char digit = endpoint[ i ];
-            if ( digit < '0' || digit > '9' ) return false;
-            const auto value = static_cast<unsigned int>( digit - '0' );
-            if ( parsed_port > ( 65535 - value ) / 10 ) return false;
-            parsed_port = parsed_port * 10 + value;
-            }
-        if ( parsed_port == 0 ) return false;
-        }
-
-    ip = host;
-    port = parsed_port;
-    return true;
     }
 
 float wages_eth::get_value() const
@@ -4424,28 +4408,35 @@ void motor_altivar::direct_off()
     atv->reverse = 0;
     }
 //-----------------------------------------------------------------------------
-void motor_altivar::set_string_property(const char * field, const char * value)
+void motor_altivar::set_string_property( const char* field, const char* value )
     {
     device::set_string_property( field, value );
 
-    if (strcmp(field, "IP") == 0)
+    if ( strcmp( field, "IP" ) == 0 && !atv )
         {
-        int port = 502;
-        int timeout = 300;
-        auto nodeip = std::string(value);
-        nodeip.append(":");
-        nodeip.append(std::to_string(port));
-        nodeip.append(" ");
-        nodeip.append(std::to_string(timeout));
-        if (!atv)
+        // Порт Modbus TCP по умолчанию - 502. Таймаут обмена (мс)
+        // фиксирован, чтобы ключ узла в менеджере оставался стабильным.
+        const unsigned int MODBUS_PORT = 502;
+        const unsigned int TIMEOUT = 300;
+        std::string host;
+        unsigned int port = 0;
+
+        if ( !parse_ip_address( value, host, port, MODBUS_PORT ) )
             {
-            atv = G_ALTIVAR_MANAGER()->get_node(nodeip.c_str());
-            if (!atv)
-                {
-                G_ALTIVAR_MANAGER()->add_node(value, port, timeout,
-                    get_article(), get_name() );
-                atv = G_ALTIVAR_MANAGER()->get_node(nodeip.c_str());
-                }
+            G_LOG->error( "%s: invalid motor IP address '%s'",
+                get_name(), value );
+            return;
+            }
+
+        auto nodeip = host + ":" + std::to_string( port ) + " " +
+            std::to_string( TIMEOUT );
+
+        atv = G_ALTIVAR_MANAGER()->get_node( nodeip.c_str() );
+        if ( !atv )
+            {
+            G_ALTIVAR_MANAGER()->add_node( host.c_str(), port, TIMEOUT,
+                get_article(), get_name() );
+            atv = G_ALTIVAR_MANAGER()->get_node( nodeip.c_str() );
             }
         }
     }
