@@ -134,12 +134,15 @@ TEST_F(LuaManagerTest, init_check_file_version_failure)
 
 TEST_F( LuaManagerTest, init_system_scripts_execution_failure )
 {
+    lua_manager::reset_lua_error_count();
+
     subhook_t hook_luaL_loadfile =
         subhook_new( (void*)&luaL_loadfile, (void*)&mock_luaL_loadfile_failure,
         SUBHOOK_64BIT_OFFSET );
     subhook_install( hook_luaL_loadfile );
 
     EXPECT_EQ( 1, G_LUA_MANAGER->init( nullptr, "", "", "" ) );
+    EXPECT_EQ( 1, lua_manager::get_lua_error_count() );
 
     subhook_remove( hook_luaL_loadfile );
     subhook_free( hook_luaL_loadfile );
@@ -172,6 +175,8 @@ TEST_F(LuaManagerTest, init_lua_load_configuration_failure)
 
 TEST_F(LuaManagerTest, init_luaL_loadfile_failure)
 {
+    lua_manager::reset_lua_error_count();
+
     subhook_t hook_luaL_loadfile =
         subhook_new((void *)luaL_loadfile, (void *)mock_luaL_loadfile_failure_2, SUBHOOK_64BIT_OFFSET);
     subhook_install(hook_luaL_loadfile);
@@ -187,6 +192,8 @@ TEST_F(LuaManagerTest, init_luaL_loadfile_failure)
 
     EXPECT_EQ( 1, G_LUA_MANAGER->init( nullptr, "", "", "" ) );
 
+    EXPECT_EQ( 1, lua_manager::get_lua_error_count() );
+
     subhook_remove(hook_luaL_loadfile);
     subhook_free(hook_luaL_loadfile);
     set_file_counter(0);
@@ -198,10 +205,14 @@ TEST_F(LuaManagerTest, init_luaL_loadfile_failure)
 
 TEST_F(LuaManagerTest, init_lua_pcall_failure)
 {
+    lua_manager::reset_lua_error_count();
+
     subhook_t hook_lua_pcall =
         subhook_new((void *)lua_pcall, (void *)mock_lua_pcall_failure, SUBHOOK_64BIT_OFFSET);
     subhook_install(hook_lua_pcall);
-    const int EXTRA_CALLS_COUNT = 1;
+    // FILE_CNT скриптов, get_PAC_id и init_devices_rt_params должны пройти,
+    // чтобы ошибкой завершился только pcall основного скрипта.
+    const int EXTRA_CALLS_COUNT = 2;
     set_lua_pcall_success_calls_before_failure(FILE_CNT + EXTRA_CALLS_COUNT);
 
     mock_project_manager* prj_mock = new mock_project_manager();
@@ -215,6 +226,7 @@ TEST_F(LuaManagerTest, init_lua_pcall_failure)
         .WillOnce(Return(0));
 
     EXPECT_EQ( 1, G_LUA_MANAGER->init( nullptr, "", "", "" ) );
+    EXPECT_EQ( 1, lua_manager::get_lua_error_count() );
 
     set_file_counter(0);
     test_project_manager::removeObject();
@@ -599,12 +611,15 @@ TEST_F(LuaManagerTest, exec_Lua_str_success)
 
 TEST_F(LuaManagerTest, exec_Lua_str_failure)
 {
+    lua_manager::reset_lua_error_count();
+
     subhook_t hook_lua_pcall =
         subhook_new((void *)lua_pcall, (void *)mock_lua_pcall_failure, SUBHOOK_64BIT_OFFSET);
     subhook_install(hook_lua_pcall);
     set_lua_pcall_success_calls_before_failure(0);
 
     EXPECT_EQ(1, G_LUA_MANAGER->exec_Lua_str("test_lua_str", "error_test_str"));
+    EXPECT_EQ(1, lua_manager::get_lua_error_count());
 
     subhook_remove(hook_lua_pcall);
     subhook_free(hook_lua_pcall);
@@ -724,6 +739,12 @@ TEST_F(LuaManagerTest, reload_script_check_file_version_failure)
 
 TEST_F(LuaManagerTest, reload_script_luaL_dofile_failure)
 {
+    lua_manager::reset_lua_error_count();
+
+    // Состояние нужно, чтобы reload_script не вышел на проверке L.
+    G_LUA_MANAGER->set_Lua( new lua_State{} );
+    need_free_Lua_state = true;
+
     subhook_t hook_lua_pcall =
         subhook_new((void *)lua_pcall, (void *)mock_lua_pcall_failure, SUBHOOK_64BIT_OFFSET);
     subhook_install(hook_lua_pcall);
@@ -736,6 +757,9 @@ TEST_F(LuaManagerTest, reload_script_luaL_dofile_failure)
 
     EXPECT_EQ(1, G_LUA_MANAGER->reload_script(
                  file_serial_number, "test_lua_func_str", ans, sizeof(ans)));
+    // Оба вызова luaL_dofile завершились ошибкой, но неудача учитывается
+    // один раз — по итоговой ошибке перезагрузки.
+    EXPECT_EQ(1, lua_manager::get_lua_error_count());
 
     subhook_remove(hook_lua_pcall);
     subhook_free(hook_lua_pcall);
@@ -755,6 +779,170 @@ TEST( lua_manager, error_trace )
     EXPECT_NE( 0, G_LUA_MANAGER->void_exec_lua_method( "t", "no_exist1", "error_trace") );
     EXPECT_NE( 0, G_LUA_MANAGER->void_exec_lua_method( "t", "no_exist2", "error_trace" ) );
     EXPECT_NE( 0, G_LUA_MANAGER->void_exec_lua_method( "t", "no_exist3", "error_trace" ) );
+    G_LUA_MANAGER->free_Lua();
+    lua_manager::reset_lua_error_count();
+    }
+
+TEST( lua_manager, get_lua_error_count )
+    {
+    auto L = lua_open();
+    luaL_openlibs( L );
+    G_LUA_MANAGER->set_Lua( L );
+
+    EXPECT_EQ( 0, luaL_dostring( L,
+        "t = {}"
+        " function t.ok() end"
+        " function t.ok_num() return 42 end"
+        " function t.fail() error( 'same' ) end"
+        " function t.fail_nil() error( nil ) end" ) );
+    EXPECT_EQ( 0, lua_gettop( L ) );
+
+    lua_manager::reset_lua_error_count();
+    EXPECT_EQ( 0, lua_manager::get_lua_error_count() );
+
+    EXPECT_NE( 0, G_LUA_MANAGER->void_exec_lua_method(
+        "missing", "ok", "get_lua_error_count" ) );
+    EXPECT_EQ( 0, lua_manager::get_lua_error_count() );
+    EXPECT_EQ( 0, lua_gettop( L ) );
+
+    EXPECT_NE( 0, G_LUA_MANAGER->void_exec_lua_method(
+        "t", "missing", "get_lua_error_count" ) );
+    EXPECT_EQ( 0, lua_manager::get_lua_error_count() );
+    EXPECT_EQ( 0, lua_gettop( L ) );
+
+    EXPECT_EQ( 0, G_LUA_MANAGER->void_exec_lua_method(
+        "t", "ok", "get_lua_error_count" ) );
+    EXPECT_EQ( 0, lua_manager::get_lua_error_count() );
+    EXPECT_EQ( 0, lua_gettop( L ) );
+
+    EXPECT_NE( 0, G_LUA_MANAGER->void_exec_lua_method(
+        "t", "fail", "get_lua_error_count" ) );
+    EXPECT_EQ( 1, lua_manager::get_lua_error_count() );
+    EXPECT_EQ( 0, lua_gettop( L ) );
+
+    EXPECT_NE( 0, G_LUA_MANAGER->void_exec_lua_method(
+        "t", "fail", "get_lua_error_count" ) );
+    EXPECT_EQ( 2, lua_manager::get_lua_error_count() );
+    EXPECT_EQ( 0, lua_gettop( L ) );
+
+    // Проверяем путь int_exec_lua_method.
+    lua_manager::reset_lua_error_count();
+    EXPECT_EQ( 0, lua_manager::get_lua_error_count() );
+
+    const int stack_top = lua_gettop( L );
+
+    EXPECT_EQ( 42, G_LUA_MANAGER->int_exec_lua_method(
+        "t", "ok_num", 0, "get_lua_error_count" ) );
+    EXPECT_EQ( 0, lua_manager::get_lua_error_count() );
+    EXPECT_EQ( stack_top, lua_gettop( L ) );
+
+    EXPECT_EQ( -1, G_LUA_MANAGER->int_exec_lua_method(
+        "t", "fail", 0, "get_lua_error_count" ) );
+    EXPECT_EQ( 1, lua_manager::get_lua_error_count() );
+    EXPECT_EQ( stack_top, lua_gettop( L ) );
+
+    // Нестроковая ошибка не должна ронять процесс.
+    EXPECT_NE( 0, G_LUA_MANAGER->void_exec_lua_method(
+        "t", "fail_nil", "get_lua_error_count" ) );
+    EXPECT_EQ( 2, lua_manager::get_lua_error_count() );
+    EXPECT_EQ( stack_top, lua_gettop( L ) );
+
+    // Повтор той же нестроковой ошибки снова увеличивает счетчик.
+    EXPECT_NE( 0, G_LUA_MANAGER->void_exec_lua_method(
+        "t", "fail_nil", "get_lua_error_count" ) );
+    EXPECT_EQ( 3, lua_manager::get_lua_error_count() );
+    EXPECT_EQ( stack_top, lua_gettop( L ) );
+
+    // После сброса счетчик снова начинается с нуля.
+    lua_manager::reset_lua_error_count();
+    EXPECT_EQ( 0, lua_manager::get_lua_error_count() );
+
+    EXPECT_NE( 0, G_LUA_MANAGER->void_exec_lua_method(
+        "t", "fail", "get_lua_error_count" ) );
+    EXPECT_EQ( 1, lua_manager::get_lua_error_count() );
+    EXPECT_EQ( stack_top, lua_gettop( L ) );
+
+    lua_manager::reset_lua_error_count();
+    G_LUA_MANAGER->free_Lua();
+    }
+
+TEST( lua_manager, exec_lua_method_preserves_caller_stack )
+    {
+    auto L = lua_open();
+    G_LUA_MANAGER->set_Lua( L );
+
+    EXPECT_EQ( 0, luaL_dostring( L,
+        "t = {} function t.ret7() return 7 end"
+        " function t.fail( s ) return s.absent.deep end" ) );
+    EXPECT_EQ( 0, lua_gettop( L ) );
+
+    // Сентинел принадлежит вызывающему коду и должен пережить
+    // как успешный вызов, так и ошибку.
+    const char* sentinel{ "sentinel" };
+    lua_pushstring( L, sentinel );
+    const int sentinel_index{ 1 };
+
+    lua_manager::reset_lua_error_count();
+
+    // Вызов с возвращаемым значением забирает результат со стека,
+    // но не затрагивает значение вызывающего кода.
+    EXPECT_EQ( 7, G_LUA_MANAGER->int_no_param_exec_lua_method(
+        "t", "ret7", "exec_lua_method_preserves_caller_stack" ) );
+    EXPECT_EQ( sentinel_index, lua_gettop( L ) );
+    EXPECT_EQ( LUA_TSTRING, lua_type( L, sentinel_index ) );
+    EXPECT_STREQ( sentinel, lua_tostring( L, sentinel_index ) );
+    EXPECT_EQ( 0, lua_manager::get_lua_error_count() );
+
+    // Ошибка выполнения не должна оставлять на стеке обработчик,
+    // функцию, объект и сообщение об ошибке.
+    EXPECT_EQ( 1, G_LUA_MANAGER->int_no_param_exec_lua_method(
+        "t", "fail", "exec_lua_method_preserves_caller_stack" ) );
+    EXPECT_EQ( sentinel_index, lua_gettop( L ) );
+    EXPECT_EQ( LUA_TSTRING, lua_type( L, sentinel_index ) );
+    EXPECT_STREQ( sentinel, lua_tostring( L, sentinel_index ) );
+    EXPECT_EQ( 1, lua_manager::get_lua_error_count() );
+
+    // Отсутствие функции тоже восстанавливает стек вызывающего кода.
+    EXPECT_EQ( 1, G_LUA_MANAGER->int_no_param_exec_lua_method(
+        "t", "missing", "exec_lua_method_preserves_caller_stack" ) );
+    EXPECT_EQ( sentinel_index, lua_gettop( L ) );
+    EXPECT_STREQ( sentinel, lua_tostring( L, sentinel_index ) );
+    EXPECT_EQ( 1, lua_manager::get_lua_error_count() );
+
+    lua_manager::reset_lua_error_count();
+    G_LUA_MANAGER->free_Lua();
+    }
+
+TEST( lua_manager, last_lua_error )
+    {
+    auto L = lua_open();
+    luaL_openlibs( L );
+    G_LUA_MANAGER->set_Lua( L );
+
+    lua_manager::reset_lua_error_count();
+    EXPECT_STREQ( "", lua_manager::get_last_lua_error() );
+
+    EXPECT_EQ( 0, luaL_dostring( L,
+        "t = {} function t.fail() error( 'boom' ) end" ) );
+    EXPECT_EQ( 0, lua_gettop( L ) );
+
+    EXPECT_NE( 0, G_LUA_MANAGER->void_exec_lua_method(
+        "t", "fail", "last_lua_error" ) );
+    EXPECT_THAT( lua_manager::get_last_lua_error(), HasSubstr( "boom" ) );
+    EXPECT_EQ( 0, lua_gettop( L ) );
+
+    //Нестроковый объект ошибки не должен ронять программу.
+    EXPECT_EQ( 0, luaL_dostring( L,
+        "function t.fail_table() error( {} ) end" ) );
+    EXPECT_NE( 0, G_LUA_MANAGER->void_exec_lua_method(
+        "t", "fail_table", "last_lua_error" ) );
+    EXPECT_THAT( lua_manager::get_last_lua_error(),
+        HasSubstr( "non-string Lua error" ) );
+    EXPECT_EQ( 0, lua_gettop( L ) );
+
+    lua_manager::reset_lua_error_count();
+    EXPECT_STREQ( "", lua_manager::get_last_lua_error() );
+
     G_LUA_MANAGER->free_Lua();
     }
 
@@ -781,9 +969,12 @@ TEST( lua_manager, init )
     // Так как не загружен соответствующий модуль package, то init должен
     // вернуть 1 - "attempt to index global 'package' (a nil value)". При этом
     // в консоль выводится информация о переданных параметрах.
+    lua_manager::reset_lua_error_count();
+
     auto res = G_LUA_MANAGER->init( L,
         "test.lua", "dir", "sys_dir", "extra_dir" );
     EXPECT_EQ( res, 1 );
+    EXPECT_EQ( 1, lua_manager::get_lua_error_count() );
 
     G_LUA_MANAGER->free_Lua();
     }
