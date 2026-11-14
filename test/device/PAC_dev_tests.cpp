@@ -21,6 +21,13 @@ using B = std::byte;
 /// ~io_device() frees only the channel pointer arrays, so the per-channel
 /// cells that tests allocated must be freed explicitly. The freed slots
 /// are nulled, so ~io_device() and repeated calls stay safe.
+///
+/// Call only for devices whose cells can come solely from
+/// io_device::init_and_alloc(). io_device::init_channel() replaces a slot
+/// with a pointer into io_manager-owned node buffers, and deleting such a
+/// slot corrupts the heap. Never call this helper on devices whose channels
+/// were bound by io_device::init_channel(), directly or via a fixture
+/// helper such as init_channels() or test_dev_err().
 static void free_channel_cells( io_device& io_dev )
     {
     io_device::IO_channels& do_ch = io_dev.DO_channels;
@@ -823,7 +830,6 @@ TEST_F( iolink_dev_test, signal_column_iolink_get_error_description )
     {
     signal_column_iolink test_dev( "test_HL1" );
     test_dev_err( test_dev, test_dev, 0 );
-    free_channel_cells( test_dev );
     }
 
 
@@ -859,7 +865,6 @@ void test_temperature( AI1* TE1 )
     EXPECT_EQ( TE1->get_value(), ERR_VALUE );
 
     G_PAC_INFO()->emulation_on();
-    free_channel_cells( *TE1 );
     io_manager::replace_instance( prev_mngr );
     }
 
@@ -900,7 +905,6 @@ TEST_F( iolink_dev_test, temperature_e_iolink_get_value )
     // Есть привязка к модулям ввода/вывода - должны получить аварийное
     // значение.
     EXPECT_EQ( TE1.get_value(), err_value );
-    free_channel_cells( TE1 );
     }
 
 TEST_F( iolink_dev_test, temperature_e_iolink_evaluate_io )
@@ -918,7 +922,6 @@ TEST_F( iolink_dev_test, temperature_e_iolink_evaluate_io )
     EXPECT_EQ( TE1.get_value(), 0.1f * VALUE );
 
     G_PAC_INFO()->emulation_on();
-    free_channel_cells( TE1 );
     }
 
 TEST_F( iolink_dev_test, temperature_e_iolink_get_error_description )
@@ -930,7 +933,6 @@ TEST_F( iolink_dev_test, temperature_e_iolink_get_error_description )
     TE1.set_cmd( "ST", 0,
         -static_cast<int>( io_device::ERRORS::LAST_ERR_IDX ) - 100 );
     EXPECT_STREQ( TE1.get_error_description(), "неизвестная ошибка" );
-    free_channel_cells( TE1 );
     }
 
 TEST_F( iolink_dev_test, temperature_e_iolink_tm311_get_value )
@@ -952,7 +954,6 @@ TEST_F( iolink_dev_test, temperature_e_iolink_tm311_get_value )
     EXPECT_EQ( TE1.get_value(), err_value );
 
     G_PAC_INFO()->emulation_on();
-    free_channel_cells( TE1 );
     }
 
 TEST_F( iolink_dev_test, temperature_e_iolink_tm311_evaluate_io )
@@ -966,10 +967,6 @@ TEST_F( iolink_dev_test, temperature_e_iolink_tm311_evaluate_io )
 
     // TM311 process data: 4 bytes.
     // Allocate 4 bytes as 2 int_2 values.
-    // Delete the cell allocated by init_channels() before
-    // overwriting it with a four byte value buffer.
-    delete TE1.AI_channels.int_read_values[ 0 ];
-    TE1.AI_channels.int_read_values[ 0 ] = nullptr;
     TE1.AI_channels.int_read_values[ 0 ] = new int_2[ 2 ]{};
 
     // Data layout in memory (before swap in evaluate_io):
@@ -1022,8 +1019,6 @@ TEST_F( iolink_dev_test, temperature_e_iolink_tm311_evaluate_io )
     }
 
     delete[] TE1.AI_channels.int_read_values[ 0 ];
-    TE1.AI_channels.int_read_values[ 0 ] = nullptr;
-    free_channel_cells( TE1 );
     G_PAC_INFO()->emulation_on();
     }
 
@@ -1037,10 +1032,6 @@ TEST_F( iolink_dev_test, temperature_e_iolink_tm311_get_state )
     set_iol_state_to_OK( TE1 );
 
     // Allocate 4 bytes as 2 int_2 values.
-    // Delete the cell allocated by init_channels() before
-    // overwriting it with a four byte value buffer.
-    delete TE1.AI_channels.int_read_values[ 0 ];
-    TE1.AI_channels.int_read_values[ 0 ] = nullptr;
     TE1.AI_channels.int_read_values[ 0 ] = new int_2[ 2 ]{ 0 };
 
     // Data layout: Byte 0=scale, Byte 1=status, Byte 2-3=temperature.
@@ -1124,8 +1115,6 @@ TEST_F( iolink_dev_test, temperature_e_iolink_tm311_get_state )
     }
 
     delete[] TE1.AI_channels.int_read_values[ 0 ];
-    TE1.AI_channels.int_read_values[ 0 ] = nullptr;
-    free_channel_cells( TE1 );
     G_PAC_INFO()->emulation_on();
     }
 
@@ -1137,10 +1126,6 @@ TEST_F( iolink_dev_test, temperature_e_iolink_tm311_get_error_description )
 
     G_PAC_INFO()->emulation_off();
     init_channels( TE1 );
-    // Delete the cell allocated by init_channels() before
-    // overwriting it with a four byte value buffer.
-    delete TE1.AI_channels.int_read_values[ 0 ];
-    TE1.AI_channels.int_read_values[ 0 ] = nullptr;
     TE1.AI_channels.int_read_values[ 0 ] = new int_2[ 2 ]{ 0 };
 
     TE1.evaluate_io();
@@ -1154,8 +1139,6 @@ TEST_F( iolink_dev_test, temperature_e_iolink_tm311_get_error_description )
     EXPECT_STREQ( TE1.get_error_description(), "ошибка IOL-устройства" );
 
     delete[] TE1.AI_channels.int_read_values[ 0 ];
-    TE1.AI_channels.int_read_values[ 0 ] = nullptr;
-    free_channel_cells( TE1 );
     G_PAC_INFO()->emulation_on();
     }
 
@@ -2039,7 +2022,6 @@ TEST_F( iolink_dev_test, level_e_iolink_get_error_description )
     {
     level_e_iolink test_dev( "TestDevice" );
     test_dev_err( test_dev, test_dev, 0 );
-    free_channel_cells( test_dev );
     }
 
 TEST_F( iolink_dev_test, level_e_iolink_evaluate_io )
@@ -2239,7 +2221,6 @@ TEST_F( iolink_dev_test, pressure_e_iolink_get_error_description )
     {
     pressure_e_iolink test_dev( "TestDevice" );
     test_dev_err( test_dev, test_dev, 0 );
-    free_channel_cells( test_dev );
     }
 
 
@@ -2507,7 +2488,6 @@ TEST_F( iolink_dev_test, concentration_e_iolink_get_error_description )
     {
     concentration_e_iolink test_dev( "TestDevice" );
     test_dev_err( test_dev, test_dev, 0 );
-    free_channel_cells( test_dev );
     }
 
 TEST_F( iolink_dev_test, concentration_e_iolink_get_value_clamps_to_p_max_v )
@@ -2538,7 +2518,6 @@ TEST_F( iolink_dev_test, concentration_e_iolink_get_value_clamps_to_p_max_v )
     EXPECT_NEAR( test_dev.get_value(), 5.0f, .001f );
 
     G_PAC_INFO()->emulation_on();
-    free_channel_cells( test_dev );
     }
 
 
@@ -4133,7 +4112,6 @@ TEST_F( iolink_dev_test, valve_iolink_mix_proof_get_state )
     EXPECT_EQ( V1.get_state(), -io_device::IOLINKSTATE::NOTCONNECTED );
 
     G_PAC_INFO()->emulation_on();
-    free_channel_cells( V1 );
     }
 
 class valve_iolink_mix_proof_testable : public valve_iolink_mix_proof
@@ -4422,7 +4400,6 @@ TEST_F( iolink_dev_test, valve_iolink_mix_proof_get_state_with_feedback_disabled
     EXPECT_EQ( state, valve::VALVE_STATE_EX::VX_OFF_FB_OFF ) << "Expected feedback disabled state";
 
     G_PAC_INFO()->emulation_on();
-    free_channel_cells( V1 );
     }
 
 TEST_F( iolink_dev_test, valve_iolink_mix_proof_get_state_with_feedback_enabled_and_module_error )
@@ -4444,7 +4421,6 @@ TEST_F( iolink_dev_test, valve_iolink_mix_proof_get_state_with_feedback_enabled_
     EXPECT_EQ( state, -io_device::IOLINKSTATE::NOTCONNECTED ) << "Expected module error code";
 
     G_PAC_INFO()->emulation_on();
-    free_channel_cells( V1 );
     }
 
 TEST_F( iolink_dev_test, valve_iolink_shut_off_thinktop_get_state_with_feedback_disabled_and_module_error )
@@ -4466,7 +4442,6 @@ TEST_F( iolink_dev_test, valve_iolink_shut_off_thinktop_get_state_with_feedback_
     EXPECT_EQ( state, valve::VALVE_STATE_EX::VX_OFF_FB_OFF ) << "Expected feedback disabled state";
 
     G_PAC_INFO()->emulation_on();
-    free_channel_cells( V1 );
     }
 
 TEST_F( iolink_dev_test, valve_iolink_shut_off_thinktop_get_state_with_feedback_enabled_and_module_error )
@@ -4488,7 +4463,6 @@ TEST_F( iolink_dev_test, valve_iolink_shut_off_thinktop_get_state_with_feedback_
     EXPECT_EQ( state, -io_device::IOLINKSTATE::NOTCONNECTED ) << "Expected module error code";
 
     G_PAC_INFO()->emulation_on();
-    free_channel_cells( V1 );
     }
 
 
@@ -4648,14 +4622,12 @@ TEST_F( iolink_dev_test, level_s_iolink_evaluate_io )
 
 
     G_PAC_INFO()->emulation_on();
-    free_channel_cells( test_dev_max );
     }
 
 TEST_F( iolink_dev_test, level_s_iolink_get_error_description )
     {
     level_s_iolink test_dev_max( "TestDevice", device::LS_IOLINK_MAX );
     test_dev_err( test_dev_max, test_dev_max, 0 );
-    free_channel_cells( test_dev_max );
     }
 
 TEST_F( iolink_dev_test, level_s_iolink_get_value )
@@ -4674,7 +4646,6 @@ TEST_F( iolink_dev_test, level_s_iolink_get_value )
     EXPECT_EQ( test_dev_max.get_value(), VALUE );
 
     G_PAC_INFO()->emulation_on();
-    free_channel_cells( test_dev_max );
     }
 
 
@@ -4698,7 +4669,6 @@ TEST_F( iolink_dev_test, valve_iolink_shut_off_thinktop_get_error_description )
     EXPECT_STREQ( V1.get_error_description(), "IOL-устройство не подключено" );
 
     G_PAC_INFO()->emulation_on();
-    free_channel_cells( V1 );
     }
 
 
@@ -4787,7 +4757,6 @@ TEST( motor, save_device )
 
 
     G_PAC_INFO()->emulation_on();
-    free_channel_cells( M1 );
     io_manager::replace_instance( prev_mngr );
     }
 
@@ -5697,7 +5666,6 @@ TEST_F( iolink_dev_test, counter_iolink_get_state_iolink_errors )
     EXPECT_EQ( static_cast<int>( i_counter::STATES::S_WORK ), fqt1.get_state() );
 
     G_PAC_INFO()->emulation_on();
-    free_channel_cells( fqt1 );
     }
 
 TEST_F( iolink_dev_test, counter_iolink_smfx20_evaluate_io_and_getters )
@@ -5706,10 +5674,6 @@ TEST_F( iolink_dev_test, counter_iolink_smfx20_evaluate_io_and_getters )
     fqt1.set_article( "IFM.SMF420" );
 
     init_channels( fqt1 );
-    // Delete the cell allocated by init_channels() before
-    // overwriting it with a four byte value buffer.
-    delete fqt1.AI_channels.int_read_values[ 0 ];
-    fqt1.AI_channels.int_read_values[ 0 ] = nullptr;
     fqt1.AI_channels.int_read_values[ 0 ] = new int_2[ 8 ]{ 0 };
     auto data = reinterpret_cast<std::byte*>( fqt1.AI_channels.int_read_values[ 0 ] );
     set_iol_state_to_OK( fqt1 );
@@ -5765,7 +5729,6 @@ TEST_F( iolink_dev_test, counter_iolink_smfx20_evaluate_io_and_getters )
     delete[] fqt1.AI_channels.int_read_values[ 0 ];
     fqt1.AI_channels.int_read_values[ 0 ] = nullptr;
     G_PAC_INFO()->emulation_on();
-    free_channel_cells( fqt1 );
     }
 
 
@@ -7286,7 +7249,6 @@ TEST_F( iolink_dev_test, converter_iolink_ao_evaluate_io )
     EXPECT_EQ( Y1.get_state(), -2 );
 
     G_PAC_INFO()->emulation_on();
-    free_channel_cells( Y1 );
     }
 
 TEST_F( iolink_dev_test, converter_iolink_ao_get_error_description )
@@ -7317,7 +7279,6 @@ TEST_F( iolink_dev_test, converter_iolink_ao_get_error_description )
     EXPECT_STREQ( Y1.get_error_description(), "отказ" );
 
     G_PAC_INFO()->emulation_on();
-    free_channel_cells( Y1 );
     }
 
 TEST_F( iolink_dev_test, converter_iolink_ao_get_state )
@@ -7338,7 +7299,6 @@ TEST_F( iolink_dev_test, converter_iolink_ao_get_state )
     Y1.set_cmd( "ST", 0, -100 );
     Y1.evaluate_io();
     EXPECT_EQ( Y1.get_state(), -100 );
-    free_channel_cells( Y1 );
     }
 
 
@@ -7352,7 +7312,6 @@ TEST_F( iolink_dev_test, analog_valve_iolink_get_error_description_and_state )
     // Повторно используем универсальную проверку ошибок IO-Link.
     // Ожидаемое состояние при OK — in_info.status, по умолчанию 0.
     test_dev_err( VC1, VC1, 0 );
-    free_channel_cells( VC1 );
     }
 
 TEST_F( iolink_dev_test, analog_valve_iolink_get_state_respects_P_FB )
@@ -7388,7 +7347,6 @@ TEST_F( iolink_dev_test, analog_valve_iolink_get_state_respects_P_FB )
     EXPECT_EQ( VC1.get_state(), 0 );
 
     G_PAC_INFO()->emulation_on();
-    free_channel_cells( VC1 );
     }
 
 
@@ -7746,7 +7704,6 @@ class DO1_test : public ::testing::Test
 
         void TearDown() override
             {
-            free_channel_cells( dev );
             io_manager::replace_instance( prev_mngr );
             G_PAC_INFO()->emulation_on();
             };

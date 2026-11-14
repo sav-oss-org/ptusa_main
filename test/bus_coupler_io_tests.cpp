@@ -9,70 +9,6 @@ using namespace ::testing;
 
 const int STD_OUT_FILENO = 1;
 
-/// Frees the channel value cells allocated by io_device::init_and_alloc().
-/// ~io_device() frees only the channel pointer arrays, so the per-channel
-/// cells that tests allocated must be freed explicitly. The freed slots
-/// are nulled, so ~io_device() and repeated calls stay safe.
-static void free_channel_cells( io_device& io_dev )
-    {
-    io_device::IO_channels& do_ch = io_dev.DO_channels;
-    for ( u_int i{ 0 }; i < do_ch.count; ++i )
-        {
-        if ( nullptr != do_ch.char_read_values )
-            {
-            delete do_ch.char_read_values[ i ];
-            do_ch.char_read_values[ i ] = nullptr;
-            }
-        if ( nullptr != do_ch.char_write_values )
-            {
-            delete do_ch.char_write_values[ i ];
-            do_ch.char_write_values[ i ] = nullptr;
-            }
-        }
-    io_device::IO_channels& di_ch = io_dev.DI_channels;
-    for ( u_int i{ 0 }; i < di_ch.count; ++i )
-        {
-        if ( nullptr != di_ch.char_read_values )
-            {
-            delete di_ch.char_read_values[ i ];
-            di_ch.char_read_values[ i ] = nullptr;
-            }
-        }
-    io_device::IO_channels& ao_ch = io_dev.AO_channels;
-    for ( u_int i{ 0 }; i < ao_ch.count; ++i )
-        {
-        if ( nullptr != ao_ch.int_read_values )
-            {
-            delete ao_ch.int_read_values[ i ];
-            ao_ch.int_read_values[ i ] = nullptr;
-            }
-        if ( nullptr != ao_ch.int_module_read_values )
-            {
-            delete ao_ch.int_module_read_values[ i ];
-            ao_ch.int_module_read_values[ i ] = nullptr;
-            }
-        if ( nullptr != ao_ch.int_write_values )
-            {
-            delete ao_ch.int_write_values[ i ];
-            ao_ch.int_write_values[ i ] = nullptr;
-            }
-        }
-    io_device::IO_channels& ai_ch = io_dev.AI_channels;
-    for ( u_int i{ 0 }; i < ai_ch.count; ++i )
-        {
-        if ( nullptr != ai_ch.int_read_values )
-            {
-            delete ai_ch.int_read_values[ i ];
-            ai_ch.int_read_values[ i ] = nullptr;
-            }
-        if ( nullptr != ai_ch.int_module_read_values )
-            {
-            delete ai_ch.int_module_read_values[ i ];
-            ai_ch.int_module_read_values[ i ] = nullptr;
-            }
-        }
-    }
-
 /*
 	TEST METHODS DEFENITION:
 	void print()
@@ -379,7 +315,6 @@ TEST( io_device, check_output_DO_node_PP_state )
 	EXPECT_EQ( 1, dev.check_output_DO_node_PP_state() );
 
 	G_PAC_INFO()->emulation_on();
-	free_channel_cells( dev );
 	}
 
 TEST( io_device, check_output_AO_node_PP_state )
@@ -422,7 +357,6 @@ TEST( io_device, check_output_AO_node_PP_state )
     EXPECT_EQ( 1, dev.check_output_AO_node_PP_state() );
 
     G_PAC_INFO()->emulation_on();
-    free_channel_cells( dev );
     }
 
 TEST( io_device, get_AO )
@@ -479,7 +413,6 @@ TEST( io_device, get_AO_IOLINK_state )
         io_device::IOLINKSTATE::OK );
 
     io_manager::replace_instance( prev_mngr );
-    free_channel_cells( dev1 );
     }
 
 
