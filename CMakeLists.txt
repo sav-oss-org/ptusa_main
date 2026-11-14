@@ -660,3 +660,95 @@ gtest_discover_tests(main_test
 gtest_discover_tests(main_test
     DISCOVERY_TIMEOUT 30
     TEST_FILTER ${UNLOCKED_FILTER_STR})
+
+# Прогон main_test в одном процессе со случайным порядком тестов
+# (--gtest_shuffle) для отлова зависимостей от порядка выполнения
+# (см. issue #1501 и #1502). gtest печатает в лог сид выбранный
+# случайно, поэтому упавший порядок воспроизводится ключом
+# --gtest_random_seed.
+#
+# Каждый тест штатно исполняется своим отдельным процессом (см.
+# gtest_discover_tests выше), поэтому зависимости по общим файлам и
+# TCP-портам между тестами в CI не проявляются. Данный прогон
+# монопольный (RUN_SERIAL), чтобы не мешать штатным процессам.
+set(MAIN_TEST_SHUFFLE_FILTER
+    "analog_io_device.set_cmd:"
+    "analog_valve_ey.set_string_property:"
+    "cipline_tech_object.save_device:"
+    "counter.set_cmd:"
+    "delay_off_action.evaluate:"
+    "device_communicator.write_devices_states_service:"
+    "device_manager.clear_io_devices:"
+    "device_manager.get_device:"
+    "device_manager.save_device:"
+    "errors_manager.evaluate:"
+    "iolink_dev_test.converter_iolink_ao_get_state:"
+    "iolink_dev_test.temperature_e_iolink_tm311_get_error_description:"
+    "iolink_dev_test.temperature_e_iolink_tm311_get_state:"
+    "i_simple_error.modbus_client:"
+    "LuaManagerTest.*:"
+    "main_cycle.main_cycle:"
+    "OPCUA_server.evaluate:"
+    "PAC_info.is_emulator:"
+    # Снять все три строки после проверки с фиксом из issue #1502.
+    "PAC_info.OPCUA_server_start_fail:"
+    "PAC_info.set_cmd:"
+    "PAC_info.save_device:"
+    "PAC_info_io_test.combined_errors_both:"
+    # Снять после проверки с фиксом из issue #1501.
+    "params_manager.was_successful_init:"
+    "ParamsRecipeAdapterTest.set_cmd:"
+    "ParamsRecipeManagerTest.evaluate:"
+    "ParamsRecipeManagerTest.save_device:"
+    "PID.direct_set_value:"
+    "PID.save_device:"
+    "pressure_e.pressure_e:"
+    "project_manager.lua_load_configuration:"
+    "siren_lights_manager.siren_lights_manager:"
+    "simple_error.save_as_Lua_str:"
+    "threshold_regulator.*:"
+    "toLuapp.tolua_PAC_dev_get_delta_millisec00:"
+    "valve_DO1_DI1_off.*:"
+    "valve_iolink_mix_proof.valve_iolink_mix_proof:"
+    "valve_iolink_shut_off_sorio.save_device:"
+    "valve_iolink_shut_off_thinktop.valve_iolink_shut_off_thinktop:"
+    "watchdog_bit.*:"
+    "watchdog_counter.*:"
+    "wages_eth.direct_set_tcp_buff:"
+    "wages_pxc_axl.direct_set_value:"
+    "wages_RS232.get_value_from_wages:"
+    "wash_action.finalize:")
+
+# Список известных грязных тестов: сами они в перемешивании не
+# участвуют и другим участвовать не дают. По мере исправления
+# зависимостей от порядка список должен сокращаться, записи
+# исправленного удаляются. Строки, помеченные issue, можно снять
+# после слияния соответствующих исправлений.
+string(REPLACE ";" "" MAIN_TEST_SHUFFLE_FILTER_STR
+    "${MAIN_TEST_SHUFFLE_FILTER}")
+
+# Отдельная пустая рабочая директория: штатные тесты оставляют в
+# build/ свои файлы (SRAM, профи, eeprom), а их наличие меняет
+# поведение тестов, поэтому прогон не должен зависеть от этого
+# осадка. При повторной конфигурации CMake эту директорию не
+# вычищает, поэтому перед каждым запуском ctest ее чистит
+# служебный тест фикстуры.
+add_test(NAME main_test.shuffle_order.setup
+    COMMAND ${CMAKE_COMMAND}
+        -Ddir=${CMAKE_BINARY_DIR}/shuffle_order_run
+        -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/CleanTestRunDir.cmake)
+
+set_tests_properties(main_test.shuffle_order.setup
+    PROPERTIES FIXTURES_SETUP shuffle_run_dir)
+
+add_test(NAME main_test.shuffle_order
+    COMMAND $<TARGET_FILE:main_test>
+        --gtest_shuffle
+        --gtest_brief=1
+        --gtest_filter=-${MAIN_TEST_SHUFFLE_FILTER_STR})
+
+set_tests_properties(main_test.shuffle_order
+    PROPERTIES
+        WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/shuffle_order_run
+        RUN_SERIAL TRUE
+        FIXTURES_REQUIRED shuffle_run_dir)
