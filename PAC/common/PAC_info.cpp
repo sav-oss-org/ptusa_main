@@ -5,6 +5,8 @@
 #include "PAC_info.h"
 #include "PAC_err.h"
 
+#include "tech_def.h"
+
 #include "lua_manager.h"
 #include "bus_coupler_io.h"
 #include "device/manager.h"
@@ -238,6 +240,35 @@ int PAC_info::set_cmd( const char* prop, u_int idx, double val )
     {
     if ( strcmp( prop, "CMD" ) == 0 )
         {
+        //Команда перезагрузки объекта в виде числа CMD = BASE + номер объекта.
+        const int cmd_val = static_cast< int >( val );
+        if ( cmd_val >= static_cast< int >( COMMANDS::RELOAD_TECH_OBJECT_BASE ) &&
+            cmd_val < static_cast< int >( COMMANDS::RELOAD_TECH_OBJECT_BASE ) + 1000 )
+            {
+            const u_int obj_n = static_cast< u_int >(
+                cmd_val - static_cast< int >( COMMANDS::RELOAD_TECH_OBJECT_BASE ) );
+            G_LOG->notice( "Reload tech object [%u] (CMD=%d).", obj_n, cmd_val );
+            const int res = G_TECH_OBJECT_MNGR()->reload_object( obj_n );
+            auto msg = "Reload object - Ok.";
+            if ( res == -1 )
+                {
+                msg = "Reload object error - object not found.";
+                }
+            else if ( res == -2 )
+                {
+                msg = "Reload object error - object is not idle.";
+                }
+            else if ( res == -3 )
+                {
+                msg = "Reload object error - Lua reload unavailable.";
+                }
+            cmd_answer[ 0 ] = 0;
+            auto r = fmt::format_to_n( cmd_answer,
+                sizeof( cmd_answer ) - 1, "{}", msg );
+            *r.out = '\0';
+            return res;
+            }
+
         switch ( static_cast<COMMANDS>( static_cast<int>( val ) ) )
             {
             case COMMANDS::CLEAR_RESULT_CMD:
