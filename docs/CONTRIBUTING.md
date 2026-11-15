@@ -16,6 +16,49 @@ Please note we have a code of conduct, please follow it in all your interactions
 4. You may merge the Pull Request in once you have the sign-off of two other developers, or if you 
    do not have permission to do that, you may request the second reviewer to merge it for you.
 
+## Pull Request Scope and Titles
+
+- Keep each pull request focused on one concrete change.
+- Put unrelated improvements into separate pull requests.
+- Use concise pull request titles.
+- Use Markdown backticks to highlight technical words when useful, for
+  example:
+  ``Removes `DNS` reverse lookup from `TCP` logging``.
+- Explain why the change is needed, what changed, expected risk and validation
+  in the pull request description.
+
+## AI-Assisted Commit Attribution
+
+- Commits whose substantive content was produced with AI assistance must
+  carry provenance trailers in the final paragraph of the commit message,
+  with no blank line between them:
+
+  ```
+  Co-authored-by: <agent-name> <agent-noreply-email>
+  AI-assisted: <agent-name> (model: <model-name>, <execution-mode>)
+  ```
+
+- Take `<agent-name>` and `<agent-noreply-email>` from the assistant
+  that produced the change; never credit an unrelated agent.
+- Use the model name reported by the agent at commit time verbatim; do
+  not invent or normalize it.
+- Document the execution mode: `local` for local models, the hosted
+  provider otherwise.
+- For the Zed agent running a local model the trailers are:
+
+  ```
+  Co-authored-by: Zed AI Agent <253101093+zed-agent@users.noreply.github.com>
+  AI-assisted: Zed agent (model: <model-name>, local)
+  ```
+
+- Never line-wrap or reflow trailer lines, even when they exceed the
+  usual 72-character body limit.
+- Human-only commits need no trailers.
+- Start the body of AI-created issues and pull requests with
+  `🤖 Generated with AI assistance`.
+- See `AGENTS.md` for the full rule and
+  `.agents/skills/ai-commit-attribution/SKILL.md` for the agent skill.
+
 ## Code of Conduct
 
 ### Our Pledge

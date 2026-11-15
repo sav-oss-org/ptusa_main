@@ -1,4 +1,3 @@
-#include <netdb.h>
 #include <time.h>
 #include <sys/ioctl.h>
 #include <string.h>
@@ -390,23 +389,11 @@ int tcp_communicator_linux::evaluate()
                         DESCR = "server";
                         }
 
-                    // Определение имени клиента.
-                    if (hostent* client = gethostbyaddr(&ssin.sin_addr, 4, AF_INET); client)
-                        {
-                        sprintf( G_LOG->msg,
-                           "Network communication : accepted %s connection : s%d->\"%s\":\"%s\".",
-                           DESCR, slave_socket, client->h_name, inet_ntoa(ssin.sin_addr) );
-                        G_LOG->write_log( i_log::P_INFO );
-                        }
-                    else
-                        {
-                        const char* err_str = hstrerror( h_errno );
-                        sprintf( G_LOG->msg,
-                           "Network communication : accepted %s connection : s%d->\"%s\":\"%s\".",
-                           DESCR, slave_socket, err_str, inet_ntoa(ssin.sin_addr));
-                        G_LOG->write_log( i_log::P_INFO );
-                        }
-
+                    // Числовой IP не требует блокирующего DNS-запроса.
+                    G_LOG->info(
+                        "Network communication : accepted %s connection : "
+                        "s%d->\"%s\".",
+                        DESCR, slave_socket, inet_ntoa( ssin.sin_addr ) );
 
                     FD_SET( slave_socket, &rfds );
                     socket_state slave_socket_state;

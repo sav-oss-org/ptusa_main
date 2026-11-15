@@ -3,6 +3,7 @@
 #include "OPCUAServer.h"
 #include "lua_manager.h"
 #include <cstdio>
+#include <cstring>
 
 // Мок для G_OPCUA_SERVER.
 class MockOPCUAServer : public OPCUA_server
@@ -54,8 +55,48 @@ TEST( PAC_info, OPCUA_server_start_fail )
     auto ret = G_PAC_INFO()->set_cmd( "P_IS_OPC_UA_SERVER_ACTIVE", 0, 1 );
     EXPECT_EQ( ret, 1 );
 
+    // Тест не должен оставлять в общем объекте грязный результат команды
+    // (текст ошибки запуска сервера), иначе он «протечёт» в соседние тесты.
+    EXPECT_EQ( 0, G_PAC_INFO()->set_cmd( "CMD", 0,
+        static_cast<double>( PAC_info::COMMANDS::CLEAR_RESULT_CMD ) ) );
+
     subhook_remove( get_OPC_hook );
     subhook_free( get_OPC_hook );
+    }
+
+TEST( PAC_info, clear_result_cmd )
+    {
+    MockOPCUAServer mockServer;
+
+    auto get_OPC_hook = subhook_new(
+        reinterpret_cast<void*>( &OPCUA_server::get_instance ),
+        reinterpret_cast<void*>( &MockOPCUAServer::get_mock_instance ),
+        SUBHOOK_64BIT_OFFSET );
+    subhook_install( get_OPC_hook );
+
+    // Подготовка: сервер вернёт ошибку, и ответ команды станет грязным.
+    EXPECT_CALL( mockServer, init_all_and_start() )
+        .WillOnce( ::testing::Return( 0xBADF00D ) );
+    EXPECT_CALL( mockServer, shutdown() );
+
+    G_PAC_INFO()->par[ PAC_info::P_IS_OPC_UA_SERVER_ACTIVE ] = 0;
+    EXPECT_EQ( 1, G_PAC_INFO()->set_cmd( "P_IS_OPC_UA_SERVER_ACTIVE", 0, 1 ) );
+
+    subhook_remove( get_OPC_hook );
+    subhook_free( get_OPC_hook );
+
+    const auto MAX_SIZE = 1000;
+    char buff[ MAX_SIZE ] = { 0 };
+    G_PAC_INFO()->save_device( buff );
+    EXPECT_NE( nullptr, std::strstr( buff, "\tCMD_ANSWER=\"OPC UA" ) );
+
+    // Команда очистки результата должна убирать и текст ответа команды.
+    EXPECT_EQ( 0, G_PAC_INFO()->set_cmd( "CMD", 0,
+        static_cast<double>( PAC_info::COMMANDS::CLEAR_RESULT_CMD ) ) );
+
+    buff[ 0 ] = 0;
+    G_PAC_INFO()->save_device( buff );
+    EXPECT_NE( nullptr, std::strstr( buff, "\tCMD_ANSWER=\"\",\n" ) );
     }
 
 TEST( PAC_info, reload_restrictions )

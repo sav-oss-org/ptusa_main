@@ -245,6 +245,7 @@ cipline_tech_object::cipline_tech_object(const char* name, u_int number, u_int t
     dev_upr_intermediate_rinse = nullptr;
     dev_upr_postrinse = nullptr;
     dev_upr_pump_stopped = nullptr;
+    dev_upr_pump_running = nullptr;
     dev_ao_flow_task = nullptr;
     dev_ao_temp_task = nullptr;
     dev_upr_wash_aborted = nullptr;
@@ -746,6 +747,19 @@ int cipline_tech_object::evaluate()
         else
             {
             dev_upr_cip_in_progress->off();
+            }
+        }
+
+    //Сигнал "подающий насос включен"
+    if ( dev_upr_pump_running )
+        {
+        if ( NP->get_state() == ON )
+            {
+            dev_upr_pump_running->on();
+            }
+        else
+            {
+            dev_upr_pump_running->off();
             }
         }
 
@@ -1630,6 +1644,10 @@ void cipline_tech_object::_StopDev( )
     if (dev_upr_postrinse)
         {
         dev_upr_postrinse->off();
+        }
+    if ( dev_upr_pump_running )
+        {
+        dev_upr_pump_running->off();
         }
     if (dev_ao_flow_task)
         {
@@ -3111,6 +3129,10 @@ void cipline_tech_object::_ResetLinesDevicesBeforeReset( )
         {
         dev_upr_pump_stopped->off();
         }
+    if ( dev_upr_pump_running )
+        {
+        dev_upr_pump_running->off();
+        }
     if (dev_upr_wash_aborted)
         {
         dev_upr_wash_aborted->off();
@@ -3154,6 +3176,7 @@ void cipline_tech_object::_ResetLinesDevicesBeforeReset( )
     dev_upr_intermediate_rinse = nullptr;
     dev_upr_postrinse = nullptr;
     dev_upr_pump_stopped = nullptr;
+    dev_upr_pump_running = nullptr;
     dev_ao_flow_task = nullptr;
     dev_ao_temp_task = nullptr;
     dev_upr_wash_aborted = nullptr;
@@ -4846,7 +4869,6 @@ int cipline_tech_object::_InitCirc( int what, int step_to_init, int not_first_ca
         {
         case WATER:
             t=rt_par_float[P_T_WP];
-            tm = static_cast<uint32_t>( rt_par_float[ PTM_OP ] * 1000 );
             break;
         case SANITIZER:
             t=rt_par_float[P_T_SANITIZER];
@@ -5833,6 +5855,8 @@ int cipline_tech_object::init_object_devices()
     if (check_DO(dev_upr_wash_aborted, P_SIGNAL_WASH_ABORTED)) return -1;
     //Сигнал остановки подающего насоса
     if (check_DO(dev_upr_pump_stopped, P_SIGNAL_PUMP_STOPPED)) return -1;
+    //Сигнал "подающий насос включен"
+    if ( check_DO( dev_upr_pump_running, P_SIGNAL_PUMP_RUNNING ) ) return -1;
     //Задание подающему насосу
     if (check_AO(dev_ao_flow_task, P_SIGNAL_FLOW_TASK)) return -1;
     //Задание подогрева

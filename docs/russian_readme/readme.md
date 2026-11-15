@@ -103,7 +103,7 @@ flowchart TD
 
 Вы можете клонировать репозиторий при помощи следующей команды:
 `git clone --recurse-submodules
-https://github.com/savushkin-r-d/ptusa_main.git`
+https://github.com/sav-oss-org/ptusa_main.git`
 
 Или, если вы клонировали проект без инициализированных и обновленных
 подмодулей, попробуйте следующее:
