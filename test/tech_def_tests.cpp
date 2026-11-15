@@ -1,5 +1,6 @@
 #include "tech_def_tests.h"
 #include "lua_manager.h"
+#include "g_errors.h"
 
 using namespace ::testing;
 
@@ -866,5 +867,85 @@ values=
 )";
     EXPECT_STREQ( REF_STR1, buff );
 
+    G_LUA_MANAGER->free_Lua();
+    }
+
+TEST( tech_object_manager, reload_object )
+    {
+    lua_State* L = lua_open();
+    ASSERT_EQ( 1, tolua_PAC_dev_open( L ) );
+    G_LUA_MANAGER->set_Lua( L );
+
+    //Объект строится в Lua, как в реальном проекте.
+    ASSERT_EQ( 0,
+        luaL_dostring( L,
+        "OLD = tech_object( \"OLD\", 1, 1, \"OLD1\", 1, 1, 10, 10, 10, 10 )" ) );
+    ASSERT_EQ( 0,
+        luaL_dostring( L,
+        "OLD:get_modes_manager():add_operation( \"Test operation\" )" ) );
+
+    lua_getfield( L, LUA_GLOBALSINDEX, "OLD" );
+    auto old_object = (tech_object*)tolua_tousertype( L, -1, 0 );
+    ASSERT_NE( nullptr, old_object );
+    lua_pop( L, 1 );
+
+    G_ERRORS_MANAGER->clear();
+    G_TECH_OBJECT_MNGR()->add_tech_object( old_object );
+
+    //Новый объект занимает место прежнего, количество не меняется.
+    const auto count_before = G_TECH_OBJECT_MNGR()->get_count();
+    const u_int serial = old_object->get_serial_idx();
+    ASSERT_NE( 0u, serial );
+
+    //Команда для несуществующего объекта и нулевой номер.
+    EXPECT_EQ( -1, G_TECH_OBJECT_MNGR()->reload_object( 777 ) );
+    EXPECT_EQ( -1, G_TECH_OBJECT_MNGR()->reload_object( 0 ) );
+
+    //Lua-функция перезагрузки ещё не определена.
+    EXPECT_EQ( -3, G_TECH_OBJECT_MNGR()->reload_object( serial ) );
+
+    //Объект не в простое - перезагрузка невозможна.
+    ASSERT_EQ( 0, old_object->set_mode( 1, operation::RUN ) );
+    EXPECT_EQ( -2, G_TECH_OBJECT_MNGR()->reload_object( serial ) );
+    //Выключение без Lua-реализации возвращает -1, но состояние
+    //при этом очищается.
+    old_object->set_mode( 1, operation::IDLE );
+    ASSERT_TRUE( old_object->is_idle() );
+
+    //Lua-функция возвращает nil - новый объект не построен.
+    ASSERT_EQ( 0,
+        luaL_dostring( L,
+        "function reload_tech_object( n )\n"
+        "    return nil\n"
+        "end" ) );
+    EXPECT_EQ( -3, G_TECH_OBJECT_MNGR()->reload_object( serial ) );
+
+    const u_int_2 id_before = G_ERRORS_MANAGER->get_errors_id();
+
+    //Lua перестраивает обёртку и возвращает новый системный объект.
+    ASSERT_EQ( 0,
+        luaL_dostring( L,
+        "function reload_tech_object( n )\n"
+        "    OLD = tech_object( \"NEW\", 1, 1, \"NEW1\", 1, 1, 10, 10, 10, 10 )\n"
+        "    OLD:get_modes_manager():add_operation( \"Test operation\" )\n"
+        "    return OLD\n"
+        "end" ) );
+    EXPECT_EQ( 0, G_TECH_OBJECT_MNGR()->reload_object( serial ) );
+
+    //Менеджер содержит новый объект под тем же последовательным номером.
+    auto new_object = G_TECH_OBJECT_MNGR()->get_tech_objects( count_before - 1 );
+    ASSERT_EQ( count_before, G_TECH_OBJECT_MNGR()->get_count() );
+    ASSERT_NE( old_object, new_object );
+    EXPECT_EQ( serial, new_object->get_serial_idx() );
+
+    //HMI должен получить новое состояние ошибок даже при том же их
+    //количестве.
+    EXPECT_NE( id_before, G_ERRORS_MANAGER->get_errors_id() );
+
+    //Повторная перезагрузка находит объект по тому же номеру.
+    EXPECT_EQ( 0, G_TECH_OBJECT_MNGR()->reload_object( serial ) );
+
+    //Убираем за собой обёртки ошибок, они указывают на объекты Lua.
+    G_ERRORS_MANAGER->clear();
     G_LUA_MANAGER->free_Lua();
     }
