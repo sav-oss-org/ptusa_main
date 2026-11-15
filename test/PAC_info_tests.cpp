@@ -2,6 +2,7 @@
 #include "bus_coupler_io.h"
 #include "OPCUAServer.h"
 #include "lua_manager.h"
+#include "tech_def.h"
 #include <cstdio>
 #include <cstring>
 
@@ -463,4 +464,48 @@ TEST_F( PAC_info_io_test, combined_errors_both )
     EXPECT_EQ( 1, G_PAC_INFO()->get_nodes_commun_error() );
     EXPECT_EQ( 1, G_PAC_INFO()->get_watchdog_commun_error() );
     EXPECT_EQ( 1, G_PAC_INFO()->get_any_commun_error() );
+    }
+
+TEST( PAC_info, set_cmd_reload_tech_object )
+    {
+    auto L = lua_open();
+    ASSERT_EQ( 1, tolua_PAC_dev_open( L ) );
+    G_LUA_MANAGER->set_Lua( L );
+
+    const double base = static_cast< double >(
+        PAC_info::COMMANDS::RELOAD_TECH_OBJECT_BASE );
+
+    //Команда, равная базе, игнорируется: нумерация объектов с 1.
+    EXPECT_EQ( 0, G_PAC_INFO()->set_cmd( "CMD", 0, base ) );
+
+    //Объект с таким номером отсутствует.
+    EXPECT_EQ( -1, G_PAC_INFO()->set_cmd( "CMD", 0, base + 777 ) );
+
+    //Создадим объект так же, как это делает Lua-скрипт проекта.
+    ASSERT_EQ( 0,
+        luaL_dostring( L,
+        "OLD = tech_object( 'OLD', 1, 1, 'OLD1', 1, 1, 10, 10, 10, 10 )" ) );
+    ASSERT_EQ( 0,
+        luaL_dostring( L,
+        "OLD:get_modes_manager():add_operation( 'Test operation' )" ) );
+
+    lua_getfield( L, LUA_GLOBALSINDEX, "OLD" );
+    auto obj = (tech_object*)tolua_tousertype( L, -1, 0 );
+    ASSERT_NE( nullptr, obj );
+    lua_pop( L, 1 );
+
+    G_TECH_OBJECT_MNGR()->add_tech_object( obj );
+    const double cmd = base + obj->get_serial_idx();
+
+    //Объект не в простое - перезагрузка невозможна.
+    ASSERT_EQ( 0, obj->set_mode( 1, operation::RUN ) );
+    EXPECT_EQ( -2, G_PAC_INFO()->set_cmd( "CMD", 0, cmd ) );
+    //Выключение без Lua-реализации возвращает -1, но состояние очищается.
+    obj->set_mode( 1, operation::IDLE );
+    ASSERT_TRUE( obj->is_idle() );
+
+    //Lua-функция перезагрузки недоступна.
+    EXPECT_EQ( -3, G_PAC_INFO()->set_cmd( "CMD", 0, cmd ) );
+
+    G_LUA_MANAGER->free_Lua();
     }

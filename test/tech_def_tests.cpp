@@ -891,6 +891,10 @@ TEST( tech_object_manager, reload_object )
 
     G_ERRORS_MANAGER->clear();
     G_TECH_OBJECT_MNGR()->add_tech_object( old_object );
+    //Объект регистрируется в коммуникаторе дважды, как это делает
+    //Lua-скрипт проекта: перепривязке подлежат все вхождения.
+    G_DEVICE_CMMCTR->add_device( old_object );
+    G_DEVICE_CMMCTR->add_device( old_object );
 
     //Новый объект занимает место прежнего, количество не меняется.
     const auto count_before = G_TECH_OBJECT_MNGR()->get_count();
@@ -945,7 +949,18 @@ TEST( tech_object_manager, reload_object )
     //Повторная перезагрузка находит объект по тому же номеру.
     EXPECT_EQ( 0, G_TECH_OBJECT_MNGR()->reload_object( serial ) );
 
+    //Граничные случаи перепривязки: пустые указатели и уже отсутствующий
+    //в реестре ошибок объект.
+    EXPECT_EQ( -1, G_ERRORS_MANAGER->update_tech_object( nullptr, new_object ) );
+    EXPECT_EQ( -1, G_ERRORS_MANAGER->update_tech_object( old_object, nullptr ) );
+    EXPECT_EQ( -1, G_ERRORS_MANAGER->update_tech_object( old_object, new_object ) );
+
+    //Перепривязка коммуникатора для уже заменённого устройства ничего
+    //не ломает.
+    G_DEVICE_CMMCTR->update_device( old_object, new_object );
+
     //Убираем за собой обёртки ошибок, они указывают на объекты Lua.
     G_ERRORS_MANAGER->clear();
+    G_DEVICE_CMMCTR->clear_devices();
     G_LUA_MANAGER->free_Lua();
     }
