@@ -413,17 +413,30 @@ int errors_manager::update_tech_object( tech_object* old_object,
         return -1;
         }
 
+    bool is_updated = false;
+
     for ( auto* cur_error : s_errors_vector )
         {
         auto* obj_error = dynamic_cast< tech_obj_error* >( cur_error );
         if ( 0 != obj_error && obj_error->tech_dev == old_object )
             {
             obj_error->tech_dev = new_tech_object;
-            return 0;
+            is_updated = true;
             }
         }
 
-    return -1;
+    if ( !is_updated )
+        {
+        return -1;
+        }
+
+    //Содержимое ошибок могло измениться при том же их количестве,
+    //поэтому счётчик состояния увеличивается явно: иначе HMI не увидит
+    //обновления, ведь tech_obj_error::evaluate реагирует только на смену
+    //размера списка ошибок объекта.
+    errors_id++;
+
+    return 0;
     }
 //-----------------------------------------------------------------------------
 void errors_manager::print()

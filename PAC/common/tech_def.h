@@ -339,7 +339,7 @@ class tech_object: public i_tech_object, public i_Lua_save_device,
         int lastLoadedRecipeNmr = 0;
 
     protected:
-        u_int serial_idx;           ///< Последовательный индекс объекта (с 1).
+        u_int serial_idx{ 0 };      ///< Последовательный индекс объекта (с 1).
 
         u_int   number;             ///< Номер объекта.
         u_int   type;               ///< Тип объекта (для ошибок).

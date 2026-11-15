@@ -241,8 +241,10 @@ int PAC_info::set_cmd( const char* prop, u_int idx, double val )
     if ( strcmp( prop, "CMD" ) == 0 )
         {
         //Команда перезагрузки объекта в виде числа CMD = BASE + номер объекта.
+        //Нумерация объектов начинается с 1, поэтому команда, равная базе,
+        //недопустима: объект с нулевым номером не существует.
         const int cmd_val = static_cast< int >( val );
-        if ( cmd_val >= static_cast< int >( COMMANDS::RELOAD_TECH_OBJECT_BASE ) &&
+        if ( cmd_val > static_cast< int >( COMMANDS::RELOAD_TECH_OBJECT_BASE ) &&
             cmd_val < static_cast< int >( COMMANDS::RELOAD_TECH_OBJECT_BASE ) + 1000 )
             {
             const u_int obj_n = static_cast< u_int >(

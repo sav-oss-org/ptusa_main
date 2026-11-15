@@ -1622,6 +1622,14 @@ int tech_object_manager::save_params_as_Lua_str( char* str )
 //-----------------------------------------------------------------------------
 int tech_object_manager::reload_object( u_int serial_number )
     {
+    //Нумерация объектов начинается с 1, поэтому нулевой номер
+    //недопустим сразу, до поиска по вектору.
+    if ( 0 == serial_number )
+        {
+        G_LOG->warning( "Reload object error - invalid object number 0." );
+        return -1;
+        }
+
     //Поиск объекта по глобальному порядковому номеру (ключ [N] в
     //main.objects.lua, он же суффикс имени OBJECTn).
     tech_object* old_object = 0;
@@ -1638,7 +1646,7 @@ int tech_object_manager::reload_object( u_int serial_number )
 
     if ( 0 == old_object )
         {
-        printf( "Reload object error - object [%u] not found.\n",
+        G_LOG->warning( "Reload object error - object [%u] not found.",
             serial_number );
         return -1;
         }
@@ -1646,7 +1654,7 @@ int tech_object_manager::reload_object( u_int serial_number )
     //Перезагрузка возможна только для объекта, находящегося в простое.
     if ( false == old_object->is_idle() )
         {
-        printf( "Reload object error - object [%u] is not idle.\n",
+        G_LOG->warning( "Reload object error - object [%u] is not idle.",
             serial_number );
         return -2;
         }
@@ -1660,8 +1668,8 @@ int tech_object_manager::reload_object( u_int serial_number )
 
     if ( 0 == new_object_ptr )
         {
-        printf( "Reload object error - Lua reload_tech_object [%u] "
-            "unavailable.\n", serial_number );
+        G_LOG->warning( "Reload object error - Lua reload_tech_object [%u] "
+            "unavailable.", serial_number );
         return -3;
         }
 
@@ -1670,16 +1678,17 @@ int tech_object_manager::reload_object( u_int serial_number )
     //Замена объекта в менеджере, коммуникаторе устройств и реестре ошибок.
     tech_objects[ idx ] = new_object;
 
-    //Восстанавливаем последовательный номер нового объекта, иначе повторная
-    //перезагрузка по номеру [N] не найдёт объект.
-    new_object->set_serial_idx( idx + 1 );
+    //Восстанавливаем последовательный номер нового объекта: он должен
+    //совпадать с номером прежнего объекта, иначе повторная перезагрузка
+    //по номеру [N] не найдёт объект, а интерфейс увидит другой номер.
+    new_object->set_serial_idx( old_object->get_serial_idx() );
 
     G_DEVICE_CMMCTR->update_device( old_object, new_object );
     G_ERRORS_MANAGER->update_tech_object( old_object, new_object );
 
     //Старый объект не удаляем здесь: он удаляется сборщиком мусора Lua после
     //обновления обёртки (объекты создаются в Lua и живут в Lua).
-    printf( "Object [%u] reloaded - Ok.\n", serial_number );
+    G_LOG->info( "Object [%u] reloaded - Ok.", serial_number );
 
     return 0;
     }
