@@ -131,6 +131,14 @@ Include all of this in the sub-agent prompt:
   never wrapped.
 - The PR body starts with the AI-assistance marker, states scope, risk,
   and validation, and links the issue.
+- The PR itself must carry an issue type (`Task`, `Bug`, or
+  `Feature`) that mirrors the linked issue's type, set right
+  after opening the PR:
+  `gh api -X PATCH repos/sav-oss-org/ptusa_main/issues/<PR_N>
+  -f type=<TypeName>`. GitHub has no `--type` flag for `gh pr
+  create` and no GraphQL field for a PR issue type, so the
+  REST issues endpoint is the only supported way; confirm the
+  change with a `GET` on the same path (`.type.name`).
 - Once the PR is open, comment the PR URL on the issue
   (`gh issue comment <issue> --repo sav-oss-org/ptusa_main --body
   <pr-url>`): that comment is the claim signal the label protocol
@@ -174,11 +182,16 @@ gh pr list --repo sav-oss-org/ptusa_main --state open \
 gh pr checks N --repo sav-oss-org/ptusa_main
 gh api repos/sav-oss-org/ptusa_main/pulls/N/comments \
   --jq '.[] | "\(.id) \(.path):\(.line) \(.user.login)"'
+gh api -X PATCH repos/sav-oss-org/ptusa_main/issues/N \
+  -f type=Task
+gh api repos/sav-oss-org/ptusa_main/issues/N --jq .type.name
 ```
 
 `N` is the issue number in `gh issue` commands and the PR number in
-`gh pr` commands and `pulls/N` API paths. All state lives in GitHub
-labels, PR threads, and check results; never in local files.
+`gh pr` commands, `issues/N`, and `pulls/N` API paths. The
+`issues/N` pair above sets and reads a PR's own issue type. All
+state lives in GitHub labels, PR threads, and check results;
+never in local files.
 
 CI gotcha: required checks on fork PRs run the base branch's copy
 of the workflow through `pull_request_target`, gated by trusted
