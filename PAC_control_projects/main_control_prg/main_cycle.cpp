@@ -12,12 +12,20 @@
 
 #include "OPCUAServer.h"
 
+#ifdef TRACY_ENABLE
+#include "tracy/Tracy.hpp"
+#endif
+
 
 extern bool G_NO_IO_NODES;
 extern bool G_READ_ONLY_IO_NODES;
 
 int main_cycle()
     {
+#ifdef TRACY_ENABLE
+    // Covers one full control cycle iteration in the Tracy timeline.
+    ZoneScoped;
+#endif
 #ifdef TEST_SPEED
     static uint32_t st_time;
     st_time = get_millisec();
@@ -43,14 +51,28 @@ int main_cycle()
 
     valve::evaluate();
 
+#ifdef TRACY_ENABLE
+    {
+    ZoneScopedN( "tech_objects_evaluate" );
     G_TECH_OBJECT_MNGR()->evaluate();
+    }
+#else
+    G_TECH_OBJECT_MNGR()->evaluate();
+#endif
     sleep_ms( G_PROJECT_MANAGER->sleep_time_ms );
 
     if ( !G_NO_IO_NODES &&
         !G_READ_ONLY_IO_NODES ) G_IO_MANAGER()->write_outputs();
     sleep_ms( G_PROJECT_MANAGER->sleep_time_ms );
 
+#ifdef TRACY_ENABLE
+    {
+    ZoneScopedN( "tcp_communicator_evaluate" );
     G_CMMCTR->evaluate();
+    }
+#else
+    G_CMMCTR->evaluate();
+#endif
 
     params_manager::get_instance()->evaluate();
 
@@ -126,6 +148,10 @@ int main_cycle()
         }
     //-Информация о времени выполнения цикла программы.!->
 #endif // TEST_SPEED
+
+#ifdef TRACY_ENABLE
+    FrameMark;
+#endif
 
     return 0;
     }

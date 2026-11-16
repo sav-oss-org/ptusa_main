@@ -61,3 +61,6 @@
 [submodule "deps/lunarmodules/luasql/luasql"]
 	path = deps/lunarmodules/luasql/luasql
 	url = https://github.com/lunarmodules/luasql.git
+[submodule "deps/tracy"]
+	path = deps/tracy
+	url = https://github.com/wolfpld/tracy.git

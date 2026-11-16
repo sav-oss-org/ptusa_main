@@ -16,6 +16,10 @@
 #include "modbus_serv.h"
 
 #include "log.h"
+#ifdef TRACY_ENABLE
+// TracyLua.hpp expects the Lua headers to be included first.
+#include "tracy/TracyLua.hpp"
+#endif
 //-----------------------------------------------------------------------------
 auto_smart_ptr< lua_manager > lua_manager::instance;
 bool lua_manager::is_print_stack_traceback = true;
@@ -155,6 +159,12 @@ int lua_manager::init( lua_State* lua_state, const char* script_name,
 
         lua_gc( L, LUA_GCSTOP, 0 );
         luaL_openlibs( L );    // Open standard libraries.
+#ifdef TRACY_ENABLE
+        // Line level Lua sampling for profiling builds; costs CPU, off unless
+        // the project is configured with -DPTUSA_TRACY=ON.
+        lua_sethook( L, tracy::LuaHook,
+            LUA_MASKCALL | LUA_MASKLINE | LUA_MASKRET, 0 );
+#endif
         }
     else
         {

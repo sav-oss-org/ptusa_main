@@ -113,6 +113,16 @@ add_subdirectory(deps/lunarmodules/term EXCLUDE_FROM_ALL)
 add_subdirectory(deps/lunarmodules/luassert EXCLUDE_FROM_ALL)
 
 add_subdirectory(deps/lunarmodules/luasql EXCLUDE_FROM_ALL)
+
+# Experimental Tracy profiler integration. Disabled by default; configure with
+# -DPTUSA_TRACY=ON and connect the Tracy GUI to port 8086/tcp by default.
+option(PTUSA_TRACY "Instrument executables with the Tracy profiler client" OFF)
+if(PTUSA_TRACY)
+    set(TRACY_ENABLE ON CACHE BOOL "" FORCE)
+    set(TRACY_ON_DEMAND ON CACHE BOOL "" FORCE)
+    set(TRACY_STATIC ON CACHE BOOL "" FORCE)
+    add_subdirectory(deps/tracy EXCLUDE_FROM_ALL)
+endif()
 include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/ToluaCopyIfDifferent.cmake")
 
 file(GLOB common_src CONFIGURE_DEPENDS
@@ -421,6 +431,14 @@ endif()
 
 target_link_libraries(${PROJECT_NAME} PRIVATE liblua_static toluapp_lib_static zlibstatic fmt::fmt)
 target_link_libraries(libptusa_main toluapp_lib_static zlibstatic fmt::fmt)
+
+if(PTUSA_TRACY)
+    # Instrument only the production executable. Keeping TracyClient out of
+    # the test binaries preserves ctest timing and exit codes; the guarded
+    # instrumentation compiles to nothing there because TRACY_ENABLE is a
+    # PUBLIC definition of the TracyClient target.
+    target_link_libraries(${PROJECT_NAME} PRIVATE TracyClient)
+endif()
 
 target_link_libraries(${PROJECT_NAME} PRIVATE open62541::open62541)
 target_link_libraries(libptusa_main open62541::open62541)
