@@ -4827,12 +4827,12 @@ TEST( camera, set_string_property )
     test_dev.set_string_property( "IP", "127.0.0.1" );
     EXPECT_EQ( "127.0.0.1", test_dev.ip );
 
-    test_dev.set_string_property( "IP", "192.168.1.10:8080" );
+    test_dev.set_string_property( "IP", "192.168.1.10:8080" ); // NOSONAR
     EXPECT_EQ( "192.168.1.10", test_dev.ip );
 
     // Порт вне допустимого диапазона - адрес не принимается,
     // предыдущее значение сохраняется.
-    test_dev.set_string_property( "IP", "192.168.1.10:70000" );
+    test_dev.set_string_property( "IP", "192.168.1.10:70000" ); // NOSONAR
     EXPECT_EQ( "192.168.1.10", test_dev.ip );
     }
 
@@ -5908,7 +5908,7 @@ TEST( wages_eth, parse_ip_address )
 TEST( wages_eth, set_ip_with_port )
     {
     wages_eth w1( "W1" );
-    w1.set_string_property( "IP", "192.168.1.1:8888" );
+    w1.set_string_property( "IP", "192.168.1.1:8888" ); // NOSONAR
     w1.evaluate_io();
     EXPECT_EQ( 0.0f, w1.get_value() );
     }
@@ -5919,7 +5919,7 @@ TEST( wages_eth, set_invalid_ip )
 
     // Некорректный адрес не создает узел, evaluate_io работает
     // и без узла.
-    w1.set_string_property( "IP", "192.168.1.1:0" );
+    w1.set_string_property( "IP", "192.168.1.1:0" ); // NOSONAR
     w1.evaluate_io();
     EXPECT_EQ( 0.0f, w1.get_value() );
     }
