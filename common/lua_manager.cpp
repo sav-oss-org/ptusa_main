@@ -115,6 +115,23 @@ const char *FILES[ FILE_CNT ] =
 //II
 //Экспортируем в Lua классы и функции из C++.
 
+//------------------------------------------------------------------------------
+namespace
+    {
+    // u8string() returns a char8_t-based string in C++20, while the
+    // printf-style log API expects const char*. Keep the UTF-8 bytes.
+    std::string log_path( const std::filesystem::path& path )
+        {
+        const auto utf8 = path.u8string();
+        return std::string( utf8.begin(), utf8.end() );
+        }
+
+    std::string log_path( const char* path )
+        {
+        return log_path( std::filesystem::path( path ).make_preferred() );
+        }
+    }
+
 int lua_manager::init( lua_State* lua_state, const char* script_name,
     const char* dir, const char* sys_dir, const char* extra_dirs )
     {
@@ -123,8 +140,7 @@ int lua_manager::init( lua_State* lua_state, const char* script_name,
         G_LOG->debug( "Init Lua..." );
         }
 
-    G_LOG->notice( "script_name = \"%s\"",
-        std::filesystem::path( script_name ).make_preferred().u8string().c_str() );
+    G_LOG->notice( "script_name = \"%s\"", log_path( script_name ).c_str() );
 
     std::string dir_str( dir );
     std::string sys_dir_str( sys_dir );
@@ -132,13 +148,12 @@ int lua_manager::init( lua_State* lua_state, const char* script_name,
 
 
     G_LOG->notice( "current working directory: \"%s\"",
-        std::filesystem::current_path().u8string().c_str() );
+        log_path( std::filesystem::current_path() ).c_str() );
     if ( !dir_str.empty() || !sys_dir_str.empty() || !extra_dirs_str.empty() )
         {
         G_LOG->notice( "path = \"%s\", sys_path = \"%s\", extra_paths = \"%s\"",
-            std::filesystem::path( dir ).make_preferred().u8string().c_str(),
-            std::filesystem::path( sys_dir ).make_preferred().u8string().c_str(),
-            std::filesystem::path( extra_dirs ).make_preferred().u8string().c_str() );
+            log_path( dir ).c_str(), log_path( sys_dir ).c_str(),
+            log_path( extra_dirs ).c_str() );
         }
 
     if ( 0 == lua_state )
