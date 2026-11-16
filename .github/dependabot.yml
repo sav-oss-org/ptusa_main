@@ -18,3 +18,10 @@ updates:
     directory: "/"
     schedule:
       interval: "monthly"
+  - package-ecosystem: "pip"
+    # Pinned commit-check wheel for the commit-check workflow;
+    # Dependabot rewrites the sha256 digest when it bumps the
+    # version, so the two cannot drift apart.
+    directory: "/.github"
+    schedule:
+      interval: "weekly"

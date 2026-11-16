@@ -1,0 +1,8 @@
+# Pinned copy of the commit-check tool used by
+# .github/workflows/commit-check.yml.  The sha256 digest comes from
+# https://pypi.org/project/commit-check/#files and must be bumped
+# together with the version, never on its own; Dependabot keeps this
+# file current.  The wheel has no runtime dependencies, so this one
+# hash covers the whole install.
+commit-check==2.20.5 \
+    --hash=sha256:24f36edae319ea1c080729e78e0aff2e2f654ad106d31eb86f856646d4482526
