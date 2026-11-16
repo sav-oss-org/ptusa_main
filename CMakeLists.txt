@@ -694,13 +694,13 @@ set(MAIN_TEST_SHUFFLE_FILTER
     "main_cycle.main_cycle:"
     "OPCUA_server.evaluate:"
     "PAC_info.is_emulator:"
-    # Снять все три строки после проверки с фиксом из issue #1502.
+    # Снять все три строки после слияния #1546: фикс #1504 сам по
+    # себе не помог - осталась зависимость от прочего глобального
+    # состояния, см. issue #1542.
     "PAC_info.OPCUA_server_start_fail:"
     "PAC_info.set_cmd:"
     "PAC_info.save_device:"
     "PAC_info_io_test.combined_errors_both:"
-    # Снять после проверки с фиксом из issue #1501.
-    "params_manager.was_successful_init:"
     "ParamsRecipeAdapterTest.set_cmd:"
     "ParamsRecipeManagerTest.evaluate:"
     "ParamsRecipeManagerTest.save_device:"
