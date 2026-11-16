@@ -20,11 +20,17 @@ them only where they are missing:
 - `agent:ok` — triaged by a maintainer as agent-suitable.
 - `agent:claimed` — an active pipeline process; its PR is linked in a
   comment on the issue.
+- `agent:done` — set on the PR once its process is handed off: CI is
+  green, review threads are answered, and human review is pending.
+  The pipeline does not touch such a PR until a human reacts (new
+  review threads, a request, or regressed checks).
 - `agent:needs-input` — escalated; a human must act before continuing.
 
 A process holds `agent:claimed` only while it needs agent work: the
-pipeline removes the label when the PR goes to human review or the
-issue escalates to `agent:needs-input`.
+pipeline removes the label when the PR is handed off to human review
+(then the PR carries `agent:done`) or the issue escalates to
+`agent:needs-input`. `agent:done` PRs are idle; they do not occupy a
+concurrency slot.
 
 Concurrency limit: at most **5** issues with `agent:claimed`. Never
 claim an issue that is assigned to a human, already linked to an open
@@ -48,10 +54,18 @@ Labels").
    - PR has unaddressed review threads: reply in each thread and push
      fixes. Max 3 rounds per thread, then `agent:needs-input` and a
      mention of the reviewer. Never resolve a thread opened by a human.
-   - PR is green with open threads answered: comment "ready for human
-     review" once, remove `agent:claimed` to free the slot, and stop
-     touching it; merging is humans only.
-3. GitHub has no atomic label compare-and-set, so serialize claiming
+   - PR is green with open threads answered: add `agent:done` to the
+     PR once, remove `agent:claimed` to free the slot, and stop
+     touching it; merging is humans only. Post a "ready for human
+     review" comment only when it carries extra context worth
+     explaining.
+3. Advance handed-off processes: for every open PR labeled
+   `agent:done`, if a human opened new review threads or required
+   checks turned red, remove `agent:done`, re-apply `agent:claimed`
+   to the linked issue (no eligibility re-checks; the concurrency
+   slot rules apply), and let the next tick advance it like any
+   claimed process.
+4. GitHub has no atomic label compare-and-set, so serialize claiming
    under an exclusive lock for this step: `mkdir ../ptusa-wt/tick.lock`
    fails while another tick holds it (transient coordination, not
    state); remove the lock on exit. Ticks run on one machine, so a
@@ -62,7 +76,7 @@ Labels").
    open PR body mentioning `#<issue>` (`gh pr list --state open`).
    Claim only then: label it `agent:claimed`, and spawn one sub-agent
    with the full contract below.
-4. Print a summary table (issue, PR, state, next action) and exit.
+5. Print a summary table (issue, PR, state, next action) and exit.
 
 ## Working copies
 
@@ -153,6 +167,10 @@ Include all of this in the sub-agent prompt:
 gh issue list --repo sav-oss-org/ptusa_main --label agent:ok \
   --json number,title --jq '.[] | "#\(.number) \(.title)"'
 gh issue edit N --repo sav-oss-org/ptusa_main --add-label agent:claimed
+gh pr edit N --repo sav-oss-org/ptusa_main --add-label agent:done
+gh pr edit N --repo sav-oss-org/ptusa_main --remove-label agent:done
+gh pr list --repo sav-oss-org/ptusa_main --state open \
+  --label agent:done --json number,title
 gh pr checks N --repo sav-oss-org/ptusa_main
 gh api repos/sav-oss-org/ptusa_main/pulls/N/comments \
   --jq '.[] | "\(.id) \(.path):\(.line) \(.user.login)"'
