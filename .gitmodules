@@ -24,7 +24,7 @@
 	url = https://github.com/sav-oss-org/subhook
 [submodule "lua"]
 	path = deps/lua/lua
-	url = http://github.com/LuaDist/lua.git
+	url = https://github.com/lua/lua.git
 [submodule "toluapp"]
 	path = deps/toluapp/toluapp
 	url = https://github.com/sav-oss-org/toluapp.git

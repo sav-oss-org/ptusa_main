@@ -11,7 +11,7 @@ using namespace ::testing;
 
 TEST( device_communicator, write_devices_states_service )
     {
-    auto L = lua_open();
+    auto L = luaL_newstate();
     G_LUA_MANAGER->set_Lua( L );
 
     const int IN_BUFF_SIZE = 100;

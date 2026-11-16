@@ -23,7 +23,7 @@ static void DoSetup( const benchmark::State& state )
         setlocale( LC_ALL, "ru_RU.UTF-8" );
         setlocale( LC_NUMERIC, "C" );
 #endif
-        L = lua_open();             // Create Lua context.
+        L = luaL_newstate();             // Create Lua context.
         lua_gc( L, LUA_GCSTOP, 0 );
         luaL_openlibs( L );         // Open standard libraries.
 

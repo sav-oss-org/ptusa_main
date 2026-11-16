@@ -144,7 +144,7 @@ int switch_off_verbose( lua_State* L )
     }
 
 //Регистрация реализованных в dll функций, что бы те стали доступны из lua.
-struct luaL_reg ls_lib[] =
+static const luaL_Reg ls_lib[] =
     {
     { "init", lua_init },
     { "eval", eval },
@@ -161,6 +161,8 @@ __declspec( dllexport )
 #endif
     luaopen_ptusa_main( lua_State* L )
     {
-    luaL_openlib( L, "ptusa_main", ls_lib, 0 );
+    luaL_newlib( L, ls_lib );
+    lua_pushvalue( L, -1 );
+    lua_setglobal( L, "ptusa_main" );
     return 1;
     }

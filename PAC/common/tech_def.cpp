@@ -433,7 +433,7 @@ int tech_object::lua_check_function( const char* function_name,
     const char* comment, u_int mode, bool show_error )
     {
     //Проверка на наличии функции function_name
-    lua_getfield( lua_manager::get_instance()->get_Lua(), LUA_GLOBALSINDEX,
+    lua_getglobal( lua_manager::get_instance()->get_Lua(),
         name_Lua );
     if ( lua_isnoneornil( lua_manager::get_instance()->get_Lua(), -1 ) )
         {
@@ -492,7 +492,7 @@ int tech_object::lua_check_on_mode( u_int mode, bool show_error )
         //Проверка на наличие уже включенной операции, запрещающей текущую.
         //1. Операции текущего объекта.
         lua_State *L = lua_manager::get_instance()->get_Lua();
-        lua_getfield( L, LUA_GLOBALSINDEX, "restrictions" );
+        lua_getglobal( L, "restrictions" );
         if ( lua_istable( L, -1 ) )
             {
             lua_rawgeti( L, -1, serial_idx );           //Номер объекта.
@@ -627,7 +627,7 @@ void tech_object::check_availability( u_int operation_n )
     //Запрет на включение других операций, запрещающаемых текущей.
     //1. Операции текущего объекта.
     lua_State *L = lua_manager::get_instance()->get_Lua();
-    lua_getfield( L, LUA_GLOBALSINDEX, "restrictions" );
+    lua_getglobal( L, "restrictions" );
     if ( lua_istable( L, -1 ) )
         {
         lua_rawgeti( L, -1, serial_idx );           //Номер объекта.
@@ -679,7 +679,7 @@ int tech_object::lua_final_mode( u_int mode )
     //текущей, и запрет на последующие операции.
     //1. Операции текущего объекта.
     lua_State *L = lua_manager::get_instance()->get_Lua();
-    lua_getfield( L, LUA_GLOBALSINDEX, "restrictions" );
+    lua_getglobal( L, "restrictions" );
     if ( lua_istable( L, -1 ) )
         {
         lua_rawgeti( L, -1, serial_idx );           //Номер объекта.
@@ -1366,7 +1366,7 @@ bool tech_object::is_any_important_mode()
     if ( has_Lua_impl == 0 )
         {
         //Проверка на наличии Lua-функции is_any_important_mode().
-        lua_getfield( lua_manager::get_instance()->get_Lua(), LUA_GLOBALSINDEX,
+        lua_getglobal( lua_manager::get_instance()->get_Lua(),
             name_Lua );
         lua_getfield( lua_manager::get_instance()->get_Lua(), -1,
             "is_any_important_mode" );
@@ -1465,7 +1465,7 @@ int tech_object_manager::init_params()
         tech_objects[ i ]->lua_init_params();
         }
 
-    lua_getfield( lua_manager::get_instance()->get_Lua(), LUA_GLOBALSINDEX,
+    lua_getglobal( lua_manager::get_instance()->get_Lua(),
         "init_params" );
 
     if ( lua_isfunction( lua_manager::get_instance()->get_Lua(), -1 ) )
@@ -1542,7 +1542,7 @@ int tech_object_manager::evaluate()
     static char has_Lua_eval = 0;
     if ( has_Lua_eval == 0 )
         {
-        lua_getfield( lua_manager::get_instance()->get_Lua(), LUA_GLOBALSINDEX,
+        lua_getglobal( lua_manager::get_instance()->get_Lua(),
             "eval" );
 
         if ( lua_isfunction( lua_manager::get_instance()->get_Lua(), -1 ) )
@@ -1569,7 +1569,7 @@ int tech_object_manager::evaluate()
 int tech_object_manager::init_objects()
     {
     //-Вызов пользовательской функции инициализации.
-    lua_getfield( lua_manager::get_instance()->get_Lua(), LUA_GLOBALSINDEX,
+    lua_getglobal( lua_manager::get_instance()->get_Lua(),
         "init" );
 
     if ( lua_isfunction( lua_manager::get_instance()->get_Lua(), -1 ) )

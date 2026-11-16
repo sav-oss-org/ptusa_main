@@ -97,7 +97,7 @@ class ModbusClientLuaTest : public ::testing::Test
 
         void SetUp() override
             {
-            L = lua_open();
+            L = luaL_newstate();
             ASSERT_EQ( 1, tolua_PAC_dev_open( L ) );
             ASSERT_EQ( 0, luaL_dostring( L,
                 "cli = modbus_client(1, '127.0.0.1')" ) );
@@ -114,7 +114,7 @@ class ModbusClientLuaTest : public ::testing::Test
 
         static long get_lua_global_int( lua_State* L, const char* name )
             {
-            lua_getfield( L, LUA_GLOBALSINDEX, name );
+            lua_getglobal( L, name );
             auto v = static_cast<long>( tolua_tonumber( L, -1, 0 ) );
             lua_pop( L, 1 );
             return v;

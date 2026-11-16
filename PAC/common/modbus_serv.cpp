@@ -251,7 +251,7 @@ long ModbusServ::ModbusService( long len, unsigned char *data,unsigned char *out
 				static char has_Lua_read_coils = 0;
 				if ( has_Lua_read_coils == 0 )
 					{
-					lua_getfield( L, LUA_GLOBALSINDEX, "read_coils" );
+					lua_getglobal( L, "read_coils" );
 
 					if ( lua_isfunction( L, -1 ) )
 						{
@@ -268,7 +268,7 @@ long ModbusServ::ModbusService( long len, unsigned char *data,unsigned char *out
 				int i = 0;
 				if ( has_Lua_read_coils == 2 )
 					{
-					lua_getfield( L, LUA_GLOBALSINDEX, "read_coils" );
+					lua_getglobal( L, "read_coils" );
 					lua_pushnumber( L, coilgroup );
 					lua_pushnumber( L, startingAddress );
 					lua_pushnumber( L, numberofElements );
@@ -586,7 +586,7 @@ long ModbusServ::ModbusService( long len, unsigned char *data,unsigned char *out
 				static char has_Lua_read_holding_registers = 0;
 				if ( has_Lua_read_holding_registers == 0 )
 					{
-					lua_getfield( L, LUA_GLOBALSINDEX, "read_holding_registers" );
+					lua_getglobal( L, "read_holding_registers" );
 
 					if ( lua_isfunction( L, -1 ) )
 						{
@@ -602,7 +602,7 @@ long ModbusServ::ModbusService( long len, unsigned char *data,unsigned char *out
 
 				if ( has_Lua_read_holding_registers == 2 )
 					{
-					lua_getfield( L, LUA_GLOBALSINDEX, "read_holding_registers" );
+					lua_getglobal( L, "read_holding_registers" );
 					lua_pushnumber( L, coilgroup );
 					lua_pushnumber( L, startingAddress );
 					lua_pushnumber( L, numberofElements );
@@ -762,7 +762,7 @@ long ModbusServ::ModbusService( long len, unsigned char *data,unsigned char *out
 				static char has_Lua_write_coils = 0;
 				if ( has_Lua_write_coils == 0 )
 					{
-					lua_getfield( L, LUA_GLOBALSINDEX, "write_coils" );
+					lua_getglobal( L, "write_coils" );
 
 					if ( lua_isfunction( L, -1 ) )
 						{
@@ -778,7 +778,7 @@ long ModbusServ::ModbusService( long len, unsigned char *data,unsigned char *out
 
 				if ( has_Lua_write_coils == 2 )
 					{
-					lua_getfield( L, LUA_GLOBALSINDEX, "write_coils" );
+					lua_getglobal( L, "write_coils" );
 					lua_pushnumber( L, coilgroup );
 					lua_pushnumber( L, startingAddress );
 					lua_pushnumber( L, value );
@@ -1008,7 +1008,7 @@ long ModbusServ::ModbusService( long len, unsigned char *data,unsigned char *out
 				static char has_Lua_write_registers = 0;
 				if ( has_Lua_write_registers == 0 )
 					{
-					lua_getfield( L, LUA_GLOBALSINDEX, "write_holding_registers" );
+					lua_getglobal( L, "write_holding_registers" );
 
 					if ( lua_isfunction( L, -1 ) )
 						{
@@ -1024,7 +1024,7 @@ long ModbusServ::ModbusService( long len, unsigned char *data,unsigned char *out
 
 				if ( has_Lua_write_registers == 2 )
 					{
-					lua_getfield( L, LUA_GLOBALSINDEX, "write_holding_registers" );
+					lua_getglobal( L, "write_holding_registers" );
 					lua_pushnumber( L, coilgroup );
 					lua_pushnumber( L, startingAddress );
 					lua_pushnumber( L, numberofElements );
