@@ -85,7 +85,7 @@ int tcp_communicator_linux::net_init()
             PAC_critical_errors_manager::AS_SOCKET_F,
             0 );                                        //Мастер сокет.
 
-        return fail_init( -4 );
+        return -4;
         }
     else
         {
@@ -114,7 +114,8 @@ int tcp_communicator_linux::net_init()
             PAC_critical_errors_manager::AS_SETSOCKOPT_F,
             0 );                                        //Мастер сокет.
 
-        return fail_init( -5 );
+        close( master_socket );
+        return -5;
         }
     else
         {
@@ -152,7 +153,8 @@ int tcp_communicator_linux::net_init()
             PAC_critical_errors_manager::AS_LISTEN_F,
             0 );
 
-        return fail_init( -6 );
+        close( master_socket );
+        return -6;
         }
     else
         {
