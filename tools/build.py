@@ -10,6 +10,18 @@ import sys
 
 ROOT = Path(__file__).resolve().parents[1]
 
+# Only -D cache entries may reach cmake configure; this blocks argument
+# injection from LLM-supplied --configure-arg values.
+CONFIGURE_ARG_RE = re.compile(r"-D[A-Za-z_][A-Za-z0-9_]*(?:=.*)?")
+
+
+def path_inside_root(path, option):
+    """Resolve path and reject traversal outside the repository root."""
+    resolved = Path(path).resolve()
+    if not resolved.is_relative_to(ROOT):
+        raise ValueError(f"{option} must be a path inside the repository.")
+    return resolved
+
 
 def read_build_presets(root):
     """Read included files and resolve build inheritance; CMake validates presets."""
@@ -126,7 +138,8 @@ def main(argv=None):
     settings = dict(cmake="cmake", jobs=4, skip_configure=False, keep_going=False,
                     configure_args=[], presets=[])
     if args.settings:
-        loaded = json.loads(args.settings.read_text(encoding="utf-8-sig"))
+        loaded = json.loads(path_inside_root(args.settings, "--settings")
+                            .read_text(encoding="utf-8-sig"))
         if not isinstance(loaded, dict) or set(loaded) - set(settings):
             raise ValueError("Settings must be a JSON object with supported option names.")
         settings.update(loaded)
@@ -145,6 +158,9 @@ def main(argv=None):
     for key in ("presets", "configure_args"):
         if not isinstance(settings[key], list) or not all(isinstance(x, str) for x in settings[key]):
             raise ValueError(f"{key} must be an array of strings.")
+    for arg in settings["configure_args"]:
+        if not CONFIGURE_ARG_RE.fullmatch(arg):
+            raise ValueError("configure args must be -D<name>[=<value>] entries.")
 
     presets = read_build_presets(ROOT)
     configured = set(listed_presets(settings["cmake"], "configure"))
@@ -163,8 +179,10 @@ def main(argv=None):
     selected = select_presets(tokens, available)
     settings["presets"] = selected
     if args.save_settings:
-        args.save_settings.write_text(json.dumps(settings, indent=2) + "\n", encoding="utf-8")
-        print(f"Settings saved: {args.save_settings}")
+        save_path = path_inside_root(args.save_settings, "--save-settings")
+        save_path.write_text(
+            json.dumps(settings, indent=2) + "\n", encoding="utf-8")
+        print(f"Settings saved: {save_path}")
     return run_builds(selected, presets, settings, args.dry_run)
 
 
