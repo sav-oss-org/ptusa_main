@@ -17,18 +17,18 @@
 using namespace ::testing;
 using B = std::byte;
 
-/// Frees the channel value cells allocated by io_device::init_and_alloc().
-/// ~io_device() frees only the channel pointer arrays, so the per-channel
-/// cells that tests allocated must be freed explicitly. The freed slots
-/// are nulled, so ~io_device() and repeated calls stay safe.
+/// Frees the digital channel cells allocated by
+/// io_device::init_and_alloc_DO_DI(). ~io_device() frees only the channel
+/// pointer arrays, so the per-channel cells that tests allocated must be
+/// freed explicitly. The freed slots are nulled, so ~io_device() and
+/// repeated calls stay safe.
 ///
-/// Call only for devices whose cells can come solely from
-/// io_device::init_and_alloc(). io_device::init_channel() replaces a slot
-/// with a pointer into io_manager-owned node buffers, and deleting such a
-/// slot corrupts the heap. Never call this helper on devices whose channels
-/// were bound by io_device::init_channel(), directly or via a fixture
-/// helper such as init_channels() or test_dev_err().
-static void free_channel_cells( io_device& io_dev )
+/// Call only for devices whose DO/DI cells can come solely from
+/// io_device::init_and_alloc_DO_DI(). io_device::init_channel() replaces a
+/// slot with a pointer into io_manager-owned node buffers, and deleting
+/// such a slot corrupts the heap. Never call this helper on devices whose
+/// digital channels were bound by io_device::init_channel().
+static void free_DO_DI_cells( io_device& io_dev )
     {
     io_device::IO_channels& do_ch = io_dev.DO_channels;
     for ( u_int i{ 0 }; i < do_ch.count; ++i )
@@ -53,6 +53,17 @@ static void free_channel_cells( io_device& io_dev )
             di_ch.char_read_values[ i ] = nullptr;
             }
         }
+    }
+
+/// Frees the analog channel cells allocated by
+/// io_device::init_and_alloc_AO_AI(), the AO/AI mirror of
+/// free_DO_DI_cells(). No analog test currently keeps these cells
+/// test-owned: every init_and_alloc_AO_AI() caller rebinds the slots via
+/// io_device::init_channel(), so the cells become io_manager-owned and
+/// must not be deleted. Kept so future analog tests free exactly what
+/// they allocate.
+[[maybe_unused]] static void free_AO_AI_cells( io_device& io_dev )
+    {
     io_device::IO_channels& ao_ch = io_dev.AO_channels;
     for ( u_int i{ 0 }; i < ao_ch.count; ++i )
         {
@@ -107,7 +118,7 @@ class iolink_dev_test : public ::testing::Test
 
         void init_channels( io_device& io_dev ) const
             {
-            io_dev.init_and_alloc( 0, 0, 0, 2 );
+            io_dev.init_and_alloc_AO_AI( 0, 2 );
             io_dev.init_channel( io_device::IO_channels::CT_AI, 0, 0, 0, 1, 1 );
             }
 
@@ -852,7 +863,7 @@ void test_temperature( AI1* TE1 )
     EXPECT_EQ( TE1->get_state(), 1 );
 
     G_PAC_INFO()->emulation_off();
-    TE1->init_and_alloc( 0, 0, 0, 1 );
+    TE1->init_and_alloc_AO_AI( 0, 1 );
     TE1->init_channel( io_device::IO_channels::CT_AI, 0, 0, 0 );
     EXPECT_EQ( TE1->get_state(), 1 );
 
@@ -2321,7 +2332,7 @@ TEST( DI_signal, get_state )
     EXPECT_EQ( DI1.get_state(), 0 );
 
     G_PAC_INFO()->emulation_off();
-    DI1.init_and_alloc( 0, 1 );
+    DI1.init_and_alloc_DO_DI( 0, 1 );
     DI1.evaluate_io();
     EXPECT_EQ( DI1.get_state(), 0 );
 
@@ -2347,7 +2358,7 @@ TEST( DI_signal, get_state )
 
     DeltaMilliSecSubHooker::set_default_time();
     G_PAC_INFO()->emulation_on();
-    free_channel_cells( DI1 );
+    free_DO_DI_cells( DI1 );
     }
 
 
@@ -2670,12 +2681,12 @@ TEST( valve_DO1_DI2, get_fb_state )
     EXPECT_EQ( valve::VALVE_STATE::V_OFF, V1.get_valve_state() );
 
     G_PAC_INFO()->emulation_off();
-    V1.init_and_alloc( 1, 2 );
+    V1.init_and_alloc_DO_DI( 1, 2 );
 
     check_fb( &V1 );
 
     G_PAC_INFO()->emulation_on();
-    free_channel_cells( V1 );
+    free_DO_DI_cells( V1 );
     }
 
 TEST( valve_DO2_DI2, valve_DO2_DI2 )
@@ -2697,7 +2708,7 @@ TEST( valve_DO2_DI2, get_fb_state )
     EXPECT_EQ( valve::VALVE_STATE::V_OFF, V1.get_valve_state() );
 
     G_PAC_INFO()->emulation_off();
-    V1.init_and_alloc( 2, 2 );
+    V1.init_and_alloc_DO_DI( 2, 2 );
 
     // Нет управления и нет обратных связей.
     EXPECT_FALSE( V1.get_fb_state() );
@@ -2727,7 +2738,7 @@ TEST( valve_DO2_DI2, get_fb_state )
     EXPECT_EQ( valve::VALVE_STATE::V_ON, V1.get_valve_state() );
 
     G_PAC_INFO()->emulation_on();
-    free_channel_cells( V1 );
+    free_DO_DI_cells( V1 );
     }
 
 
@@ -2737,7 +2748,7 @@ TEST( valve_DO1, get_fb_state )
     EXPECT_TRUE( V1.get_fb_state() );
 
     G_PAC_INFO()->emulation_off();
-    V1.init_and_alloc( 1 );
+    V1.init_and_alloc_DO_DI( 1 );
 
     EXPECT_TRUE( V1.get_fb_state() );
     EXPECT_EQ( V1.get_state(), 0 );
@@ -2753,7 +2764,7 @@ TEST( valve_DO1, get_fb_state )
     EXPECT_FALSE( V1.get_on_fb_value() );
 
     G_PAC_INFO()->emulation_on();
-    free_channel_cells( V1 );
+    free_DO_DI_cells( V1 );
     }
 
 
@@ -2763,7 +2774,7 @@ TEST( valve_DO1_DI1_off, get_fb_state )
     EXPECT_TRUE( V1.get_fb_state() );
 
     G_PAC_INFO()->emulation_off();
-    V1.init_and_alloc( 1, 1 );
+    V1.init_and_alloc_DO_DI( 1, 1 );
 
     // Нет обратной связи для отключенного состояния.
     EXPECT_FALSE( V1.get_fb_state() );
@@ -2775,7 +2786,7 @@ TEST( valve_DO1_DI1_off, get_fb_state )
     EXPECT_TRUE( V1.get_off_fb_value() );
 
     G_PAC_INFO()->emulation_on();
-    free_channel_cells( V1 );
+    free_DO_DI_cells( V1 );
     }
 
 TEST( valve_DO1_DI1_off, direct_off )
@@ -2784,7 +2795,7 @@ TEST( valve_DO1_DI1_off, direct_off )
     EXPECT_EQ( V1.get_state(), valve::VALVE_STATE::V_OFF );
 
     G_PAC_INFO()->emulation_off();
-    V1.init_and_alloc( 1, 1 );
+    V1.init_and_alloc_DO_DI( 1, 1 );
     V1.set_cmd( "P_FB", 0, 1 );
 
     V1.direct_on();
@@ -2803,7 +2814,7 @@ TEST( valve_DO1_DI1_off, direct_off )
     EXPECT_EQ( V1.get_state(), valve::VALVE_STATE::V_OFF );
 
     G_PAC_INFO()->emulation_on();
-    free_channel_cells( V1 );
+    free_DO_DI_cells( V1 );
     }
 
 TEST( valve_DO1_DI1_off, get_on_fb_value )
@@ -2825,7 +2836,7 @@ TEST( valve_DO1_DI1_on, get_fb_state )
     EXPECT_TRUE( V1.get_fb_state() );
 
     G_PAC_INFO()->emulation_off();
-    V1.init_and_alloc( 1, 1 );
+    V1.init_and_alloc_DO_DI( 1, 1 );
 
     EXPECT_TRUE( V1.get_fb_state() );
     EXPECT_FALSE( V1.get_on_fb_value() );
@@ -2836,7 +2847,7 @@ TEST( valve_DO1_DI1_on, get_fb_state )
     EXPECT_TRUE( V1.get_on_fb_value() );
 
     G_PAC_INFO()->emulation_on();
-    free_channel_cells( V1 );
+    free_DO_DI_cells( V1 );
     }
 
 TEST( valve_DO1_DI1_on, direct_off )
@@ -2845,7 +2856,7 @@ TEST( valve_DO1_DI1_on, direct_off )
     EXPECT_EQ( V1.get_state(), valve::VALVE_STATE::V_OFF );
 
     G_PAC_INFO()->emulation_off();
-    V1.init_and_alloc( 1, 1 );
+    V1.init_and_alloc_DO_DI( 1, 1 );
     V1.set_cmd( "P_FB", 0, 1 );
 
     V1.direct_on();
@@ -2865,7 +2876,7 @@ TEST( valve_DO1_DI1_on, direct_off )
     EXPECT_EQ( V1.get_state(), valve::VALVE_STATE::V_OFF );
 
     G_PAC_INFO()->emulation_on();
-    free_channel_cells( V1 );
+    free_DO_DI_cells( V1 );
     }
 
 TEST( valve_DO1_DI1_on, get_on_fb_value )
@@ -2899,7 +2910,7 @@ TEST( valve_mix_proof, get_fb_state )
     EXPECT_TRUE( V1.get_fb_state() );
 
     G_PAC_INFO()->emulation_off();
-    V1.init_and_alloc( 3, 2 );
+    V1.init_and_alloc_DO_DI( 3, 2 );
 
     check_fb( &V1 );
 
@@ -2915,7 +2926,7 @@ TEST( valve_mix_proof, get_fb_state )
     EXPECT_TRUE( V1.get_fb_state() );
 
     G_PAC_INFO()->emulation_on();
-    free_channel_cells( V1 );
+    free_DO_DI_cells( V1 );
     }
 
 TEST( valve_mix_proof, direct_set_state )
@@ -2923,7 +2934,7 @@ TEST( valve_mix_proof, direct_set_state )
     valve_mix_proof V1( "V1" );
 
     G_PAC_INFO()->emulation_off();
-    V1.init_and_alloc( 3, 2 );
+    V1.init_and_alloc_DO_DI( 3, 2 );
 
     V1.set_cmd( "P_FB", 0, 1 );
     V1.direct_set_state( valve::VALVE_STATE::V_UPPER_SEAT );
@@ -2942,7 +2953,7 @@ TEST( valve_mix_proof, direct_set_state )
     EXPECT_EQ( V1.get_state(), valve::VALVE_STATE::V_ON );
 
     G_PAC_INFO()->emulation_on();
-    free_channel_cells( V1 );
+    free_DO_DI_cells( V1 );
     }
 
 
@@ -3118,7 +3129,7 @@ TEST( valve_bottom_mix_proof, get_fb_state )
     EXPECT_TRUE( V1.get_fb_state() );
 
     G_PAC_INFO()->emulation_off();
-    V1.init_and_alloc( 3, 2 );
+    V1.init_and_alloc_DO_DI( 3, 2 );
 
     check_fb( &V1 );
 
@@ -3129,7 +3140,7 @@ TEST( valve_bottom_mix_proof, get_fb_state )
     EXPECT_TRUE( V1.get_fb_state() );
 
     G_PAC_INFO()->emulation_on();
-    free_channel_cells( V1 );
+    free_DO_DI_cells( V1 );
     }
 
 TEST( valve_bottom_mix_proof, is_switching_off_finished )
@@ -3157,7 +3168,7 @@ TEST( valve_bottom_mix_proof, on )
     valve_bottom_mix_proof V1( "V1" );
 
     G_PAC_INFO()->emulation_off();
-    V1.init_and_alloc( 3, 2 );
+    V1.init_and_alloc_DO_DI( 3, 2 );
 
     V1.on();
     EXPECT_FALSE( V1.get_fb_state() );
@@ -3168,7 +3179,7 @@ TEST( valve_bottom_mix_proof, on )
     EXPECT_TRUE( V1.get_fb_state() );
 
     G_PAC_INFO()->emulation_on();
-    free_channel_cells( V1 );
+    free_DO_DI_cells( V1 );
     }
 
 
@@ -3191,7 +3202,7 @@ TEST( valve_mini_flushing, get_state )
 TEST( valve_mini_flushing, get_fb_state )
     {
     valve_mini_flushing V1( "V1" );
-    V1.init_and_alloc( 2, 2 );
+    V1.init_and_alloc_DO_DI( 2, 2 );
 
     EXPECT_TRUE( V1.get_fb_state() );
 
@@ -3209,7 +3220,7 @@ TEST( valve_mini_flushing, get_fb_state )
     EXPECT_FALSE( V1.get_on_fb_value() );
 
     G_PAC_INFO()->emulation_on();
-    free_channel_cells( V1 );
+    free_DO_DI_cells( V1 );
     }
 
 
@@ -3222,7 +3233,7 @@ TEST( valve_DO2_DI2_bistable, get_fb_state )
     EXPECT_TRUE( V1.get_off_fb_value() );
 
     G_PAC_INFO()->emulation_off();
-    V1.init_and_alloc( 2, 2 );
+    V1.init_and_alloc_DO_DI( 2, 2 );
 
     check_fb( &V1 );
 
@@ -3242,7 +3253,7 @@ TEST( valve_DO2_DI2_bistable, get_fb_state )
     EXPECT_FALSE( V1.get_off_fb_value() );
 
     G_PAC_INFO()->emulation_on();
-    free_channel_cells( V1 );
+    free_DO_DI_cells( V1 );
     }
 
 
@@ -4703,7 +4714,7 @@ TEST( i_motor, get_amperage )
 TEST( motor, direct_off )
     {
     motor M1( "M1", device::DST_M_FREQ );
-    M1.init_and_alloc( 1, 1 );
+    M1.init_and_alloc_DO_DI( 1, 1 );
 
     EXPECT_EQ( M1.get_state(), 0 );
 
@@ -4718,7 +4729,7 @@ TEST( motor, direct_off )
     EXPECT_EQ( M1.get_state(), 0 );
 
     G_PAC_INFO()->emulation_on();
-    free_channel_cells( M1 );
+    free_DO_DI_cells( M1 );
     }
 
 TEST( motor, direct_set_state )
@@ -4745,7 +4756,8 @@ TEST( motor, save_device )
     EXPECT_STREQ( "M1={M=0, ST=0, V=0, R=0, ERRT=0, P_ON_TIME=0},\n", buff );
 
     G_PAC_INFO()->emulation_off();
-    M1.init_and_alloc( 2, 1, 1 );
+    M1.init_and_alloc_DO_DI( 2, 1 );
+    M1.init_and_alloc_AO_AI( 1 );
     M1.init_channel( io_device::IO_channels::CT_AO, 0, 0, 0 );
     *M1.DI_channels.char_read_values[ 0 ] = 1;
     *M1.DO_channels.char_write_values[ 1 ] = 1;
@@ -4757,6 +4769,7 @@ TEST( motor, save_device )
 
 
     G_PAC_INFO()->emulation_on();
+    free_DO_DI_cells( M1 );
     io_manager::replace_instance( prev_mngr );
     }
 
@@ -7690,7 +7703,7 @@ class DO1_test : public ::testing::Test
             mngr.add_node( 0, io_manager::io_node::TYPES::PHOENIX_BK_ETH,
                 1, "127.0.0.1", "A100", 1, 0, 0, 0, 0, 0 );
 
-            dev.init_and_alloc( 1, 0, 0, 0 );
+            dev.init_and_alloc_DO_DI( 1, 0 );
             dev.init_channel( io_device::IO_channels::CT_DO, 0, 0, 0 );
 
             // Set DO channel value to 1.
