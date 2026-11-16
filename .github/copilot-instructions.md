@@ -384,6 +384,13 @@ changes
   `🤖 Generated with AI assistance`.
 - Follow `AGENTS.md` for the full attribution rule.
 
+## Response links
+
+When an agent reply mentions a GitHub pull request, issue, review
+thread, comment, commit, or CI run, render the reference as a
+Markdown link with the full URL so the reader can click through
+directly.
+
 ## Advanced Usage
 
 ### Cross-Compilation (PLCnext)

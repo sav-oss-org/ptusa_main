@@ -93,6 +93,21 @@ jobs:
           unzip -o $HOME/.sonar/build-wrapper-linux-x86.zip -d $HOME/.sonar/
           echo "$HOME/.sonar/build-wrapper-linux-x86" >> $GITHUB_PATH
 
+      # CFamily plugin re-parses every translation unit from
+      # compile_commands.json. Persisting its analysis cache between runs
+      # makes `Run sonar-scanner` re-analyze only changed files. The cache
+      # lives outside the workspace so sonar never indexes it. Entries are
+      # validated against compiler and flags, so sharing a stale cache is
+      # safe. actions/cache never overwrites an existing key, so every run
+      # saves a new entry and restore-keys picks up the latest one.
+      - name: Cache sonar-scanner CFamily analysis cache
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ runner.temp }}/sonar-cfamily-cache
+          key: ${{ runner.os }}-sonar-cfamily-${{ github.run_id }}
+          restore-keys: |
+            ${{ runner.os }}-sonar-cfamily-
+
       - name: Run build-wrapper (ccache enabled)
         run: |
           mkdir build
@@ -134,10 +149,13 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_CFAMILY_CACHE_DIR: ${{ runner.temp }}/sonar-cfamily-cache
         run: |
           sonar-scanner \
             --define sonar.host.url="${{ env.SONAR_SERVER_URL }}" \
             --define sonar.cfamily.compile-commands="${{ env.BUILD_WRAPPER_OUT_DIR }}/compile_commands.json" \
+            --define sonar.cfamily.cache.enabled=true \
+            --define sonar.cfamily.cache.path="${{ env.SONAR_CFAMILY_CACHE_DIR }}" \
             --define sonar.pullrequest.key=${{ github.event.pull_request.number }} \
             --define sonar.scm.revision=${{ github.event.pull_request.head.sha }} \
             --define sonar.cfamily.gcov.reportsPath="coverage-dir"

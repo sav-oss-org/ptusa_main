@@ -37,6 +37,11 @@ class i_memory
         virtual void zero_fill() = 0;
 
         virtual std::byte* get_data() = 0;
+
+        /// @brief Каталог, в котором выполняется сохранение данных.
+        ///
+        /// @return путь к каталогу хранения файла данных.
+        virtual std::filesystem::path get_directory() const = 0;
     };
 //-----------------------------------------------------------------------------
 /// @brief Работа с энергонезависимой ОЗУ (Static Memory).
@@ -59,6 +64,8 @@ class SRAM : public i_memory
         void zero_fill() override;
 
         u_int get_size() const override;
+
+        std::filesystem::path get_directory() const override;
     private:
 
     SRAM( const SRAM& ) = delete;
@@ -66,8 +73,23 @@ class SRAM : public i_memory
     SRAM& operator=( const SRAM& ) = delete;
     SRAM& operator=( SRAM&& ) = delete;
 
+    /// @brief Подготовка каталога хранения файла данных.
+    ///
+    /// Создает каталог, если он отсутствует, и проверяет права записи в него
+    /// для текущего процесса. Вызывается из конструктора, чтобы файлы
+    /// параметров можно было разместить в новом каталоге без ручных действий
+    /// на контроллере, а проблема с правами была видна в журнале до первой
+    /// попытки сохранения.
+    void ensure_storage_dir();
+
+    /// Пути хранятся в абсолютном виде, чтобы сообщения об ошибках были
+    /// однозначными.
     std::filesystem::path file_path;
     std::filesystem::path tmp_path;
+
+    /// Сообщение об ошибке создания временного файла выводится один раз,
+    /// так как сохранение выполняется циклически.
+    bool error_logged{ false };
 
     u_int total_size;
 
