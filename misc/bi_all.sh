@@ -38,7 +38,7 @@ parse_preset_listing() {
 # Print presets of a kind as "<name><TAB><display name>" rows. The second
 # argument "wsl" runs the query inside WSL from the current directory.
 list_presets() {
-    if [ "$2" = wsl ]; then
+    if [[ "$2" == wsl ]]; then
         wsl -e cmake --list-presets="$1" 2> /dev/null | parse_preset_listing
     else
         cmake --list-presets="$1" 2> /dev/null | parse_preset_listing
@@ -51,7 +51,7 @@ list_presets() {
 scrape_build_preset_map() {
     local file
     for file in CMakePresets.json CMakeUserPresets.json; do
-        [ -f "$file" ] || continue
+        [[ -f "$file" ]] || continue
         awk -F'"' '
             $2 ~ /Presets$/ {
                 in_build = ($2 == "buildPresets")
@@ -70,7 +70,7 @@ scrape_build_preset_map() {
 }
 
 have_wsl=0
-if [ "$(uname -s)" != Linux ] && command -v wsl > /dev/null 2>&1; then
+if [[ "$(uname -s)" != Linux ]] && command -v wsl > /dev/null 2>&1; then
     have_wsl=1
 fi
 
@@ -78,7 +78,7 @@ fi
 # configure-to-build mapping, both merged over the host and WSL views.
 build_list=$({
     list_presets build ""
-    if [ "$have_wsl" = 1 ]; then
+    if [[ "$have_wsl" == 1 ]]; then
         list_presets build wsl
     fi
 } | awk -F'\t' '!seen[$1]++')
@@ -101,7 +101,7 @@ find_build_preset() { # $1 = configure preset name.
         return 0
     fi
     while IFS= read -r candidate; do
-        if [ -n "$candidate" ] && is_listed_build "$candidate"; then
+        if [[ -n "$candidate" ]] && is_listed_build "$candidate"; then
             printf '%s\n' "$candidate"
             return 0
         fi
@@ -139,19 +139,19 @@ echo -e '\033[1;36mDiscovered configure presets:\033[0m'
 
 native_cfg_list=$(list_presets configure "")
 while IFS=$'\t' read -r cfg _display; do
-    [ -n "$cfg" ] || continue
+    [[ -n "$cfg" ]] || continue
     add_preset "$cfg" ""
 done <<< "$native_cfg_list"
 
-if [ "$have_wsl" = 1 ]; then
+if [[ "$have_wsl" == 1 ]]; then
     native_cfg_names=$(printf '%s\n' "$native_cfg_list" | cut -f1)
     wsl_cfg_list=$(list_presets configure wsl)
-    if [ -z "$wsl_cfg_list" ]; then
+    if [[ -z "$wsl_cfg_list" ]]; then
         echo "note: cmake through wsl listed no configure presets, so the" \
             "Linux presets were not added." >&2
     fi
     while IFS=$'\t' read -r cfg _display; do
-        [ -n "$cfg" ] || continue
+        [[ -n "$cfg" ]] || continue
         case $'\n'"$native_cfg_names"$'\n' in
             *$'\n'"$cfg"$'\n'*) continue ;;
         esac
@@ -159,7 +159,7 @@ if [ "$have_wsl" = 1 ]; then
     done <<< "$wsl_cfg_list"
 fi
 
-if [ "${#configs[@]}" -eq 0 ]; then
+if [[ "${#configs[@]}" -eq 0 ]]; then
     echo "error: no buildable presets found, run the script in the" \
         "repository root." >&2
     exit 1
