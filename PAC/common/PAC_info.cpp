@@ -251,18 +251,20 @@ int PAC_info::set_cmd( const char* prop, u_int idx, double val )
                 cmd_val - static_cast< int >( COMMANDS::RELOAD_TECH_OBJECT_BASE ) );
             G_LOG->notice( "Reload tech object [%u] (CMD=%d).", obj_n, cmd_val );
             const int res = G_TECH_OBJECT_MNGR()->reload_object( obj_n );
-            auto msg = "Reload object - Ok.";
+            //Ответ команды - ровно токен, зафиксированный
+            //в описании команды для клиента.
+            auto msg = "Ok";
             if ( res == -1 )
                 {
-                msg = "Reload object error - object not found.";
+                msg = "object not found";
                 }
             else if ( res == -2 )
                 {
-                msg = "Reload object error - object is not idle.";
+                msg = "object is not idle";
                 }
             else if ( res == -3 )
                 {
-                msg = "Reload object error - Lua reload unavailable.";
+                msg = "Lua reload unavailable";
                 }
             cmd_answer[ 0 ] = 0;
             auto r = fmt::format_to_n( cmd_answer,

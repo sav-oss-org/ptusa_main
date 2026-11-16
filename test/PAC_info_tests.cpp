@@ -475,11 +475,28 @@ TEST( PAC_info, set_cmd_reload_tech_object )
     const double base = static_cast< double >(
         PAC_info::COMMANDS::RELOAD_TECH_OBJECT_BASE );
 
+    //Ответ команды CMD_ANSWER - точный токен из её описания.
+    const auto answer_is = [ ]( const char* token ) -> bool
+        {
+        char buff[ 1000 ]{};
+        G_PAC_INFO()->save_device( buff );
+        char probe[ 200 ]{};
+        std::snprintf( probe, sizeof( probe ),
+            "\tCMD_ANSWER=\"%s\",", token );
+        return std::strstr( buff, probe ) != nullptr;
+        };
+
+    //Сбрасываем ответ, чтобы не зависеть от предыдущих тестов.
+    EXPECT_EQ( 0, G_PAC_INFO()->set_cmd( "CMD", 0,
+        static_cast<double>( PAC_info::COMMANDS::CLEAR_RESULT_CMD ) ) );
+
     //Команда, равная базе, игнорируется: нумерация объектов с 1.
     EXPECT_EQ( 0, G_PAC_INFO()->set_cmd( "CMD", 0, base ) );
+    EXPECT_TRUE( answer_is( "" ) );
 
     //Объект с таким номером отсутствует.
     EXPECT_EQ( -1, G_PAC_INFO()->set_cmd( "CMD", 0, base + 777 ) );
+    EXPECT_TRUE( answer_is( "object not found" ) );
 
     //Создадим объект так же, как это делает Lua-скрипт проекта.
     ASSERT_EQ( 0,
@@ -500,12 +517,14 @@ TEST( PAC_info, set_cmd_reload_tech_object )
     //Объект не в простое - перезагрузка невозможна.
     ASSERT_EQ( 0, obj->set_mode( 1, operation::RUN ) );
     EXPECT_EQ( -2, G_PAC_INFO()->set_cmd( "CMD", 0, cmd ) );
+    EXPECT_TRUE( answer_is( "object is not idle" ) );
     //Выключение без Lua-реализации возвращает -1, но состояние очищается.
     obj->set_mode( 1, operation::IDLE );
     ASSERT_TRUE( obj->is_idle() );
 
     //Lua-функция перезагрузки недоступна.
     EXPECT_EQ( -3, G_PAC_INFO()->set_cmd( "CMD", 0, cmd ) );
+    EXPECT_TRUE( answer_is( "Lua reload unavailable" ) );
 
     G_LUA_MANAGER->free_Lua();
     }
