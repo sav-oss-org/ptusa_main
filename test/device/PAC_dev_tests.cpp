@@ -55,50 +55,6 @@ static void free_DO_DI_cells( io_device& io_dev )
         }
     }
 
-/// Frees the analog channel cells allocated by
-/// io_device::init_and_alloc_AO_AI(), the AO/AI mirror of
-/// free_DO_DI_cells(). No analog test currently keeps these cells
-/// test-owned: every init_and_alloc_AO_AI() caller rebinds the slots via
-/// io_device::init_channel(), so the cells become io_manager-owned and
-/// must not be deleted. Kept so future analog tests free exactly what
-/// they allocate.
-[[maybe_unused]] static void free_AO_AI_cells( io_device& io_dev )
-    {
-    io_device::IO_channels& ao_ch = io_dev.AO_channels;
-    for ( u_int i{ 0 }; i < ao_ch.count; ++i )
-        {
-        if ( nullptr != ao_ch.int_read_values )
-            {
-            delete ao_ch.int_read_values[ i ];
-            ao_ch.int_read_values[ i ] = nullptr;
-            }
-        if ( nullptr != ao_ch.int_module_read_values )
-            {
-            delete ao_ch.int_module_read_values[ i ];
-            ao_ch.int_module_read_values[ i ] = nullptr;
-            }
-        if ( nullptr != ao_ch.int_write_values )
-            {
-            delete ao_ch.int_write_values[ i ];
-            ao_ch.int_write_values[ i ] = nullptr;
-            }
-        }
-    io_device::IO_channels& ai_ch = io_dev.AI_channels;
-    for ( u_int i{ 0 }; i < ai_ch.count; ++i )
-        {
-        if ( nullptr != ai_ch.int_read_values )
-            {
-            delete ai_ch.int_read_values[ i ];
-            ai_ch.int_read_values[ i ] = nullptr;
-            }
-        if ( nullptr != ai_ch.int_module_read_values )
-            {
-            delete ai_ch.int_module_read_values[ i ];
-            ai_ch.int_module_read_values[ i ] = nullptr;
-            }
-        }
-    }
-
 class iolink_dev_test : public ::testing::Test
     {
     protected:
