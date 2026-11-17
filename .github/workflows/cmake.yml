@@ -51,6 +51,11 @@ jobs:
           # pull_request_target checks out the base by default; the
           # detector must diff the pull request head instead.
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          # The head ref of a fork pull request needs the explicit
+          # opt-in of checkout v7 on pull_request_target; this job
+          # only runs git diff on the checked metadata and executes
+          # no pull request code (same pattern as sonar_build.yml).
+          allow-unsafe-pr-checkout: 'true'
       - name: Check whether only documentation files changed
         id: check
         env:
