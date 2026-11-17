@@ -643,7 +643,18 @@ void lua_manager::note_lua_error( lua_State* L, const char* message )
 
     auto res = snprintf( G_LOG->msg, i_log::C_BUFF_SIZE, "Lua error: %s",
         error_str.c_str() );
-    if ( G_LOG->msg[ res - 1 ] != '\n' )
+    if ( res < 0 )
+        {
+        res = 0;
+        }
+    else if ( res >= i_log::C_BUFF_SIZE )
+        {
+        // snprintf вернул длину обрезанного сообщения: она
+        // указывает за конец буфера.
+        res = static_cast< int >( strlen( G_LOG->msg ) );
+        }
+    if ( res > 0 && G_LOG->msg[ res - 1 ] != '\n'
+        && res + 1 < i_log::C_BUFF_SIZE )
         {
         // Добавляем последний CR.
         G_LOG->msg[ res++ ] = '\n';
@@ -652,8 +663,8 @@ void lua_manager::note_lua_error( lua_State* L, const char* message )
 
     if ( is_print_stack_traceback )
         {
-        res += snprintf( G_LOG->msg + res, i_log::C_BUFF_SIZE,
-            "Lua stack traceback:" );
+        res += snprintf( G_LOG->msg + res,
+            i_log::C_BUFF_SIZE - res, "Lua stack traceback:" );
 
         lua_Debug ar{};
         int level{ 1 };
@@ -709,8 +720,9 @@ void lua_manager::note_lua_error( lua_State* L, const char* message )
             level++;
             }
 
-        G_LOG->write_log( i_log::P_ERR );
         }
+
+    G_LOG->write_log( i_log::P_ERR );
 
     if ( recorded_lua_errors.size() > MAX_ERRORS )
         {
