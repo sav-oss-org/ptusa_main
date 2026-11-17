@@ -5,6 +5,7 @@
 #include "log.h"
 
 #include <cstdlib>
+#include <atomic>
 #include <string_view>
 #include <utility>
 #include <iostream>
@@ -19,8 +20,10 @@
 #include <netinet/in.h>
 
 #include <sys/wait.h>
+#include <unistd.h>
 #else
 #include <ws2tcpip.h>
+#include <process.h>
 #endif
 
 
@@ -158,11 +161,39 @@ void node_dev::evaluate_io()
         }
     }
 //-----------------------------------------------------------------------------
+/// Returns a command output file private to this process and call.
+/// A fixed file name in the shared working directory lets concurrent
+/// command runs (for example parallel CTest jobs, which use one
+/// process per test) truncate and overwrite each other's output via
+/// the shell `>` redirect, so the reader can observe empty, mixed,
+/// or foreign content. The system temporary directory keeps the
+/// working tree clean; if it is unavailable, a relative unique name
+/// still prevents the race between processes.
+static std::filesystem::path unique_cmd_output_path()
+    {
+    static std::atomic<unsigned> counter{ 0 };
+
+#ifdef LINUX_OS
+    const auto pid{ getpid() };
+#else
+    const auto pid{ _getpid() };
+#endif
+    std::error_code ec;
+    std::filesystem::path dir = std::filesystem::temp_directory_path( ec );
+    if ( ec )
+        {
+        dir.clear();
+        }
+
+    return dir / ( "ptusa_cmd_output_" + std::to_string( pid ) + "_" +
+        std::to_string( ++counter ) + ".txt" );
+    }
+//-----------------------------------------------------------------------------
 int node_dev::run_cmd_exit_code( const char* cmd, int expected )
     {
     res_msg[ 0 ] = '\0';
 
-    const std::filesystem::path file_path = "ptusa_cmd_output.txt";
+    const std::filesystem::path file_path = unique_cmd_output_path();
     std::string cmd_debug{ cmd };
     cmd_debug += " > \"" + file_path.string() + "\" 2>&1";
 
@@ -200,6 +231,9 @@ int node_dev::run_cmd_exit_code( const char* cmd, int expected )
                 }
             }
         }
+
+    std::error_code remove_ec;
+    std::filesystem::remove( file_path, remove_ec );
 
     return rc;
     }
