@@ -5,7 +5,6 @@
 #include "log.h"
 
 #include <cstdlib>
-#include <atomic>
 #include <string_view>
 #include <utility>
 #include <iostream>
@@ -168,11 +167,12 @@ void node_dev::evaluate_io()
 /// the shell `>` redirect, so the reader can observe empty, mixed,
 /// or foreign content. The system temporary directory keeps the
 /// working tree clean; if it is unavailable, a relative unique name
-/// still prevents the race between processes.
+/// still prevents the race between processes. The random suffix from
+/// `unique_path()` also makes the name unguessable, which is
+/// required to use the publicly writable temporary directory safely
+/// (no pre-creation or symlink attacks).
 static std::filesystem::path unique_cmd_output_path()
     {
-    static std::atomic<unsigned> counter{ 0 };
-
 #ifdef LINUX_OS
     const auto pid{ getpid() };
 #else
@@ -185,8 +185,10 @@ static std::filesystem::path unique_cmd_output_path()
         dir.clear();
         }
 
-    return dir / ( "ptusa_cmd_output_" + std::to_string( pid ) + "_" +
-        std::to_string( ++counter ) + ".txt" );
+    std::filesystem::path name = std::filesystem::unique_path(
+        "ptusa_cmd_" + std::to_string( pid ) + "_output_????????.txt" );
+
+    return dir / name;
     }
 //-----------------------------------------------------------------------------
 int node_dev::run_cmd_exit_code( const char* cmd, int expected )
