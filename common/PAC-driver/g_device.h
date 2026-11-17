@@ -117,6 +117,14 @@ class device_communicator
         /// @brief Добавление устройства.
         int add_device( i_Lua_save_device *dev );
 
+        /// @brief Замена устройства на новое (при горячей перезагрузке
+        /// технологического объекта).
+        ///
+        /// @param old_device - прежнее устройство.
+        /// @param new_device - новое устройство.
+        void update_device( i_Lua_save_device* old_device,
+            i_Lua_save_device* new_device );
+
         /// @brief Сервис для работы с device_communicator.
         static long write_devices_states_service( long len, u_char *data,
             u_char *outdata );

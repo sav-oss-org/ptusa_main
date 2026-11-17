@@ -1620,6 +1620,79 @@ int tech_object_manager::save_params_as_Lua_str( char* str )
     return res;
     }
 //-----------------------------------------------------------------------------
+int tech_object_manager::reload_object( u_int serial_number )
+    {
+    //Нумерация объектов начинается с 1, поэтому нулевой номер
+    //недопустим сразу, до поиска по вектору.
+    if ( 0 == serial_number )
+        {
+        G_LOG->warning( "Reload object error - invalid object number 0." );
+        return -1;
+        }
+
+    //Поиск объекта по глобальному порядковому номеру (ключ [N] в
+    //main.objects.lua, он же суффикс имени OBJECTn).
+    tech_object* old_object = 0;
+    u_int idx = 0;
+    for ( u_int i = 0; i < tech_objects.size(); i++ )
+        {
+        if ( tech_objects[ i ]->get_serial_idx() == serial_number )
+            {
+            old_object = tech_objects[ i ];
+            idx = i;
+            break;
+            }
+        }
+
+    if ( 0 == old_object )
+        {
+        G_LOG->warning( "Reload object error - object [%u] not found.",
+            serial_number );
+        return -1;
+        }
+
+    //Перезагрузка возможна только для объекта, находящегося в простое.
+    if ( false == old_object->is_idle() )
+        {
+        G_LOG->warning( "Reload object error - object [%u] is not idle.",
+            serial_number );
+        return -2;
+        }
+
+    //Построение нового объекта в Lua (см. reload_tech_object в
+    //sys/sys.objects.lua). Lua-функция обновляет обёртку объекта и возвращает
+    //новый системный объект.
+    void* new_object_ptr = G_LUA_MANAGER->user_object_exec_lua_method( "",
+        "reload_tech_object", static_cast< int >( serial_number ),
+        "int tech_object_manager::reload_object( u_int serial_number )" );
+
+    if ( 0 == new_object_ptr )
+        {
+        G_LOG->warning( "Reload object error - Lua reload_tech_object [%u] "
+            "unavailable.", serial_number );
+        return -3;
+        }
+
+    tech_object* new_object = static_cast< tech_object* >( new_object_ptr );
+
+    //Замена объекта в менеджере, коммуникаторе устройств и реестре ошибок.
+    tech_objects[ idx ] = new_object;
+
+    //Восстанавливаем последовательный номер нового объекта: он должен
+    //совпадать с номером прежнего объекта, иначе повторная перезагрузка
+    //по номеру [N] не найдёт объект, а интерфейс увидит другой номер.
+    new_object->set_serial_idx( old_object->get_serial_idx() );
+
+    G_DEVICE_CMMCTR->update_device( old_object, new_object );
+    G_ERRORS_MANAGER->update_tech_object( old_object, new_object );
+
+    //Старый объект не удаляем здесь: он удаляется сборщиком мусора Lua после
+    //обновления обёртки (объекты создаются в Lua и живут в Lua).
+    G_LOG->info( "Object [%u] reloaded - Ok.", serial_number );
+
+    return 0;
+    }
+//-----------------------------------------------------------------------------
 //-----------------------------------------------------------------------------
 tech_object_manager* G_TECH_OBJECT_MNGR()
     {
