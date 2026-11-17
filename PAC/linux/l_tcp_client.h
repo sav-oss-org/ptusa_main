@@ -14,7 +14,7 @@ class linux_tcp_client: public tcp_client
         sockaddr_in async_sock_address{};
         unsigned int async_bytes_to_send{};
         uint32_t asyncReceiveTime{};
-        bool newDataIsAvailable{ false };
+        bool newDataIsAvailable{};
     public:
         int Connect();
         int AsyncConnect() override;
