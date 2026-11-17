@@ -668,27 +668,44 @@ void lua_manager::note_lua_error( lua_State* L, const char* message )
             // главного чанка и безымянных функций ar.name равен
             // nullptr, а печать nullptr через %s - неопределенное
             // поведение. Поэтому печатаем то, что знает ar.what.
+            // Для C-функций номер строки неизвестен (-1), и
+            // собственный debug.traceback из Lua его не печатает.
+            if ( ar.currentline > 0 )
+                {
+                res += snprintf( G_LOG->msg + res,
+                    i_log::C_BUFF_SIZE - res, "\n\t%s:%d:",
+                    ar.short_src, ar.currentline );
+                }
+            else
+                {
+                res += snprintf( G_LOG->msg + res,
+                    i_log::C_BUFF_SIZE - res, "\n\t%s:",
+                    ar.short_src );
+                }
+
             if ( ar.name != nullptr )
                 {
                 res += snprintf( G_LOG->msg + res,
                     i_log::C_BUFF_SIZE - res,
-                    "\n\t%s:%d: in function '%s' ('%s')",
-                    ar.short_src, ar.currentline, ar.name,
+                    " in function '%s' ('%s')", ar.name,
                     ar.namewhat );
                 }
             else if ( strcmp( ar.what, "main" ) == 0 )
                 {
                 res += snprintf( G_LOG->msg + res,
-                    i_log::C_BUFF_SIZE - res,
-                    "\n\t%s:%d: in main chunk", ar.short_src,
-                    ar.currentline );
+                    i_log::C_BUFF_SIZE - res, " in main chunk" );
+                }
+            else if ( strcmp( ar.what, "C" ) == 0 )
+                {
+                res += snprintf( G_LOG->msg + res,
+                    i_log::C_BUFF_SIZE - res, " in ?" );
                 }
             else
                 {
                 res += snprintf( G_LOG->msg + res,
                     i_log::C_BUFF_SIZE - res,
-                    "\n\t%s:%d: in function <%s:%d>", ar.short_src,
-                    ar.currentline, ar.short_src, ar.linedefined );
+                    " in function <%s:%d>", ar.short_src,
+                    ar.linedefined );
                 }
             level++;
             }
