@@ -694,6 +694,15 @@ set(MAIN_TEST_SHUFFLE_FILTER
     "main_cycle.main_cycle:"
     "OPCUA_server.evaluate:"
     "PAC_info.is_emulator:"
+    # Три строки ниже остаются, несмотря на влитый #1546: в CI со
+    # включенными тестами PAC_info перемешанный прогон упал на
+    # соседях (valve_DO2.get_valve_state, power_unit.set_cmd,
+    # power_unit.on, temperature_e_analog.get_state) - PAC_info
+    # тесты изолированы от входящего состояния, но исходящее за
+    # собой всё ещё оставляют. См. issue #1542.
+    "PAC_info.OPCUA_server_start_fail:"
+    "PAC_info.set_cmd:"
+    "PAC_info.save_device:"
     "PAC_info_io_test.combined_errors_both:"
     "ParamsRecipeAdapterTest.set_cmd:"
     "ParamsRecipeManagerTest.evaluate:"
