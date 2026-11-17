@@ -21,6 +21,11 @@ CONFIGURE_ARG_RE = re.compile(r"-D([A-Za-z_][A-Za-z0-9_]*)(?:=(.*))?")
 # used downstream are rebuilt from the regex match object's captured group.
 PRESET_TOKEN_RE = re.compile(r"([A-Za-z0-9][A-Za-z0-9._+-]{0,99})")
 
+# Settings paths that reach open() are rebuilt from the regex match
+# object's captured groups below; the segments exclude separators so the
+# rebuilt string keeps the validated directory structure.
+SAFE_PATH_RE = re.compile(r"((?:[A-Za-z]:)?[\\/])((?:[^\\/]+[\\/])*[^\\/]*)")
+
 
 def sanitize_configure_arg(raw):
     """Validate a -D cache entry and rebuild it from the regex match groups."""
@@ -56,7 +61,12 @@ def path_inside_root(raw, option):
         inside = False
     if not inside:
         raise ValueError(f"{option} must be a path inside the repository.")
-    return candidate
+    match = SAFE_PATH_RE.fullmatch(candidate)
+    if match is None:
+        raise ValueError(f"{option} must be a path inside the repository.")
+    root = match.group(1)
+    rest = match.group(2)
+    return f"{root}{rest}"
 
 
 def read_build_presets(root):
