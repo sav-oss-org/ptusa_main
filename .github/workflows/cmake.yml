@@ -26,6 +26,12 @@ env:
   MINGW_EXCEPT: seh
   MINGW_CRT: ucrt
 
+# One run per pull request at a time; other events group per git ref.
+# Rationale and examples: #1555.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: false
+
 jobs:
   build:
     name: ${{ matrix.config.name }}

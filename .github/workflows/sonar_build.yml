@@ -13,6 +13,12 @@ on:
   merge_group:
     types: [ checks_requested ]
 
+# One run per pull request at a time; other events group per git ref.
+# Rationale and examples: #1555.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: false
+
 jobs:
   build:
     name: Build and analyze
