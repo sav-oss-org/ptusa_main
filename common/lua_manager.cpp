@@ -641,20 +641,19 @@ void lua_manager::note_lua_error( lua_State* L, const char* message )
         return;
         }
 
-    snprintf( G_LOG->msg, i_log::C_BUFF_SIZE, "Lua error: %s",
+    auto res = snprintf( G_LOG->msg, i_log::C_BUFF_SIZE, "Lua error: %s",
         error_str.c_str() );
-    if ( G_LOG->msg[ strlen( G_LOG->msg ) - 1 ] == '\n' )
+    if ( G_LOG->msg[ res - 1 ] != '\n' )
         {
-        //Удаляем последний CR
-        G_LOG->msg[ strlen( G_LOG->msg ) - 1 ] = 0;
+        // Добавляем последний CR.
+        G_LOG->msg[ res++ ] = '\n';
+        G_LOG->msg[ res ] = '\0';
         }
-
-    G_LOG->write_log( i_log::P_ERR );
 
     if ( is_print_stack_traceback )
         {
-        int res{ snprintf( G_LOG->msg, i_log::C_BUFF_SIZE,
-            "Lua stack traceback:" ) };
+        res += snprintf( G_LOG->msg + res, i_log::C_BUFF_SIZE,
+            "Lua stack traceback:" );
 
         lua_Debug ar{};
         int level{ 1 };
