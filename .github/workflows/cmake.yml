@@ -34,12 +34,7 @@ jobs:
   # with `if:` still report skipped checks, which satisfy required checks.
   docs-only:
     name: Detect docs-only change
-    if: >-
-      ${{
-        github.repository == 'sav-oss-org/ptusa_main' &&
-        (github.event_name == 'pull_request' ||
-         github.event_name == 'pull_request_target')
-      }}
+    if: ${{ github.repository == 'sav-oss-org/ptusa_main' }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
