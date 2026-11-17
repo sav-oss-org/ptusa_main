@@ -10,16 +10,17 @@
 
 #include "lua_manager.h"
 
+#ifdef TRACY_ENABLE
+// TracyLua.hpp expects the Lua headers to be included first.
+#include "tracy/TracyLua.hpp"
+#endif
+
 #include "prj_mngr.h"
 #include "device/device.h"
 #include "tech_def.h"
 #include "modbus_serv.h"
 
 #include "log.h"
-#ifdef TRACY_ENABLE
-// TracyLua.hpp expects the Lua headers to be included first.
-#include "tracy/TracyLua.hpp"
-#endif
 //-----------------------------------------------------------------------------
 auto_smart_ptr< lua_manager > lua_manager::instance;
 bool lua_manager::is_print_stack_traceback = true;
