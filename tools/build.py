@@ -3,24 +3,60 @@
 
 import argparse
 import json
+import os
 from pathlib import Path
 import re
 import subprocess
 import sys
 
 ROOT = Path(__file__).resolve().parents[1]
+ROOT_REALPATH = os.path.realpath(ROOT)
 
-# Only -D cache entries may reach cmake configure; this blocks argument
-# injection from LLM-supplied --configure-arg values.
-CONFIGURE_ARG_RE = re.compile(r"-D[A-Za-z_][A-Za-z0-9_]*(?:=.*)?")
+# Only -D cache entries may reach cmake configure. Values used downstream are
+# rebuilt from the regex match object's captured groups, never from the raw
+# CLI string, so --configure-arg values cannot inject extra cmake arguments.
+CONFIGURE_ARG_RE = re.compile(r"-D([A-Za-z_][A-Za-z0-9_]*)(?:=(.*))?")
+
+# Preset tokens handed to cmake must be plain name/number tokens; the names
+# used downstream are rebuilt from the regex match object's captured group.
+PRESET_TOKEN_RE = re.compile(r"([A-Za-z0-9][A-Za-z0-9._+-]{0,99})")
 
 
-def path_inside_root(path, option):
-    """Resolve path and reject traversal outside the repository root."""
-    resolved = Path(path).resolve()
-    if not resolved.is_relative_to(ROOT):
+def sanitize_configure_arg(raw):
+    """Validate a -D cache entry and rebuild it from the regex match groups."""
+    match = CONFIGURE_ARG_RE.fullmatch(raw)
+    if match is None:
+        raise ValueError("configure args must be -D<name>[=<value>] entries.")
+    name = match.group(1)
+    value = match.group(2)
+    if value is None:
+        return f"-D{name}"
+    return f"-D{name}={value}"
+
+
+def sanitize_preset_token(raw):
+    """Validate a preset token and return the string rebuilt from its match."""
+    match = PRESET_TOKEN_RE.fullmatch(raw)
+    if match is None:
+        raise ValueError(f"Unknown or unavailable preset: {raw}")
+    return match.group(1)
+
+
+def path_inside_root(raw, option):
+    """Reject traversal outside the repo root; return the realpath rebuild.
+
+    The candidate is rebuilt by os.path.realpath from resolved components
+    and only that realpath string, never the raw input, is returned for
+    callers to use downstream.
+    """
+    candidate = os.path.realpath(os.path.abspath(str(raw)))
+    try:
+        inside = os.path.commonpath([ROOT_REALPATH, candidate]) == ROOT_REALPATH
+    except ValueError:
+        inside = False
+    if not inside:
         raise ValueError(f"{option} must be a path inside the repository.")
-    return resolved
+    return candidate
 
 
 def read_build_presets(root):
@@ -74,17 +110,18 @@ def select_presets(tokens, available):
         for item in re.split(r"[,\s]+", token.strip()):
             if not item:
                 continue
-            if item.lower() == "all":
+            name = sanitize_preset_token(item)
+            if name.lower() == "all":
                 names = available
-            elif item.isdigit() and 1 <= int(item) <= len(available):
-                names = [available[int(item) - 1]]
-            elif item in available:
-                names = [item]
+            elif name.isdigit() and 1 <= int(name) <= len(available):
+                names = [available[int(name) - 1]]
+            elif name in available:
+                names = [name]
             else:
-                raise ValueError(f"Unknown or unavailable preset: {item}")
-            for name in names:
-                if name not in selected:
-                    selected.append(name)
+                raise ValueError(f"Unknown or unavailable preset: {name}")
+            for preset_name in names:
+                if preset_name not in selected:
+                    selected.append(preset_name)
     if not selected:
         raise ValueError("No presets selected.")
     return selected
@@ -138,7 +175,7 @@ def main(argv=None):
     settings = dict(cmake="cmake", jobs=4, skip_configure=False, keep_going=False,
                     configure_args=[], presets=[])
     if args.settings:
-        loaded = json.loads(path_inside_root(args.settings, "--settings")
+        loaded = json.loads(Path(path_inside_root(args.settings, "--settings"))
                             .read_text(encoding="utf-8-sig"))
         if not isinstance(loaded, dict) or set(loaded) - set(settings):
             raise ValueError("Settings must be a JSON object with supported option names.")
@@ -158,9 +195,8 @@ def main(argv=None):
     for key in ("presets", "configure_args"):
         if not isinstance(settings[key], list) or not all(isinstance(x, str) for x in settings[key]):
             raise ValueError(f"{key} must be an array of strings.")
-    for arg in settings["configure_args"]:
-        if not CONFIGURE_ARG_RE.fullmatch(arg):
-            raise ValueError("configure args must be -D<name>[=<value>] entries.")
+    settings["configure_args"] = [sanitize_configure_arg(arg)
+                                  for arg in settings["configure_args"]]
 
     presets = read_build_presets(ROOT)
     configured = set(listed_presets(settings["cmake"], "configure"))
@@ -180,7 +216,7 @@ def main(argv=None):
     settings["presets"] = selected
     if args.save_settings:
         save_path = path_inside_root(args.save_settings, "--save-settings")
-        save_path.write_text(
+        Path(save_path).write_text(
             json.dumps(settings, indent=2) + "\n", encoding="utf-8")
         print(f"Settings saved: {save_path}")
     return run_builds(selected, presets, settings, args.dry_run)
