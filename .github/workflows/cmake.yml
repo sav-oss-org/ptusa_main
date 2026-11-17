@@ -26,11 +26,8 @@ env:
   MINGW_EXCEPT: seh
   MINGW_CRT: ucrt
 
-# De-duplicate heavy matrix runs per pull request. Duplicate
-# `pull_request_target` events for one head otherwise start several
-# full matrices at once (observed on 2026-11-16; see #1555), and the
-# same grouping keeps master pushes independent from PR runs. PR
-# events group by pull request number, other events by git ref.
+# One run per pull request at a time; other events group per git ref.
+# Rationale and examples: #1555.
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: false

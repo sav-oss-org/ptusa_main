@@ -13,13 +13,8 @@ on:
   merge_group:
     types: [ checks_requested ]
 
-# Queue concurrent runs of one pull request instead of letting them
-# race. The `labeled` and `synchronize` event types can fire for the
-# same head within seconds; concurrent SonarCloud PR analyses of one
-# pull request cancel each other server-side and leave the
-# `SonarCloud Code Analysis` check `cancelled` (observed on #1528 and
-# #1529 on 2026-11-13; see #1555). Queuing keeps the check instead of
-# losing it. Non-PR events fall back to the git ref as the group key.
+# One run per pull request at a time; other events group per git ref.
+# Rationale and examples: #1555.
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: false
