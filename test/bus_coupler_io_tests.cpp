@@ -280,7 +280,7 @@ TEST( io_device, check_output_DO_node_PP_state )
 	io_device dev( "TEST_DO" );
     EXPECT_EQ( 0, dev.check_output_DO_node_PP_state() );
 
-	dev.init_and_alloc( 1, 0, 0, 0 );
+	dev.init_and_alloc_DO_DI( 1, 0 );
 
 	io_manager::get_instance()->init( 0 );
 	EXPECT_EQ( 1, dev.check_output_DO_node_PP_state() );
@@ -322,7 +322,7 @@ TEST( io_device, check_output_AO_node_PP_state )
     io_device dev( "TEST_AO" );
     EXPECT_EQ( 0, dev.check_output_AO_node_PP_state() );
 
-    dev.init_and_alloc( 0, 0, 1, 0 );
+    dev.init_and_alloc_AO_AI( 1, 0 );
 
     io_manager::get_instance()->init( 0 );
     EXPECT_EQ( 1, dev.check_output_AO_node_PP_state() );
@@ -396,7 +396,7 @@ TEST( io_device, get_AO_IOLINK_state )
 
     io_device dev1( "D1" );
     dev1.set_io_vendor( io_device::VENDOR::PHOENIX );
-    dev1.init_and_alloc( 0, 0, 2, 0 );
+    dev1.init_and_alloc_AO_AI( 2, 0 );
     dev1.init_channel( io_device::IO_channels::CT_AO, 0, 0, 0, 1, 1 );
     const io_device& DEV1 = dev1;
     EXPECT_EQ( DEV1.get_AO_IOLINK_state( 0 ),
