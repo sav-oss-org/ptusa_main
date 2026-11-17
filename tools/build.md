@@ -69,4 +69,4 @@ python -m unittest discover -s tools -p test_build.py
 
 Те же проверки выполняются в CI как CTest-тест `tools_build_py_tests`.
 Прямой запуск файла с переменной окружения `PTUSA_BUILD_COVERAGE_XML`
-дополнительно пишет отчёт `coverage.xml` в корень репозитория для Sonar.
+дополнительно пишет отчёт Sonar: `coverage.xml` в корень и `.coverage-reports/coverage-py.xml` (текущий glob по умолчанию).

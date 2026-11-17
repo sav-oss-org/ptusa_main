@@ -17,6 +17,7 @@ import runpy
 import subprocess
 import sys
 import tempfile
+import time
 from types import CodeType
 import unittest
 from unittest.mock import patch
@@ -98,12 +99,13 @@ def _write_coverage_xml(hits, destination):
         classes.append(
             f'<class name="{escape(Path(relative).name)}"'
             f' filename="{escape(relative)}" line-rate="{rate:.6f}"'
-            ' branch-rate="0" complexity="0"><lines>'
+            ' branch-rate="0" complexity="0"><methods/><lines>'
             + "".join(entries) + "</lines></class>")
     overall = covered / total if total else 1.0
     report = (
         '<?xml version="1.0" encoding="utf-8" ?>\n'
-        f'<coverage version="7.13.3" line-rate="{overall:.6f}"'
+        f'<coverage version="7.13.3" timestamp="{int(time.time())}"'
+        f' line-rate="{overall:.6f}"'
         f' lines-covered="{covered}" lines-valid="{total}"'
         ' branches-covered="0" branches-valid="0" branch-rate="0"'
         ' complexity="0">\n'
@@ -112,7 +114,15 @@ def _write_coverage_xml(hits, destination):
         f' line-rate="{overall:.6f}" branch-rate="0" complexity="0">'
         "<classes>" + "".join(classes) + "</classes></package></packages>\n"
         "</coverage>\n")
-    Path(destination).write_text(report, encoding="utf-8")
+    # Mirror the report next to the Sonar scanner's current default glob
+    # .coverage-reports/*coverage-*.xml in addition to the requested path.
+    outputs = [Path(destination)]
+    mirrored = Path(build.ROOT) / ".coverage-reports" / "coverage-py.xml"
+    if outputs[0] != mirrored:
+        outputs.append(mirrored)
+    for output in outputs:
+        output.parent.mkdir(parents=True, exist_ok=True)
+        output.write_text(report, encoding="utf-8")
 
 
 def _run_with_coverage(destination):
