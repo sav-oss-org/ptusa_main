@@ -143,6 +143,11 @@ Include all of this in the sub-agent prompt:
   (`gh issue comment <issue> --repo sav-oss-org/ptusa_main --body
   <pr-url>`): that comment is the claim signal the label protocol
   promises.
+- Every GitHub post an agent writes under the maintainer account
+  (issue/PR comments, review-thread replies) must end with its own
+  final line: `🤖 Posted with AI assistance (Zed agent)`. Bodies
+  of issues and PRs keep using the opening `🤖 Generated with AI
+  assistance` instead; never hide the maintainer's identity in prose.
 - Forbidden without a human decision: merging, approving, resolving
   human threads, touching `deps/` submodules, adding labels,
   `git commit --amend` of pushed commits, force-push. Editing
