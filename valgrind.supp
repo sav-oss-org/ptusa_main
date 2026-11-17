@@ -98,3 +98,39 @@
    fun:*
    fun:_ZN19ParamsRecipeManager13createAdapterEP19ParamsRecipeStorage
 }
+
+# #1524: tech objects live in the tech_object_manager singleton and
+# are never deleted, so their operation vectors leak through
+# operation_manager::add_operation().  Both observed chains: the
+# operation vector growth and the operation/step construction.
+{
+   leak-operation-manager-vector-growth
+   Memcheck:Leak
+   match-leak-kinds: definite
+   fun:*
+   fun:*
+   fun:_ZN17operation_manager13add_operationEPKc
+}
+
+{
+   leak-operation-manager-operation-steps
+   Memcheck:Leak
+   match-leak-kinds: definite
+   fun:*
+   fun:*
+   fun:*
+   fun:*
+   fun:_ZN17operation_manager13add_operationEPKc
+}
+
+{
+   leak-operation-manager-action-vector-growth
+   Memcheck:Leak
+   match-leak-kinds: definite
+   fun:*
+   fun:*
+   fun:*
+   fun:*
+   fun:*
+   fun:_ZN17operation_manager13add_operationEPKc
+}

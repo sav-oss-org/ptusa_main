@@ -22,7 +22,11 @@ set(MEMCHECK_DEFAULT_EXCLUDE
     # Compare wall-clock uptimes and countdown timers; memcheck
     # slowdowns shift the measured values.
     PAC_info.save_device
-    cipline_tech_object.OpolRR)
+    cipline_tech_object.OpolRR
+    # get_delta_millisec00 measures wall-clock deltas with a fixed
+    # tolerance; memcheck's slowdown pushes the measured values out
+    # of it intermittently.
+    toLuapp.tolua_PAC_dev_get_delta_millisec00)
 
 function(run_memcheck_test target)
     if(NOT MEMORY_CHECK)
