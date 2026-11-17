@@ -1,8 +1,6 @@
 name: CMake Build Matrix
 
 on:
-  push:
-    branches: [ master ]
   schedule:
     - cron: '0 9 * * 1'
   workflow_dispatch:
@@ -26,11 +24,61 @@ env:
   MINGW_EXCEPT: seh
   MINGW_CRT: ucrt
 
+# One run per pull request at a time; other events group per git ref.
+# Rationale and examples: #1555.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: false
+
 jobs:
+  # Docs-only pull requests skip the heavy build matrix. The flag is
+  # computed by this tiny job instead of a workflow-level `paths-ignore`,
+  # because that filter would prevent the workflow from running at all
+  # and leave the required matrix checks "Expected" forever. Jobs gated
+  # with `if:` still report skipped checks, which satisfy required checks.
+  docs-only:
+    name: Detect docs-only change
+    if: ${{ github.repository == 'sav-oss-org/ptusa_main' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      docs_only: ${{ steps.check.outputs.docs_only }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          # pull_request_target checks out the base by default; the
+          # detector must diff the pull request head instead.
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          # The head ref of a fork pull request needs the explicit
+          # opt-in of checkout v7 on pull_request_target; this job
+          # only runs git diff on the checked metadata and executes
+          # no pull request code (same pattern as sonar_build.yml).
+          allow-unsafe-pr-checkout: 'true'
+      - name: Check whether only documentation files changed
+        id: check
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          set -eu
+          if [ -z "$BASE_REF" ]; then
+            echo "docs_only=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          base=$(git merge-base "origin/$BASE_REF" HEAD)
+          if git diff --name-only "$base" HEAD -- . \
+            ':(exclude)*.md' ':(exclude)docs' | grep -q .; then
+            echo "docs_only=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "docs_only=true" >> "$GITHUB_OUTPUT"
+          fi
   build:
     name: ${{ matrix.config.name }}
+    needs: docs-only
     if: >-
       ${{
+        needs.docs-only.outputs.docs_only != 'true' &&
         github.repository == 'sav-oss-org/ptusa_main' &&
           (
           github.event_name == 'push' ||
@@ -571,7 +619,11 @@ jobs:
         token: ${{ secrets.CODECOV_TOKEN }}
 
     - name: Store benchmark result (Linux only)
-      if: runner.os == 'Linux' && !matrix.config.preset
+      # github-action-benchmark cannot resolve the temporary
+      # merge queue ref (gh-readonly-queue/*), so skip queue runs.
+      if: >-
+        runner.os == 'Linux' && !matrix.config.preset &&
+        github.event_name != 'merge_group'
       uses: benchmark-action/github-action-benchmark@4322e5726e6334590d251fc4f92bec0efafc45dc # v1.22.2
       with:
         name: C++ Benchmark
@@ -605,8 +657,10 @@ jobs:
 
   memcheck:
     name: Valgrind memcheck (Linux GCC)
+    needs: docs-only
     if: >-
       ${{
+        needs.docs-only.outputs.docs_only != 'true' &&
         github.repository == 'sav-oss-org/ptusa_main' &&
           (
           github.event_name == 'push' ||
@@ -666,6 +720,30 @@ jobs:
       working-directory: build
       run: ctest -R main_test_memcheck --output-on-failure
 
+  # The ruleset also requires the codecov/patch commit status, which is
+  # posted by the codecov action inside the Ubuntu build job. A skipped
+  # job posts no external status, so for docs-only changes post a passing
+  # codecov/patch status here; real changes still get real reports.
+  codecov-docs-only:
+    name: Report codecov/patch for docs-only change
+    needs: docs-only
+    if: needs.docs-only.outputs.docs_only == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      statuses: write
+    steps:
+      - name: Post passing codecov/patch status
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: >-
+          gh api -X POST "repos/$GITHUB_REPOSITORY/statuses/$HEAD_SHA"
+          -f state=success
+          -f context=codecov/patch
+          -f description="Docs-only change, no coverage impact"
+          -f target_url="$RUN_URL"
   release:
     if: contains(github.ref, 'tags/v')
     runs-on: ubuntu-latest

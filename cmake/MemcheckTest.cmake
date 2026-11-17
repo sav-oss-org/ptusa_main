@@ -22,11 +22,7 @@ set(MEMCHECK_DEFAULT_EXCLUDE
     # Compare wall-clock uptimes and countdown timers; memcheck
     # slowdowns shift the measured values.
     PAC_info.save_device
-    cipline_tech_object.OpolRR
-    # checkBuff() calls FD_SET without an FD_SETSIZE guard; valgrind
-    # opens enough descriptors to push fd past 1024 and glibc aborts
-    # with __fdelt_chk.  Re-enable together with the fd guard fix.
-    tcp_communicator.checkBuff)
+    cipline_tech_object.OpolRR)
 
 function(run_memcheck_test target)
     if(NOT MEMORY_CHECK)
@@ -53,7 +49,7 @@ function(run_memcheck_test target)
 
     # Print every leak kind, but fail the case only on definite
     # leaks.  The baseline suppression file in the repository root
-    # hides the known findings (issues #1524, #1525, #1526); remove
+    # hides the known findings (issue #1524); remove
     # entries there as the fixes land.
     add_test(NAME ${target}_memcheck
         COMMAND ${VALGRIND_EXECUTABLE}

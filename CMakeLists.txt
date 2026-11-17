@@ -609,6 +609,10 @@ set(STDOUT_CAPTURE_LOCKED_FILTER
 
 	"uni_io_manager.write_outputs:"
 
+	"SRAM.safe_save_create_error_logged_once:"
+	"SRAM.storage_directory_create_error_logged:"
+	"SRAM.storage_directory_write_error_logged:"
+
 	"tech_object.set_mode:"
 
     "project_manager.proc_main_params:"

@@ -384,6 +384,13 @@ changes
   `🤖 Generated with AI assistance`.
 - Follow `AGENTS.md` for the full attribution rule.
 
+## Response links
+
+When an agent reply mentions a GitHub pull request, issue, review
+thread, comment, commit, or CI run, render the reference as a
+Markdown link with the full URL so the reader can click through
+directly.
+
 ## Advanced Usage
 
 ### Cross-Compilation (PLCnext)
@@ -402,11 +409,9 @@ memcheck and fails when Valgrind reports definite leaks. Without
 `MEMORY_CHECK=ON`, on non-Linux platforms, or without Valgrind, the
 case is not registered:
 
-Known findings tracked as issues #1524, #1525 and #1526 are hidden
-by the baseline suppression file `valgrind.supp` in the repository
-root; remove entries as the fixes land. The `checkBuff` abort from
-issue #1527 cannot be suppressed, so that test stays excluded from
-memcheck by default.
+Known findings tracked as issue #1524 are hidden by the baseline
+suppression file `valgrind.supp` in the repository root; remove
+entries as the fixes land.
 
 ```bash
 cd build
@@ -418,7 +423,8 @@ A direct Valgrind run from the build directory stays possible:
 ```bash
 cd build
 valgrind --tool=memcheck --smc-check=all --leak-check=full \
-    --suppressions="$(git rev-parse --show-toplevel)/valgrind.supp" \n    ./Release/main_test
+    --suppressions="$(git rev-parse --show-toplevel)/valgrind.supp" \
+    ./Release/main_test
 ```
 
 `--smc-check=all` is mandatory because the tests patch executable

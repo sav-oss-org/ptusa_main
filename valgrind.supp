@@ -4,12 +4,8 @@
 # These entries hide known findings tracked as issues in
 # sav-oss-org/ptusa_main:
 #   #1524  Unit-test leaks under Valgrind (test fixtures)
-#   #1525  io_device::get_DO reads past the DO channels allocation
-#   #1526  AsyncReceive branches on an uninitialised stack value
 # Do not add new entries without a linked issue, and remove entries
-# as soon as the corresponding fix lands.  The tcp_communicator
-# checkBuff abort (#1527) cannot be suppressed, so that test stays
-# excluded in cmake/MemcheckTest.cmake until the fd guard lands.
+# as soon as the corresponding fix lands.
 #
 # cmake/MemcheckTest.cmake passes this file to valgrind automatically.
 #
@@ -34,14 +30,16 @@
    fun:_ZN19cipline_tech_objectC1EPKcjjS1_jjjjjj
 }
 
-# #1524: init_and_alloc() allocates channel arrays that nobody
-# releases afterwards.
+# #1524: the test-only init_and_alloc_DO_DI() and
+# init_and_alloc_AO_AI() (split in #1537) allocate channel arrays;
+# only the DO/DI group is paired with a free in the fixtures, so
+# either group can still leak.
 {
    leak-io-device-init-and-alloc
    Memcheck:Leak
    match-leak-kinds: definite
    fun:*
-   fun:_ZN9io_device14init_and_allocEiiii
+   fun:*init_and_alloc_*
 }
 
 # #1524: cip_stats::deserialize() allocates arrays loaded from the
@@ -99,20 +97,4 @@
    match-leak-kinds: definite
    fun:*
    fun:_ZN19ParamsRecipeManager13createAdapterEP19ParamsRecipeStorage
-}
-
-# #1525: get_DO() reads one element past the end of the DO channels
-# array when the device reports more DO channels than allocated.
-{
-   oob-read-io-device-get-do
-   Memcheck:Addr8
-   fun:_ZNK9io_device6get_DOEj
-}
-
-# #1526: AsyncReceive() selects() with an fd_set built from an
-# uninitialised stack value.
-{
-   cond-linux-tcp-client-async-receive
-   Memcheck:Cond
-   fun:_ZN16linux_tcp_client12AsyncReceiveEv
 }

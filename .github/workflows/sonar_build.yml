@@ -13,6 +13,12 @@ on:
   merge_group:
     types: [ checks_requested ]
 
+# One run per pull request at a time; other events group per git ref.
+# Rationale and examples: #1555.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: false
+
 jobs:
   build:
     name: Build and analyze
@@ -48,6 +54,12 @@ jobs:
       CCACHE_DIR: ${{ github.workspace }}/.ccache
       CCACHE_BASEDIR: ${{ github.workspace }}
       CCACHE_COMPILERCHECK: content
+      # Deep symbolic execution takes ~85% of the CFamily analysis time.
+      # Only merge-queue runs get the shallow-mode cap, because they block
+      # the merge queue; the post-merge `push` analysis keeps full depth
+      # and blocks nothing. Threshold 70 is the value recommended by the
+      # scanner itself and by the Sonar docs; 0 disables the cap.
+      SONAR_SHALLOW_TH: ${{ github.event_name == 'merge_group' && '70' || '0' }}
     steps:
       - name: Harden the runner (Audit all outbound calls)
         uses: step-security/harden-runner@1d88384fd173af6ecb012dfd0264a306b711241a # v2.22.4
@@ -69,7 +81,7 @@ jobs:
           sudo apt-get install -y unixodbc-dev
 
       - name: Setup ccache (cache restore/save)
-        uses: hendrikmuhs/ccache-action@f09c25b45002a07be2955cbe52e8cee55643f89d # v1.2.24
+        uses: hendrikmuhs/ccache-action@dbeefd73e8e2ffc1bbc412570072735eb4db3607 # v1.2.25
         with:
           key: ${{ runner.os }}-ccache-${{ hashFiles('**/CMakeLists.txt') }}
           restore-keys: |
@@ -140,4 +152,5 @@ jobs:
             --define sonar.cfamily.compile-commands="${{ env.BUILD_WRAPPER_OUT_DIR }}/compile_commands.json" \
             --define sonar.pullrequest.key=${{ github.event.pull_request.number }} \
             --define sonar.scm.revision=${{ github.event.pull_request.head.sha }} \
-            --define sonar.cfamily.gcov.reportsPath="coverage-dir"
+            --define sonar.cfamily.gcov.reportsPath="coverage-dir" \
+            --define sonar.cfamily.symbolicExecution.automaticShallowModeThreshold=${{ env.SONAR_SHALLOW_TH }}

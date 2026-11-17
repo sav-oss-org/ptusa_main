@@ -20,12 +20,64 @@ Please note we have a code of conduct, please follow it in all your interactions
 
 - Keep each pull request focused on one concrete change.
 - Put unrelated improvements into separate pull requests.
-- Use concise pull request titles.
+- Use concise pull request titles. Write them in the imperative mood,
+  because a squash merge builds the commit message from the title.
 - Use Markdown backticks to highlight technical words when useful, for
   example:
-  ``Removes `DNS` reverse lookup from `TCP` logging``.
+  ``Remove `DNS` reverse lookup from `TCP` logging``.
 - Explain why the change is needed, what changed, expected risk and validation
   in the pull request description.
+
+## Branch Names
+
+- Use snake_case. Prefixes form a closed set mapped from the issue
+  kind and the commit verb:
+  - `fix_` for bugs: `fix_pac_info_test_order`;
+  - `add_` for features and new devices, written as
+    `add_device_<name>` for devices:
+    `add_lua_test_error_counter`;
+  - `remove_` and `refactor_` for removals and refactoring;
+  - `ci_` for CI and test infrastructure: `ci_test_order_shuffle`;
+  - `docs_` for documentation.
+- The `dependabot/` prefix is reserved for automated pull requests.
+- Never use Conventional Branch slashes (`feat/`, `fix/`): the
+  branch vocabulary follows the commit verbs, not Conventional
+  Commit types.
+- CI does not validate branch names: squash merges keep them out of
+  history, and commit-check only knows the Conventional Branch
+  format, which rejects every branch in this repository.
+
+## Issue Types and Labels
+
+- The native GitHub issue type is the canonical classification:
+  `Bug`, `Feature`, or `Task`. Templates apply it automatically.
+- The `bug` and `enhancement` labels are GitHub's own mirror of the
+  native type: treat them as read-only reflections, not as a second
+  source of truth to keep in sync by hand.
+- The issue templates write title prefixes (`[BUG]: `,
+  `[FEATURE]: `, `[DEVICE]: `) as human-readable reflections of the
+  type. Edit a prefix only to fix a wrong reflection, never to
+  reclassify the issue.
+- `[DEVICE]` refines `[FEATURE]` for new device support and lives in
+  the title until the organization owns a Device type.
+- A `[DISCUSSION]` marker in the title means the issue is a design
+  discussion for humans, not something to implement directly.
+- Labels remain for workflow state beyond classification, such as
+  `urgent`, `help wanted`, and `iteration-plan`.
+- The `bug` label classifies issues while `bugfix` classifies pull
+  requests; they are separate axes, not duplicates.
+
+## Versioning and Tags
+
+- Release tags use CalVer: `YYYY.MM.DD`, or `YYYY.MM.DD.N` when a
+  second release happens on the same day. `N` is a hotfix serial
+  number starting at 1.
+- Components carry no leading zeros (`2026.1.28`), and new tags carry
+  no leading `v`; the legacy `v2024.01.31` is a historical exception.
+- Tags carry no free-form suffixes such as `CP1251`; rule `CC401` in
+  `.github/cchk.toml` enforces the pattern.
+- Semantic Versioning is reserved for independently distributed
+  libraries or SDKs, should this repository ever publish them.
 
 ## AI-Assisted Commit Attribution
 
