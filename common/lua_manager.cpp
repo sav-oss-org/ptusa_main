@@ -664,9 +664,32 @@ void lua_manager::note_lua_error( lua_State* L, const char* message )
             {
             lua_getinfo( L, "Sln", &ar );
 
-            res += snprintf( G_LOG->msg + res, i_log::C_BUFF_SIZE - res,
-                "\n\t%s:%d: in function '%s' ('%s')",
-                ar.short_src, ar.currentline, ar.name, ar.namewhat );
+            // Lua 5.1 не всегда может определить имя функции: для
+            // главного чанка и безымянных функций ar.name равен
+            // nullptr, а печать nullptr через %s - неопределенное
+            // поведение. Поэтому печатаем то, что знает ar.what.
+            if ( ar.name != nullptr )
+                {
+                res += snprintf( G_LOG->msg + res,
+                    i_log::C_BUFF_SIZE - res,
+                    "\n\t%s:%d: in function '%s' ('%s')",
+                    ar.short_src, ar.currentline, ar.name,
+                    ar.namewhat );
+                }
+            else if ( strcmp( ar.what, "main" ) == 0 )
+                {
+                res += snprintf( G_LOG->msg + res,
+                    i_log::C_BUFF_SIZE - res,
+                    "\n\t%s:%d: in main chunk", ar.short_src,
+                    ar.currentline );
+                }
+            else
+                {
+                res += snprintf( G_LOG->msg + res,
+                    i_log::C_BUFF_SIZE - res,
+                    "\n\t%s:%d: in function <%s:%d>", ar.short_src,
+                    ar.currentline, ar.short_src, ar.linedefined );
+                }
             level++;
             }
 
