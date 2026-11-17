@@ -1,8 +1,6 @@
 name: CMake Build Matrix
 
 on:
-  push:
-    branches: [ master ]
   schedule:
     - cron: '0 9 * * 1'
   workflow_dispatch:
