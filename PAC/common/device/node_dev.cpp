@@ -160,35 +160,25 @@ void node_dev::evaluate_io()
         }
     }
 //-----------------------------------------------------------------------------
-/// Returns a command output file private to this process and call.
-/// A fixed file name in the shared working directory lets concurrent
-/// command runs (for example parallel CTest jobs, which use one
-/// process per test) truncate and overwrite each other's output via
-/// the shell `>` redirect, so the reader can observe empty, mixed,
-/// or foreign content. The system temporary directory keeps the
-/// working tree clean; if it is unavailable, a relative unique name
-/// still prevents the race between processes. The random suffix from
-/// `unique_path()` also makes the name unguessable, which is
-/// required to use the publicly writable temporary directory safely
-/// (no pre-creation or symlink attacks).
+/// Build a private output file name for `run_cmd_exit_code()`.
+///
+/// Ctest runs every gtest case as its own `main_test` process, and
+/// parallel jobs share one working directory, so the fixed file name
+/// used before let a second command-redirecting test truncate or
+/// overwrite the file while a first test read it back. The process id
+/// suffix gives every concurrent process its own file.
 static std::filesystem::path unique_cmd_output_path()
     {
+    // The process id cannot be alive twice at once, which keeps the
+    // names unique, and the working directory is not world-writable,
+    // unlike the system temporary directory.
 #ifdef LINUX_OS
     const auto pid{ getpid() };
 #else
     const auto pid{ _getpid() };
 #endif
-    std::error_code ec;
-    std::filesystem::path dir = std::filesystem::temp_directory_path( ec );
-    if ( ec )
-        {
-        dir.clear();
-        }
-
-    std::filesystem::path name = std::filesystem::unique_path(
-        "ptusa_cmd_" + std::to_string( pid ) + "_output_????????.txt" );
-
-    return dir / name;
+    return std::filesystem::path( "ptusa_cmd_"
+        + std::to_string( static_cast< long >( pid ) ) + "_output.txt" );
     }
 //-----------------------------------------------------------------------------
 int node_dev::run_cmd_exit_code( const char* cmd, int expected )
