@@ -49,6 +49,8 @@ jobs:
           BASE_REF: ${{ github.base_ref }}
         run: |
           set -eu
+          ruby --version
+          ruby -ryaml -e 'X = 1'
           if [ -z "$BASE_REF" ]; then
             echo "ci_only=false" >> "$GITHUB_OUTPUT"
             exit 0
