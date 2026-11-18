@@ -458,7 +458,7 @@ TEST( cipline_tech_object, OpolRR )
     // Arm with a one-millisecond countdown instead of zero: a
     // zero countdown makes the first boundary check depend on
     // whether two get_millisec() reads land on the same tick,
-    // which fails on loaded CI runners (issue #1569).
+    // which fails on loaded CI runners.
     cip1.T[ TMR_CHK_CONC ]->set_countdown_time( 1 );
     float currentConcentration;
     float cVal;
