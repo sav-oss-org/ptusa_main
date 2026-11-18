@@ -3,6 +3,23 @@
 
 using namespace ::testing;
 
+TEST( PAC_critical_errors_manager, network_alarm_identifies_listener )
+    {
+    auto manager = PAC_critical_errors_manager::get_instance();
+    manager->reset_all_error();
+    manager->set_global_error( PAC_critical_errors_manager::AC_NET,
+        PAC_critical_errors_manager::AS_BIND_F, 0 );
+    manager->set_global_error( PAC_critical_errors_manager::AC_NET,
+        PAC_critical_errors_manager::AS_BIND_F, 1 );
+    std::array<char, 4096> buffer{};
+    u_int_2 id = 0;
+    manager->save_as_Lua_str( buffer.data(), id );
+    EXPECT_THAT( buffer.data(), HasSubstr( "Мастер : вызов функции bind(...)" ) );
+    EXPECT_THAT( buffer.data(), HasSubstr( "Modbus : вызов функции bind(...)" ) );
+    EXPECT_THAT( buffer.data(), Not( HasSubstr( "{}" ) ) );
+    manager->reset_all_error();
+    }
+
 TEST( PAC_critical_errors_manager, set_global_error )
     {
     auto mngr = PAC_critical_errors_manager::get_instance();

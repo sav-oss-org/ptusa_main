@@ -620,6 +620,7 @@ set(STDOUT_CAPTURE_LOCKED_FILTER
 	"project_manager.apply_opc_mode:")
 
 set(TCP_SOCKET_LOCKED_FILTER
+    "tcp_communicator_linux_restart.*:"
     "tcp_communicator.evaluate:"
 	"tcp_communicator.recvtimeout:"
     "device_communicator.write_devices_states_service:"
