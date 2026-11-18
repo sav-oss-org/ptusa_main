@@ -11,6 +11,8 @@ on:
     types: [ labeled, opened, reopened, synchronize ]
   merge_group:
     types: [ checks_requested ]
+  release:
+    types: [ published ]
 
 env:
   NINJA_VERSION: 1.10.1
@@ -152,7 +154,7 @@ jobs:
         needs.docs-only.outputs.ci_only != 'true' &&
         github.repository == 'sav-oss-org/ptusa_main' &&
           (
-          github.event_name == 'push' ||
+          github.event_name == 'release' ||
           github.event_name == 'schedule' ||
           github.event_name == 'merge_group' ||
           github.event_name == 'workflow_dispatch' ||
@@ -739,7 +741,7 @@ jobs:
     # only the privileged `pull_request_target` copy posts it, so
     # the stub is restricted to that event (this workflow has no
     # `push` trigger, and the flags are false for `schedule`,
-    # `workflow_dispatch`, and `merge_group` anyway).
+    # `workflow_dispatch`, `merge_group`, and `release` anyway).
     if: >-
       (
       needs.docs-only.outputs.docs_only == 'true' ||
@@ -762,89 +764,40 @@ jobs:
           -f context=codecov/patch
           -f description="Docs- or workflow-only change, no coverage impact"
           -f target_url="$RUN_URL"
-  release:
-    if: contains(github.ref, 'tags/v')
-    runs-on: ubuntu-latest
+  # Publishing a GitHub release (on: release, type published)
+  # runs this workflow from the tag commit, so the build matrix
+  # above compiles exactly the released sources. This job then
+  # attaches every produced archive to that release, including
+  # the PLCnext cross builds. The write-scoped token lives only
+  # here: the matrix runs untrusted forks through
+  # pull_request_target and must stay without contents: write.
+  publish-release:
+    name: Attach release archives
     needs: build
-
+    if: github.event_name == 'release'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
-    - name: Harden the runner (Audit all outbound calls)
-      uses: step-security/harden-runner@1d88384fd173af6ecb012dfd0264a306b711241a # v2.22.4
-      with:
-        egress-policy: audit
+      - name: Harden the runner (Audit all outbound calls)
+        uses: step-security/harden-runner@1d88384fd173af6ecb012dfd0264a306b711241a # v2.22.4
+        with:
+          egress-policy: audit
 
-    - name: Create Release
-      id: create_release
-      uses: actions/create-release@0cb9c9b65d5d1901c1f53e5e66eaf4afd303e70e # v1.1.4
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        tag_name: ${{ github.ref }}
-        release_name: Release ${{ github.ref }}
-        draft: false
-        prerelease: false
+      - name: Download build archives
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          path: ./dist
 
-    - name: Store Release url
-      run: |
-        echo "${{ steps.create_release.outputs.upload_url }}" > ./upload_url
-    - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-      with:
-        path: ./upload_url
-        name: upload_url
-
-  publish:
-    if: contains(github.ref, 'tags/v')
-    name: ${{ matrix.config.name }}
-    runs-on: ${{ matrix.config.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        config:
-        - {
-            name: "Windows Latest MSVC",
-            artifact: "Windows-MSVC.7z",
-            os: ubuntu-latest
-          }
-        - {
-            name: "Windows Latest MinGW",
-            artifact: "Windows-MinGW.7z",
-            os: ubuntu-latest
-          }
-        - {
-            name: "Ubuntu Latest GCC",
-            artifact: "Linux.7z",
-            os: ubuntu-latest
-          }
-    needs: release
-
-    steps:
-    - name: Harden the runner (Audit all outbound calls)
-      uses: step-security/harden-runner@1d88384fd173af6ecb012dfd0264a306b711241a # v2.22.4
-      with:
-        egress-policy: audit
-
-    - name: Download artifact
-      uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
-      with:
-        name: ${{ matrix.config.artifact }}
-        path: ./
-
-    - name: Download URL
-      uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
-      with:
-        name: upload_url
-        path: ./
-    - id: set_upload_url
-      run: |
-        upload_url=`cat ./upload_url`
-        echo "upload_url=$upload_url" >> $GITHUB_OUTPUT
-    - name: Upload to Release
-      id: upload_to_release
-      uses: actions/upload-release-asset@e8f9f06c4b078e705bd2ea027f0926603fc9b4d5 # v1.0.2
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.set_upload_url.outputs.upload_url }}
-        asset_path: ./${{ matrix.config.artifact }}
-        asset_name: ${{ matrix.config.artifact }}
-        asset_content_type: application/x-gtar
+      - name: Upload release assets
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          shopt -s nullglob
+          assets=(./dist/*/*.7z)
+          if [ ${#assets[@]} -eq 0 ]; then
+            echo "no release archives were produced" >&2
+            exit 1
+          fi
+          gh release upload "$TAG" "${assets[@]}" --clobber
