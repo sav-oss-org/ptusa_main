@@ -1,6 +1,8 @@
 name: CMake Build Matrix
 
 on:
+  push:
+    branches: [ master ]
   schedule:
     - cron: '0 9 * * 1'
   workflow_dispatch:
@@ -767,9 +769,9 @@ jobs:
     # The `pull_request` copy of this workflow runs with the
     # read-only fork token and cannot post the external status;
     # only the privileged `pull_request_target` copy posts it, so
-    # the stub is restricted to that event (this workflow has no
-    # `push` trigger, and the flags are false for `schedule`,
-    # `workflow_dispatch`, `merge_group`, and `release` anyway).
+    # the stub is restricted to that event (the flags are false
+    # for `push`, `schedule`, `workflow_dispatch`,
+    # `merge_group`, and `release` anyway).
     if: >-
       (
       needs.docs-only.outputs.docs_only == 'true' ||
@@ -792,6 +794,56 @@ jobs:
           -f context=codecov/patch
           -f description="Docs- or workflow-only change, no coverage impact"
           -f target_url="$RUN_URL"
+  # Cutting a release starts here: every master push extracts the
+  # project() version from CMakeLists.txt and, when no release
+  # carries that name yet, drafts a release. GitHub creates the
+  # tag from the commit stored at draft time once the draft is
+  # published, so publishing the draft is the only manual step;
+  # it fires the on: release pipeline below, and the version
+  # gate there can never disagree with the tag because both come
+  # from the same line. Other jobs skip push events through their
+  # own conditions, and the workflow concurrency block serializes
+  # master pushes, so the exists-check stays race-free.
+  autocut-release:
+    name: Draft release for a new CMake version
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Harden the runner (Audit all outbound calls)
+        uses: step-security/harden-runner@1d88384fd173af6ecb012dfd0264a306b711241a # v2.22.4
+        with:
+          egress-policy: audit
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Draft the release when the version is new
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SHA: ${{ github.sha }}
+        run: |
+          set -eu
+          ver=$(sed -nE \
+            's/^project\(ptusa_main VERSION ([0-9.]+).*/\1/p' CMakeLists.txt)
+          if [ -z "$ver" ]; then
+            echo "::error::cannot parse the version from CMakeLists.txt" >&2
+            exit 1
+          fi
+          echo "CMake version: $ver"
+          if gh release view "$ver" \
+            --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "release $ver exists already, nothing to draft"
+            exit 0
+          fi
+          gh release create "$ver" --draft --target "$SHA" \
+            --title "ptusa_main $ver" \
+            --repo "$GITHUB_REPOSITORY" \
+            --notes "Draft cut automatically from master at $SHA." ||
+            gh release view "$ver" --repo "$GITHUB_REPOSITORY" >/dev/null
+
   # Publishing a GitHub release (on: release, type published)
   # runs this workflow from the tag commit, so the build matrix
   # above compiles exactly the released sources. This job then
