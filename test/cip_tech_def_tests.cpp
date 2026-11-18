@@ -455,7 +455,11 @@ TEST( cipline_tech_object, OpolRR )
     cip1.initline();
     InitStationParams();
 
-    cip1.T[ TMR_CHK_CONC ]->set_countdown_time( 0 );
+    // Arm with a one-millisecond countdown instead of zero: a
+    // zero countdown makes the first boundary check depend on
+    // whether two get_millisec() reads land on the same tick,
+    // which fails on loaded CI runners.
+    cip1.T[ TMR_CHK_CONC ]->set_countdown_time( 1 );
     float currentConcentration;
     float cVal;
     float testVal;
@@ -475,7 +479,9 @@ TEST( cipline_tech_object, OpolRR )
             else
                 {
                 EXPECT_EQ( 0, cip1.OpolRR( TANK_K ) );
-                std::this_thread::sleep_for( std::chrono::milliseconds( 1 ) );
+                // Sleep well past the countdown so the expiry is
+                // deterministic regardless of scheduling jitter.
+                std::this_thread::sleep_for( std::chrono::milliseconds( 5 ) );
                 EXPECT_EQ( 1, cip1.OpolRR( TANK_K ) );
                 isCheckPoint = true;
                 }
@@ -503,7 +509,7 @@ TEST( cipline_tech_object, OpolRR )
             else
                 {
                 EXPECT_EQ( 0, cip1.OpolRR( TANK_S ) );
-                std::this_thread::sleep_for( std::chrono::milliseconds( 1 ) );
+                std::this_thread::sleep_for( std::chrono::milliseconds( 5 ) );
                 EXPECT_EQ( 1, cip1.OpolRR( TANK_S ) );
                 isCheckPoint = true;
                 }
