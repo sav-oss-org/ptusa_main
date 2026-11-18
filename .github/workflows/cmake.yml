@@ -736,17 +736,16 @@ jobs:
     needs: docs-only
     # The `pull_request` copy of this workflow runs with the
     # read-only fork token and cannot post the external status;
-    # the privileged `pull_request_target` copy (or a `push`) does
-    # the posting, so the stub is restricted to those events.
+    # only the privileged `pull_request_target` copy posts it, so
+    # the stub is restricted to that event (this workflow has no
+    # `push` trigger, and the flags are false for `schedule`,
+    # `workflow_dispatch`, and `merge_group` anyway).
     if: >-
       (
       needs.docs-only.outputs.docs_only == 'true' ||
       needs.docs-only.outputs.ci_only == 'true'
       ) &&
-      (
-      github.event_name == 'push' ||
       github.event_name == 'pull_request_target'
-      )
     runs-on: ubuntu-latest
     permissions:
       contents: read
