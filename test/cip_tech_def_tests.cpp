@@ -1,5 +1,6 @@
 #include "cip_tech_def_tests.h"
 #include "lua_manager.h"
+#include "scoped_fake_clock.h"
 #include <cstring>
 
 using namespace ::testing;
@@ -448,6 +449,7 @@ TEST( cipline_tech_object, waterTankIsEmpty )
 
 TEST( cipline_tech_object, OpolRR )
     {
+    scoped_fake_clock vclock;
     InitCipDevices();
     cipline_tech_object cip1( "CIP1", 1, 1, "CIP1", 1, 1, 200, 200, 200, 200 );
     lua_manager::get_instance()->set_Lua( lua_open() );
@@ -455,10 +457,9 @@ TEST( cipline_tech_object, OpolRR )
     cip1.initline();
     InitStationParams();
 
-    // Arm with a one-millisecond countdown instead of zero: a
-    // zero countdown makes the first boundary check depend on
-    // whether two get_millisec() reads land on the same tick,
-    // which fails on loaded CI runners.
+    // Virtual clock plus a one-millisecond countdown make the
+    // boundary checks deterministic: expiry follows only the
+    // advance() calls below, never the wall clock (issue #1569).
     cip1.T[ TMR_CHK_CONC ]->set_countdown_time( 1 );
     float currentConcentration;
     float cVal;
@@ -479,9 +480,7 @@ TEST( cipline_tech_object, OpolRR )
             else
                 {
                 EXPECT_EQ( 0, cip1.OpolRR( TANK_K ) );
-                // Sleep well past the countdown so the expiry is
-                // deterministic regardless of scheduling jitter.
-                std::this_thread::sleep_for( std::chrono::milliseconds( 5 ) );
+                vclock.advance( 2 );
                 EXPECT_EQ( 1, cip1.OpolRR( TANK_K ) );
                 isCheckPoint = true;
                 }
@@ -509,7 +508,7 @@ TEST( cipline_tech_object, OpolRR )
             else
                 {
                 EXPECT_EQ( 0, cip1.OpolRR( TANK_S ) );
-                std::this_thread::sleep_for( std::chrono::milliseconds( 5 ) );
+                vclock.advance( 2 );
                 EXPECT_EQ( 1, cip1.OpolRR( TANK_S ) );
                 isCheckPoint = true;
                 }
@@ -740,6 +739,7 @@ TEST( cipline_tech_object, _Circ_timer_behavior )
     // The main logic change (removal of wasflip) is tested via _DoStep
     // and _ToObject tests.
 
+    scoped_fake_clock vclock;
     InitCipDevices();
     cipline_tech_object cip1( "CIP1", 1, 1, "CIP1", 1, 1, 200, 200, 200, 200 );
     lua_manager::get_instance()->set_Lua( lua_open() );
@@ -758,7 +758,7 @@ TEST( cipline_tech_object, _Circ_timer_behavior )
 
     cip1.T[ TMR_OP_TIME ]->set_countdown_time( 1 );
     cip1.T[ TMR_OP_TIME ]->start();
-    sleep_ms( 2 );
+    vclock.advance( 2 );
 
     // Test with can_continue ON.
     can_continue_signal.set_state( 1 );

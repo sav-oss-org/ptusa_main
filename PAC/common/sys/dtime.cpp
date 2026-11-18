@@ -9,6 +9,17 @@ namespace
     }
 
 #ifdef PTUSA_TEST
+namespace
+    {
+    /// Подменный источник миллисекунд, см. set_millisec_source.
+    uint32_t ( *g_millisec_source )() {};
+    }
+//-----------------------------------------------------------------------------
+void set_millisec_source( uint32_t ( *source )() )
+    {
+    g_millisec_source = source;
+    }
+//-----------------------------------------------------------------------------
 tm get_time_next_hour()
     {
     thread_local static struct tm timeInfo_;
@@ -53,6 +64,12 @@ uint32_t get_sec()
 //-----------------------------------------------------------------------------
 uint32_t get_millisec()
     {
+#ifdef PTUSA_TEST
+    if ( g_millisec_source )
+        {
+        return g_millisec_source();
+        }
+#endif // PTUSA_TEST
     auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(
         get_duration() ).count();
 
