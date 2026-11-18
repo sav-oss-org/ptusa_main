@@ -758,13 +758,18 @@ jobs:
         path: ./${{ matrix.config.artifact }}
         name: ${{ matrix.config.artifact }}
 
-  # The ruleset also requires the codecov/patch commit status, which is
-  # posted by the codecov action inside the Ubuntu build job. A skipped
-  # job posts no external status, so for docs-only and workflow-only
-  # changes post a passing codecov/patch status here; real changes still
-  # get real reports.
+  # The ruleset also requires the codecov/patch commit status and the
+  # three matrix build names plus the SonarCloud result. All of them
+  # come from jobs that docs-only and workflow-only pull requests
+  # intentionally skip: a skipped matrix job reports only the
+  # unexpanded template name, and the SonarCloud action never runs
+  # behind the workflow-only gate of its own workflow. This job posts
+  # passing stub statuses instead, so the required contexts never sit
+  # in "Expected" forever; real changes still get real reports. The
+  # SonarCloud stub is limited to workflow-only changes because that
+  # workflow keeps analyzing docs-only pull requests.
   codecov-docs-only:
-    name: Report codecov/patch for docs-only change
+    name: Report stubs for skipped required checks
     needs: docs-only
     # The `pull_request` copy of this workflow runs with the
     # read-only fork token and cannot post the external status;
@@ -794,6 +799,29 @@ jobs:
           -f context=codecov/patch
           -f description="Docs- or workflow-only change, no coverage impact"
           -f target_url="$RUN_URL"
+
+      - name: Post passing statuses for the skipped required checks
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          CI_ONLY: ${{ needs.docs-only.outputs.ci_only }}
+        run: |
+          set -eu
+          post() {
+            gh api -X POST "repos/$GITHUB_REPOSITORY/statuses/$HEAD_SHA" \
+              -f state=success -f context="$1" \
+              -f description="$2" -f target_url="$RUN_URL" >/dev/null
+            echo "posted passing status: $1"
+          }
+          matrix_desc="Docs- or workflow-only change, matrix skipped"
+          post "Ubuntu Latest GCC" "$matrix_desc"
+          post "Windows Latest MSVC" "$matrix_desc"
+          post "Windows Latest MinGW" "$matrix_desc"
+          if [ "$CI_ONLY" = "true" ]; then
+            post "SonarCloud Code Analysis" \
+              "Workflow-only change, no sources to analyze"
+          fi
   # Cutting a release starts here: every master push extracts the
   # project() version from CMakeLists.txt and, when no release
   # carries that name yet, drafts a release. GitHub creates the
