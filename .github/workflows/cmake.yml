@@ -49,6 +49,7 @@ jobs:
       docs_only: ${{ steps.check.outputs.docs_only }}
       ci_only: ${{ steps.check.outputs.ci_only }}
       workflows_changed: ${{ steps.check.outputs.workflows_changed }}
+      version_ok: ${{ steps.version.outputs.version_ok }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -95,6 +96,32 @@ jobs:
             echo "workflows_changed=true" >> "$GITHUB_OUTPUT"
           else
             echo "workflows_changed=false" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Check release tag against CMake version
+        id: version
+        # Release tags carry no v prefix: the tag string must
+        # equal the four-component project() version in
+        # CMakeLists.txt, because that version is what the
+        # binaries embed through version_info.h. A mismatch
+        # fails in seconds and, through version_ok, skips the
+        # expensive matrix; all other events always pass.
+        env:
+          EVENT: ${{ github.event_name }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          echo "version_ok=true" >> "$GITHUB_OUTPUT"
+          if [ "$EVENT" != "release" ]; then
+            exit 0
+          fi
+          cmake_version=$(sed -nE \
+            's/^project\(ptusa_main VERSION ([0-9.]+).*/\1/p' CMakeLists.txt)
+          echo "CMake version: $cmake_version"
+          echo "release tag:   $TAG"
+          if [ -z "$cmake_version" ] || [ "$cmake_version" != "$TAG" ]; then
+            echo "version_ok=false" >> "$GITHUB_OUTPUT"
+            echo "::error::release tag '$TAG' must equal the CMake" \
+              "project() version '$cmake_version'" >&2
+            exit 1
           fi
   # A workflow-only pull request skips the build matrix, and GitHub
   # runs the base copy of the workflow files, so nothing else would
@@ -152,6 +179,7 @@ jobs:
       ${{
         needs.docs-only.outputs.docs_only != 'true' &&
         needs.docs-only.outputs.ci_only != 'true' &&
+        needs.docs-only.outputs.version_ok == 'true' &&
         github.repository == 'sav-oss-org/ptusa_main' &&
           (
           github.event_name == 'release' ||
@@ -774,7 +802,12 @@ jobs:
   publish-release:
     name: Attach release archives
     needs: build
-    if: github.event_name == 'release'
+    # The build-result check keeps this job off matrices that
+    # failed or were skipped, for example after a mistagged
+    # release.
+    if: >-
+      github.event_name == 'release' &&
+      needs.build.result == 'success'
     runs-on: ubuntu-latest
     permissions:
       contents: write
