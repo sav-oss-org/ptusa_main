@@ -31,19 +31,22 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  # Docs-only pull requests skip the heavy build matrix. The flag is
-  # computed by this tiny job instead of a workflow-level `paths-ignore`,
-  # because that filter would prevent the workflow from running at all
-  # and leave the required matrix checks "Expected" forever. Jobs gated
-  # with `if:` still report skipped checks, which satisfy required checks.
+  # Docs-only and workflow-only pull requests skip the heavy build
+  # matrix. The flags are computed by this tiny job instead of a
+  # workflow-level `paths-ignore`, because that filter would prevent
+  # the workflow from running at all and leave the required matrix
+  # checks "Expected" forever. Jobs gated with `if:` still report
+  # skipped checks, which satisfy required checks.
   docs-only:
-    name: Detect docs-only change
+    name: Detect docs-only or workflow-only change
     if: ${{ github.repository == 'sav-oss-org/ptusa_main' }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
     outputs:
       docs_only: ${{ steps.check.outputs.docs_only }}
+      ci_only: ${{ steps.check.outputs.ci_only }}
+      workflows_changed: ${{ steps.check.outputs.workflows_changed }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -56,7 +59,7 @@ jobs:
           # only runs git diff on the checked metadata and executes
           # no pull request code (same pattern as sonar_build.yml).
           allow-unsafe-pr-checkout: 'true'
-      - name: Check whether only documentation files changed
+      - name: Check whether the change is docs- or workflow-only
         id: check
         env:
           BASE_REF: ${{ github.base_ref }}
@@ -64,6 +67,8 @@ jobs:
           set -eu
           if [ -z "$BASE_REF" ]; then
             echo "docs_only=false" >> "$GITHUB_OUTPUT"
+            echo "ci_only=false" >> "$GITHUB_OUTPUT"
+            echo "workflows_changed=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
           base=$(git merge-base "origin/$BASE_REF" HEAD)
@@ -73,12 +78,78 @@ jobs:
           else
             echo "docs_only=true" >> "$GITHUB_OUTPUT"
           fi
+          # ci_only is true only when every changed file lives
+          # under `.github/workflows`.
+          if git diff --name-only "$base" HEAD -- . \
+            ':(exclude).github/workflows' | grep -q .; then
+            echo "ci_only=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "ci_only=true" >> "$GITHUB_OUTPUT"
+          fi
+          # workflows_changed is true when any changed file lives
+          # under `.github/workflows`, mixed changes included.
+          if git diff --name-only "$base" HEAD -- .github/workflows \
+            | grep -q .; then
+            echo "workflows_changed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "workflows_changed=false" >> "$GITHUB_OUTPUT"
+          fi
+  # A workflow-only pull request skips the build matrix, and GitHub
+  # runs the base copy of the workflow files, so nothing else would
+  # parse the changed `YAML` before the merge. This cheap job parses
+  # the pull-request copy with the `Psych` `YAML` parser that ships
+  # with the runner image, so broken workflow syntax fails the pull
+  # request instead of surprising the merge queue. Like the detector,
+  # this job only reads the checked-out tree: it runs no pull
+  # request scripts and uses no secrets.
+  workflow-syntax:
+    name: Validate workflow syntax
+    needs: docs-only
+    if: needs.docs-only.outputs.workflows_changed == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          # Validate the pull-request copy, not the base copy that
+          # GitHub already ran for this event.
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          # Explicit checkout opt-in, same read-only pattern as the
+          # `docs-only` detector above.
+          allow-unsafe-pr-checkout: 'true'
+      - name: Parse the changed workflow files
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          set -eu
+          base=$(git merge-base "origin/$BASE_REF" HEAD)
+          status=0
+          # Read file names NUL-separated so no name can break the
+          # loop; deleted files have no new syntax to validate.
+          while IFS= read -r -d '' f; do
+            case "$f" in
+              *.yml|*.yaml) ;;
+              *) continue ;;
+            esac
+            if [ ! -f "$f" ]; then
+              echo "Skipped deleted workflow: $f"
+              continue
+            fi
+            echo "Validating $f"
+            ruby -ryaml \
+              -e 'YAML.load_file(ARGV[0])' "$f" || status=1
+          done < <(git diff --name-only -z "$base" HEAD -- \
+            .github/workflows)
+          exit "$status"
   build:
     name: ${{ matrix.config.name }}
     needs: docs-only
     if: >-
       ${{
         needs.docs-only.outputs.docs_only != 'true' &&
+        needs.docs-only.outputs.ci_only != 'true' &&
         github.repository == 'sav-oss-org/ptusa_main' &&
           (
           github.event_name == 'push' ||
@@ -657,12 +728,24 @@ jobs:
 
   # The ruleset also requires the codecov/patch commit status, which is
   # posted by the codecov action inside the Ubuntu build job. A skipped
-  # job posts no external status, so for docs-only changes post a passing
-  # codecov/patch status here; real changes still get real reports.
+  # job posts no external status, so for docs-only and workflow-only
+  # changes post a passing codecov/patch status here; real changes still
+  # get real reports.
   codecov-docs-only:
     name: Report codecov/patch for docs-only change
     needs: docs-only
-    if: needs.docs-only.outputs.docs_only == 'true'
+    # The `pull_request` copy of this workflow runs with the
+    # read-only fork token and cannot post the external status;
+    # only the privileged `pull_request_target` copy posts it, so
+    # the stub is restricted to that event (this workflow has no
+    # `push` trigger, and the flags are false for `schedule`,
+    # `workflow_dispatch`, and `merge_group` anyway).
+    if: >-
+      (
+      needs.docs-only.outputs.docs_only == 'true' ||
+      needs.docs-only.outputs.ci_only == 'true'
+      ) &&
+      github.event_name == 'pull_request_target'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -677,7 +760,7 @@ jobs:
           gh api -X POST "repos/$GITHUB_REPOSITORY/statuses/$HEAD_SHA"
           -f state=success
           -f context=codecov/patch
-          -f description="Docs-only change, no coverage impact"
+          -f description="Docs- or workflow-only change, no coverage impact"
           -f target_url="$RUN_URL"
   release:
     if: contains(github.ref, 'tags/v')
