@@ -264,7 +264,22 @@ void camera::set_string_property( const char* field, const char* value )
 
     if ( strcmp( field, "IP" ) == 0 )
         {
-        ip = std::string( value );
+        if ( value == nullptr || value[ 0 ] == '\0' )
+            {
+            ip.clear();
+            return;
+            }
+
+        std::string host;
+        unsigned int port = 0;
+        if ( !parse_ip_address( value, host, port ) )
+            {
+            G_LOG->error( "%s: invalid camera IP address '%s'",
+                get_name(), value );
+            return;
+            }
+
+        ip = host;
         }
     }
 
@@ -2270,7 +2285,7 @@ void wages_eth::evaluate_io()
     {
     if ( G_PAC_INFO()->is_emulator() ) return;
 
-    weth->evaluate();
+    if ( weth ) weth->evaluate();
     }
 
 void wages_eth::tare()
@@ -2285,9 +2300,15 @@ void wages_eth::set_string_property( const char* field, const char* value )
 
     if ( !weth && strcmp( field, "IP" ) == 0 )
         {
-        int port = 1001;
+        std::string ip;
+        unsigned int port;
+        if ( !parse_ip_address( value, ip, port ) )
+            {
+            G_LOG->error( "%s: invalid scales IP address '%s'", get_name(), value );
+            return;
+            }
         int id = 0;
-        weth = new iot_wages_eth( id, value, port, get_name() );
+        weth = new iot_wages_eth( id, ip.c_str(), port, get_name() );
         }
     }
 
@@ -2338,7 +2359,7 @@ void wages_eth::direct_on()
 void wages_eth::direct_set_tcp_buff( const char* new_value, size_t size,
     int new_status )
     {
-    weth->direct_set_tcp_buff( new_value, size, new_status );
+    if ( weth ) weth->direct_set_tcp_buff( new_value, size, new_status );
     }
 //-----------------------------------------------------------------------------
 wages_pxc_axl::wages_pxc_axl( const char* dev_name ) :
@@ -4387,28 +4408,35 @@ void motor_altivar::direct_off()
     atv->reverse = 0;
     }
 //-----------------------------------------------------------------------------
-void motor_altivar::set_string_property(const char * field, const char * value)
+void motor_altivar::set_string_property( const char* field, const char* value )
     {
     device::set_string_property( field, value );
 
-    if (strcmp(field, "IP") == 0)
+    if ( strcmp( field, "IP" ) == 0 && !atv )
         {
-        int port = 502;
-        int timeout = 300;
-        auto nodeip = std::string(value);
-        nodeip.append(":");
-        nodeip.append(std::to_string(port));
-        nodeip.append(" ");
-        nodeip.append(std::to_string(timeout));
-        if (!atv)
+        // Порт Modbus TCP по умолчанию - 502. Таймаут обмена (мс)
+        // фиксирован, чтобы ключ узла в менеджере оставался стабильным.
+        const unsigned int MODBUS_PORT = 502;
+        const unsigned int TIMEOUT = 300;
+        std::string host;
+        unsigned int port = 0;
+
+        if ( !parse_ip_address( value, host, port, MODBUS_PORT ) )
             {
-            atv = G_ALTIVAR_MANAGER()->get_node(nodeip.c_str());
-            if (!atv)
-                {
-                G_ALTIVAR_MANAGER()->add_node(value, port, timeout,
-                    get_article(), get_name() );
-                atv = G_ALTIVAR_MANAGER()->get_node(nodeip.c_str());
-                }
+            G_LOG->error( "%s: invalid motor IP address '%s'",
+                get_name(), value );
+            return;
+            }
+
+        auto nodeip = host + ":" + std::to_string( port ) + " " +
+            std::to_string( TIMEOUT );
+
+        atv = G_ALTIVAR_MANAGER()->get_node( nodeip.c_str() );
+        if ( !atv )
+            {
+            G_ALTIVAR_MANAGER()->add_node( host.c_str(), port, TIMEOUT,
+                get_article(), get_name() );
+            atv = G_ALTIVAR_MANAGER()->get_node( nodeip.c_str() );
             }
         }
     }
