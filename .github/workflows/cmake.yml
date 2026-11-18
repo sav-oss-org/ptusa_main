@@ -97,10 +97,11 @@ jobs:
   # A workflow-only pull request skips the build matrix, and GitHub
   # runs the base copy of the workflow files, so nothing else would
   # parse the changed `YAML` before the merge. This cheap job parses
-  # the pull-request copy with `yaml.safe_load`, so broken workflow
-  # syntax fails the pull request instead of surprising the merge
-  # queue. Like the detector, this job only reads the checked-out
-  # tree: it runs no pull request scripts and uses no secrets.
+  # the pull-request copy with the `Psych` `YAML` parser that ships
+  # with the runner image, so broken workflow syntax fails the pull
+  # request instead of surprising the merge queue. Like the detector,
+  # this job only reads the checked-out tree: it runs no pull
+  # request scripts and uses no secrets.
   workflow-syntax:
     name: Validate workflow syntax
     needs: docs-only
@@ -123,18 +124,6 @@ jobs:
           BASE_REF: ${{ github.base_ref }}
         run: |
           set -eu
-          if python3 -c 'import yaml' 2>/dev/null; then
-            yaml_python=python3
-          else
-            # Ubuntu runner images carry no guaranteed `PyYAML` for
-            # the system `python3`; fall back to the sha256-pinned
-            # private venv, the same pattern as commit-check uses.
-            python3 -m venv "$RUNNER_TEMP/wfsyn-venv"
-            "$RUNNER_TEMP/wfsyn-venv/bin/pip" install --no-deps \
-              --require-hashes --quiet \
-              -r "$GITHUB_WORKSPACE/.github/requirements-workflow-syntax.txt"
-            yaml_python="$RUNNER_TEMP/wfsyn-venv/bin/python3"
-          fi
           base=$(git merge-base "origin/$BASE_REF" HEAD)
           status=0
           # Read file names NUL-separated so no name can break the
@@ -149,9 +138,8 @@ jobs:
               continue
             fi
             echo "Validating $f"
-            "$yaml_python" -c \
-              'import sys, yaml; yaml.safe_load(open(sys.argv[1]))' \
-              "$f" || status=1
+            ruby -ryaml \
+              -e 'YAML.load_file(ARGV[0])' "$f" || status=1
           done < <(git diff --name-only -z "$base" HEAD -- \
             .github/workflows)
           exit "$status"
