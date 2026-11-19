@@ -19,6 +19,10 @@ project(ptusa_main VERSION YYYY.MM.DD.N)
 # for example: project(ptusa_main VERSION 2026.11.18.0)
 ```
 
+The serial `N` counts releases on that day: `0` is the
+first release of the day, then `1`, `2`, and so on for
+repeat releases (hotfixes) of the same day.
+
 The version string is compiled into the binaries through
 `version_info.h` (`-v` output, OPC UA server info, Windows
 version resource), so the release tag must equal the version
