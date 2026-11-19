@@ -6,6 +6,7 @@
 #pragma once
 
 #include <cstddef>
+#include <string>
 
 #include "console.h"
 #include "s_types.h"
@@ -28,6 +29,12 @@ class i_memory
         /// @brief Безопасное сохранение данных.
         /// @return - результат.
         virtual int safe_save() = 0;
+
+        /// @brief Описание ошибки последнего сохранения.
+        ///
+        /// @return описание ошибки или пустая строка, если
+        /// сохранение удалось.
+        virtual const std::string& get_last_error() const = 0;
 
         /// @brief Получение размера памяти в байтах.
         ///
@@ -66,6 +73,9 @@ class SRAM : public i_memory
         u_int get_size() const override;
 
         std::filesystem::path get_directory() const override;
+
+        /// @brief Описание ошибки последнего сохранения.
+        const std::string& get_last_error() const override;
     private:
 
     SRAM( const SRAM& ) = delete;
@@ -90,6 +100,10 @@ class SRAM : public i_memory
     /// Сообщение об ошибке создания временного файла выводится один раз,
     /// так как сохранение выполняется циклически.
     bool error_logged{ false };
+
+    /// Описание последней ошибки safe_save(); пусто, если
+    /// сохранение удалось.
+    std::string last_error_msg;
 
     u_int total_size;
 
