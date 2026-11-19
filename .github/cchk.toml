@@ -7,9 +7,17 @@
 warn = ["CC003"]
 
 [commit]
-# House style is a capitalized sentence, not Conventional Commits.
-conventional_commits = false
-# AGENTS.md: capitalize the subject line.
+# House style is Conventional Commits with a closed set of
+# prefixes (#1596); squash merges copy the pull request title,
+# so titles carry the same prefixes as commit subjects.
+conventional_commits = true
+# Keep in sync with the workflow env and the PR-title policy:
+# the repo's own change types (no style/perf, `deps` for manual
+# dependency bumps that are not dependabot's).
+allow_commit_types = ["fix", "feat", "test", "build", "ci",
+                      "deps", "docs", "chore"]
+# AGENTS.md: capitalize the subject line. With the prefixes on,
+# CC002 judges the description after the prefix.
 subject_capitalized = true
 # AGENTS.md: use the imperative mood in the subject line.
 # The history is mostly third person ("Adds", "Fixes"), so CC003
