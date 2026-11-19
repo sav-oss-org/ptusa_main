@@ -837,12 +837,14 @@ jobs:
   # from the same line. Other jobs skip push events through their
   # own conditions, and the workflow concurrency block serializes
   # master pushes, so the exists-check stays race-free. The
-  # --generate-notes flag fills the draft body with the list of
-  # pull requests merged since the previous release (GitHub
-  # groups them and links the full changelog), below the
-  # one-line preamble. Publishing later does not refresh them:
-  # regenerate with gh release edit --generate-notes when the
-  # queue merged more pull requests in between.
+  # draft body groups the pull requests merged since the
+  # previous release by the change-type prefix of their titles
+  # (docs/CONTRIBUTING.md, "Pull Request Scope and Titles"), so
+  # the notes need no manual classification. Without a previous
+  # release, or on any compare surprise, the job falls back to
+  # --generate-notes. Publishing later does not refresh the
+  # notes: rerun the job after the queue merged more pull
+  # requests.
   autocut-release:
     name: Draft release for a new CMake version
     if: github.event_name == 'push'
@@ -877,11 +879,77 @@ jobs:
             echo "release $ver exists already, nothing to draft"
             exit 0
           fi
+          # collect_notes appends pull request lines grouped by
+          # the change-type prefix of their squash commit
+          # subjects, which end with "(#<number>)", to the
+          # preamble file already stored at $out.
+          collect_notes() {
+            local prev="$1" out="$2" tmp nums num title key name
+            tmp=$(mktemp -d)
+            nums=$(gh api \
+              "repos/$GITHUB_REPOSITORY/compare/${prev}...$SHA" \
+              --jq '.commits[].commit.message
+              | split("\n")[0]
+              | capture("\\(#(?<n>[0-9]+)\\)$").n // empty')
+            for num in $nums; do
+              title=$(gh pr view "$num" --repo "$GITHUB_REPOSITORY" \
+                --json title --jq '.title | split("\n")[0]') ||
+                continue
+              pre='^(fix|feat|test|build|ci|deps|docs|chore)'
+              pre=$pre'(\([a-z0-9-]+\))?!?: .*'
+              key=$(printf '%s' "$title" |
+                sed -nE "s/${pre}/\1/p")
+              [ -n "$key" ] || key=other
+              printf -- '- %s ([#%s](%s))\n' "$title" "$num" \
+                "https://github.com/$GITHUB_REPOSITORY/pull/$num" \
+                >>"$tmp/$key"
+            done
+            for key in feat fix test build ci deps docs chore other; do
+              [ -s "$tmp/$key" ] || continue
+              case $key in
+                feat) name=Features ;;
+                fix) name=Fixes ;;
+                test) name=Tests ;;
+                build) name=Build ;;
+                ci) name=CI ;;
+                deps) name=Dependencies ;;
+                docs) name=Documentation ;;
+                chore) name=Chores ;;
+                *) name='Other changes' ;;
+              esac
+              printf '\n### %s\n\n' "$name" >>"$out"
+              cat "$tmp/$key" >>"$out"
+            done
+            printf '\n**Full Changelog**: \n' >>"$out"
+            printf 'https://github.com/%s/compare/%s...%s\n' \
+              "$GITHUB_REPOSITORY" "$prev" "$SHA" >>"$out"
+          }
+          notes_args=(
+            --notes "Draft cut automatically from master at $SHA."
+            --generate-notes
+          )
+          prev=$(gh release list --exclude-drafts \
+            --exclude-pre-releases --limit 1 \
+            --repo "$GITHUB_REPOSITORY" --json tagName \
+            --jq '.[0].tagName // empty' 2>/dev/null || true)
+          body=$(mktemp)
+          printf 'Draft cut automatically from master at %s.\n' \
+            "$SHA" >"$body"
+          if [ -n "$prev" ] &&
+            total=$(gh api \
+              "repos/$GITHUB_REPOSITORY/compare/${prev}...$SHA" \
+              --jq .total_commits 2>/dev/null) &&
+            [ "${total:-9}" -le 250 ] &&
+            collect_notes "$prev" "$body"; then
+            notes_args=(--notes-file "$body")
+            echo "grouped release notes since $prev"
+          else
+            echo "falling back to GitHub generated notes"
+          fi
           gh release create "$ver" --draft --target "$SHA" \
             --title "ptusa_main $ver" \
             --repo "$GITHUB_REPOSITORY" \
-            --notes "Draft cut automatically from master at $SHA." \
-            --generate-notes ||
+            "${notes_args[@]}" ||
             gh release view "$ver" --repo "$GITHUB_REPOSITORY" >/dev/null
 
   # Publishing a GitHub release (on: release, type published)

@@ -25,6 +25,31 @@ Please note we have a code of conduct, please follow it in all your interactions
 - Use Markdown backticks to highlight technical words when useful, for
   example:
   ``Remove `DNS` reverse lookup from `TCP` logging``.
+- Start the title with a change-type prefix from the closed
+  set below, followed by `: `. The release drafter groups
+  release notes by this prefix, so a missing prefix files the
+  change under "Other changes":
+  - `fix:` - bug fixes (issue labels `bug`, `bugfix`);
+  - `feat:` - new functionality, devices, signals
+    (label `enhancement`);
+  - `test:` - test and fixture stabilization;
+  - `build:` - CMake, presets, toolchain;
+  - `ci:` - workflows, Sonar, merge queue
+    (label `github_actions`);
+  - `deps:` - submodule and action bumps (labels
+    `dependencies`, `submodules`);
+  - `docs:` - documentation (label `documentation`);
+  - `chore:` - everything else.
+- A squash merge copies the title into the commit subject,
+  so keep the prefixed title as concise as the commit
+  subject rules require.
+- Pull requests changing product code (`PAC`, `common`,
+  `test`) must link the issue they close (`Closes #N` in the
+  body or the Development section). The `no-issue` label
+  exempts urgent fixes and `dependabot` is exempt. The
+  `pr-policy` job of `commit-check.yml` reports both rules:
+  titles warn during rollout, missing links fail product
+  changes and only warn for infrastructure ones.
 - Explain why the change is needed, what changed, expected risk and validation
   in the pull request description.
 

@@ -124,6 +124,93 @@ jobs:
           done
           exit "$status"
 
+  pr-policy:
+    name: Pull request title and issue policy
+    if: github.event_name == 'pull_request'
+    # The closed prefix set and the linked-issue rule mirror
+    # docs/CONTRIBUTING.md (Pull Request Scope and Titles) and
+    # issue #1575. The autocut-release job groups release notes
+    # from the title prefixes, so this job is the enforcement
+    # side of that contract. It never runs in the merge queue:
+    # merge_group events do not fire pull_request triggers.
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+      issues: read
+    env:
+      PR_NUMBER: ${{ github.event.pull_request.number }}
+      PR_TITLE: ${{ github.event.pull_request.title }}
+      PR_BODY: ${{ github.event.pull_request.body }}
+      PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+      # Flip to 'true' to turn title warnings into errors once
+      # the prefix habit settles across open pull requests.
+      TITLES_STRICT: 'false'
+    steps:
+      - name: Check the title prefix
+        run: |
+          pre_re='^(fix|feat|test|build|ci|deps|docs|chore)'
+          pre_re=$pre_re'(\([a-z0-9-]+\))?!?: \S'
+          if ! printf '%s' "$PR_TITLE" | grep -qE "$pre_re"; then
+            msg='PR title must start with a change-type prefix:'
+            msg=$msg' fix:, feat:, test:, build:, ci:, deps:,'
+            msg=$msg' docs: or chore: - see docs/CONTRIBUTING.md.'
+            if [ "$TITLES_STRICT" = 'true' ]; then
+              echo "::error::$msg"
+              exit 1
+            fi
+            echo "::warning::$msg"
+          fi
+
+      # Rollout plan from issue #1575: product code paths
+      # (PAC, common, test) fail, infrastructure pull requests
+      # only warn until the habit settles.
+      - name: Check the linked issue
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -eu
+          repo="$GITHUB_REPOSITORY"
+          if [ "$PR_AUTHOR" = 'dependabot[bot]' ]; then
+            echo 'dependabot pull requests own their issues'
+            exit 0
+          fi
+          labels=$(gh api "repos/$repo/issues/$PR_NUMBER/labels" \
+            --jq '[.[].name] | join(" ")')
+          if printf '%s' " $labels " | grep -q ' no-issue '; then
+            echo 'the no-issue label exempts this pull request'
+            exit 0
+          fi
+          q='query($owner:String!,$name:String!,$number:Int!){'
+          q=$q'repository(owner:$owner,name:$name){'
+          q=$q'pullRequest(number:$number){'
+          q=$q'closingIssuesReferences(first:1){totalCount}}}}'
+          refs=$(gh api graphql -f owner="${repo%%/*}" \
+            -f name="${repo##*/}" -F number="$PR_NUMBER" \
+            -f query="$q" \
+            --jq '.data.repository.pullRequest
+              .closingIssuesReferences.totalCount')
+          if [ "$refs" != '0' ]; then
+            exit 0
+          fi
+          link_re='(close[sd]?|fix(ed|es)?|resolve[sd]?)'
+          link_re=$link_re'[[:space:]]+(#[0-9]+|https://github.com/'
+          link_re=$link_re'[^/ ]+/[^/ ]+/(issues|pull)/[0-9]+)'
+          if printf '%s' "$PR_BODY" | grep -qiE "$link_re"; then
+            exit 0
+          fi
+          if gh api "repos/$repo/pulls/$PR_NUMBER/files?per_page=100" \
+            --paginate --jq '.[].filename' |
+            grep -qE '^(PAC|common|test)/'; then
+            msg='link the closed issue ("Closes #N") or label'
+            msg=$msg' the pull request no-issue (docs/CONTRIBUTING.md)'
+            echo "::error::$msg"
+            exit 1
+          fi
+          msg='link the closed issue ("Closes #N"): infrastructure'
+          msg=$msg' changes may only warn here for now'
+          echo "::warning::$msg"
+
   tag-check:
     if: github.event_name == 'push'
     runs-on: ubuntu-latest
