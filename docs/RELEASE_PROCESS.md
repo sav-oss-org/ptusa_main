@@ -7,7 +7,7 @@ runbook describes how `ptusa_main` releases are produced by CI;
 the tag naming rules live in
 [CONTRIBUTING.md](CONTRIBUTING.md#versioning-and-tags).
 
-## Source of truth
+## Source of the version
 
 The project version is the four-component CalVer string in
 `CMakeLists.txt`:
