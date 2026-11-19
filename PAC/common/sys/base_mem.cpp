@@ -201,12 +201,14 @@ int SRAM::safe_save()
             fwrite( get_data(), sizeof( std::byte ), get_size(), temp );
             res != get_size() )
             {
-            G_LOG->error( "SRAM() - ERROR: fwrite (%s) wrote %zu of %u bytes.",
-                tmp_path.string().c_str(), res, get_size() );
+            // Формируем текст о частичной записи один раз:
+            // он идёт и в лог, и наружу через get_last_error().
             last_error_msg =
                 "write error: wrote " + std::to_string( res )
                 + " of " + std::to_string( get_size() )
                 + " bytes";
+            G_LOG->error( "SRAM() - ERROR: fwrite (%s): %s",
+                tmp_path.string().c_str(), last_error_msg.c_str() );
             fclose( temp );
             return 2;
             }
