@@ -79,6 +79,20 @@ Please note we have a code of conduct, please follow it in all your interactions
 - Semantic Versioning is reserved for independently distributed
   libraries or SDKs, should this repository ever publish them.
 
+## Release Process
+
+- The four-component `project(ptusa_main VERSION ...)`
+  string in `CMakeLists.txt` is the single source of truth:
+  the binaries embed it, and the release tag must equal it
+  byte-for-byte.
+- Bump the version in a pull request into `master`; the
+  draft release is cut automatically after the merge, and
+  publishing it builds the archives from the tag commit and
+  attaches them to the release.
+- The full runbook:
+  [English version](RELEASE_PROCESS.md);
+  [Русская версия](RELEASE_PROCESS_RU.md).
+
 ## AI-Assisted Commit Attribution
 
 - Commits whose substantive content was produced with AI assistance must
