@@ -1994,6 +1994,82 @@ class converter_iolink_ao : public analog_io_device
 
         io_link_device iol_dev{};
     };
+//-----------------------------------------------------------------------------
+/// @brief Конвертер AI -> IO-Link (IFM DP2200).
+///
+/// Устройство преобразует сигнал одного аналогового входа (токовый датчик
+/// 4..20 мА) в 32-разрядное входное значение процесса IO-Link.
+class converter_ai_iolink : public AI1
+    {
+    public:
+        explicit converter_ai_iolink( const char* dev_name );
+
+        ~converter_ai_iolink() override = default;
+
+        float get_value() const override;
+
+        int get_state() const override;
+
+        void evaluate_io() override;
+
+        const char* get_error_description() override;
+
+#ifndef PTUSA_TEST
+    private:
+#endif
+
+#pragma pack(push, 1)
+
+        constexpr inline static int DP2200_PROCESS_DATA_IN_SIZE{ 4 };
+        ///| Бит( ы ) | Имя     | Тип         |
+        ///|----------|---------|-------------|
+        ///| 0        | OUT1    |  Bool       |
+        ///| 1-15     | Unused  |  -          |
+        ///| 16-31    | Current |  Int16      |
+        ///
+        struct process_data_in
+            {
+            uint8_t out1 : 1;      ///< Статус выходного ключа OUT1.
+            uint8_t unused0 : 7;   ///< Неиспользуемые биты.
+            uint8_t unused1{};     ///< Неиспользуемый байт.
+            int16_t current{};     ///< Текущее значение тока (мА * 0.001).
+            };
+
+#pragma pack(pop)
+
+        static_assert( sizeof( process_data_in ) == DP2200_PROCESS_DATA_IN_SIZE,
+            "Struct `process_data_in` must be the 4 byte size." );
+
+        process_data_in info{};
+        u_int start_param_idx{};
+
+        enum class CONSTANTS : u_int
+            {
+            P_MIN_V = 1,                 ///< Минимальное значение (при 4 мА).
+            P_MAX_V,                     ///< Максимальное значение (при 20 мА).
+            P_ERR,                       ///< Аварийное значение.
+
+            ADDITIONAL_PARAM_COUNT = 3,  ///< Количество параметров.
+            };
+
+        enum class ERRORS
+            {
+            ERR_NO_DATA = 1,   ///< NoData - нет данных.
+            ERR_UNDERLOAD,     ///< UL - underload.
+            ERR_OVERLOAD,      ///< OL - overload.
+            };
+
+        // Специальные значения поля `Current` согласно IODD.
+        static constexpr int16_t C_CURRENT_NO_DATA{ 32764 };  ///< NoData.
+        static constexpr int16_t C_CURRENT_UL{ -32760 };  ///< UL - underload.
+        static constexpr int16_t C_CURRENT_OL{ 32760 };  ///< OL - overload.
+
+        // Номинальный диапазон входного тока, мА.
+        static constexpr float C_MIN_CURRENT{ 4.0f };  ///< Ток для P_MIN_V.
+        static constexpr float C_MAX_CURRENT{ 20.0f }; ///< Ток для P_MAX_V.
+
+        io_link_device iol_dev{};
+    };
 ///-----------------------------------------------------------------------------
 /// Предоставляет функциональность таймера.
 ///
