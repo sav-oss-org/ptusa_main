@@ -91,8 +91,7 @@ Please note we have a code of conduct, please follow it in all your interactions
   attaches them to the release.
 - The full runbook:
   [docs/RELEASE_PROCESS.md](RELEASE_PROCESS.md);
-  the Russian version is
-  [docs/RELEASE_PROCESS_RU.md](RELEASE_PROCESS_RU.md).
+  [Русская версия](RELEASE_PROCESS_RU.md).
 
 ## AI-Assisted Commit Attribution
 
