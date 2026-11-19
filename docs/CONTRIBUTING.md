@@ -69,9 +69,10 @@ Please note we have a code of conduct, please follow it in all your interactions
 
 ## Versioning and Tags
 
-- Release tags use CalVer: `YYYY.MM.DD`, or `YYYY.MM.DD.N` when a
-  second release happens on the same day. `N` is a hotfix serial
-  number starting at 1.
+- Release tags use CalVer: `YYYY.MM.DD.N`. The serial `N` is `0`
+  for the first release of a day and increments for every same-day
+  hotfix. The tag equals the four-component
+  `project(ptusa_main VERSION ...)` string.
 - Components carry no leading zeros (`2026.1.28`), and new tags carry
   no leading `v`; the legacy `v2024.01.31` is a historical exception.
 - Tags carry no free-form suffixes such as `CP1251`; rule `CC401` in
