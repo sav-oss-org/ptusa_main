@@ -90,7 +90,7 @@ Please note we have a code of conduct, please follow it in all your interactions
   publishing it builds the archives from the tag commit and
   attaches them to the release.
 - The full runbook:
-  [docs/RELEASE_PROCESS.md](RELEASE_PROCESS.md);
+  [English version](RELEASE_PROCESS.md);
   [Русская версия](RELEASE_PROCESS_RU.md).
 
 ## AI-Assisted Commit Attribution
