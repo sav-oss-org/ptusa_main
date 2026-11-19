@@ -8,9 +8,15 @@ on:
   workflow_dispatch:
   pull_request:
     branches: [ master ]
+    # Actions never run for draft pull requests, so the ready
+    # transition is the first event that can report the required
+    # contexts for a PR opened as a draft (#1592).
+    types: [ opened, reopened, synchronize, ready_for_review ]
   pull_request_target:
     branches: [ master ]
-    types: [ labeled, opened, reopened, synchronize ]
+    # `ready` mirrors `ready_for_review` for the privileged
+    # copy that posts the stub statuses.
+    types: [ labeled, opened, reopened, synchronize, ready ]
   merge_group:
     types: [ checks_requested ]
   release:
