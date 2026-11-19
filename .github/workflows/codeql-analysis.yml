@@ -14,17 +14,20 @@ name: "CodeQL"
 on:
   push:
     branches: [ master ]
-    # Documentation-only changes cannot affect the compiled-code
-    # analysis; the weekly schedule scan still covers everything.
+    # Documentation- and workflow-only changes cannot affect the
+    # compiled-code analysis; the weekly schedule scan still
+    # covers everything.
     paths-ignore:
       - '**/*.md'
       - 'docs/**'
+      - '.github/**'
   pull_request:
     # The branches below must be a subset of the branches above
     branches: [ master ]
     paths-ignore:
       - '**/*.md'
       - 'docs/**'
+      - '.github/**'
   schedule:
     - cron: '0 9 * * 1'
   workflow_dispatch:
