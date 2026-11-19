@@ -831,7 +831,13 @@ jobs:
   # gate there can never disagree with the tag because both come
   # from the same line. Other jobs skip push events through their
   # own conditions, and the workflow concurrency block serializes
-  # master pushes, so the exists-check stays race-free.
+  # master pushes, so the exists-check stays race-free. The
+  # --generate-notes flag fills the draft body with the list of
+  # pull requests merged since the previous release (GitHub
+  # groups them and links the full changelog), below the
+  # one-line preamble. Publishing later does not refresh them:
+  # regenerate with gh release edit --generate-notes when the
+  # queue merged more pull requests in between.
   autocut-release:
     name: Draft release for a new CMake version
     if: github.event_name == 'push'
@@ -869,7 +875,8 @@ jobs:
           gh release create "$ver" --draft --target "$SHA" \
             --title "ptusa_main $ver" \
             --repo "$GITHUB_REPOSITORY" \
-            --notes "Draft cut automatically from master at $SHA." ||
+            --notes "Draft cut automatically from master at $SHA." \
+            --generate-notes ||
             gh release view "$ver" --repo "$GITHUB_REPOSITORY" >/dev/null
 
   # Publishing a GitHub release (on: release, type published)
