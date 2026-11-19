@@ -55,7 +55,7 @@ jobs:
           fi
           base=$(git merge-base "origin/$BASE_REF" HEAD)
           if git diff --name-only "$base" HEAD -- . \
-            ':(exclude).github/workflows' | grep -q .; then
+            ':(exclude).github' | grep -q .; then
             echo "ci_only=false" >> "$GITHUB_OUTPUT"
           else
             echo "ci_only=true" >> "$GITHUB_OUTPUT"
