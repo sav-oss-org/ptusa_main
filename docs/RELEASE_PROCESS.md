@@ -1,6 +1,6 @@
 # Release Process
 
-Russian version: [RELEASE_PROCESS_RU.md](RELEASE_PROCESS_RU.md).
+[Версия на русском](RELEASE_PROCESS_RU.md).
 
 One authoritative version string, one command to publish. This
 runbook describes how `ptusa_main` releases are produced by CI;
