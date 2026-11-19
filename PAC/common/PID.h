@@ -159,6 +159,8 @@ class PID : public device
 
         device* sensor;
         device* actuator;
+        char in_value_name[ C_MAX_NAME + 1 ] = { 0 };
+        char out_value_name[ C_MAX_NAME + 1 ] = { 0 };
 
         const float MIN_OUT_VALUE = .0f;
         const float MAX_OUT_VALUE = 100.f;
