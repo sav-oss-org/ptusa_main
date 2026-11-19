@@ -913,4 +913,8 @@ jobs:
             echo "no release archives were produced" >&2
             exit 1
           fi
-          gh release upload "$TAG" "${assets[@]}" --clobber
+          # The job has no checkout, so gh cannot infer the repository
+          # from a git directory and needs the explicit --repo flag.
+          gh release upload "$TAG" \
+            --repo "$GITHUB_REPOSITORY" \
+            --clobber "${assets[@]}"
