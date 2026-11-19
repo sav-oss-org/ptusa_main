@@ -29,6 +29,7 @@ unsigned int power_unit::WAIT_CMD_TIME = 1000;
 
 analog_valve_iolink::out_data analog_valve_iolink::stub_out_info{};
 signal_column_iolink::out_data signal_column_iolink::stub_out_info{};
+signal_column_iolink::psd_out_data signal_column_iolink::stub_psd_out_info{};
 
 //-----------------------------------------------------------------------------
 //-----------------------------------------------------------------------------
@@ -90,6 +91,34 @@ signal_column_iolink::signal_column_iolink( const char* dev_name ) :
     {
     }
 //-----------------------------------------------------------------------------
+void signal_column_iolink::set_article( const char* new_article )
+    {
+    device::set_article( new_article );
+
+    if ( strcmp( get_article(), "PXC.1801971" ) == 0 )
+        {
+        n_article = ARTICLE::PXC_PSD_SC_IOL_S9_AE;
+        return;
+        }
+
+    if ( get_article()[ 0 ] == '\0' ||
+        strcmp( get_article(), "PXC.1191993" ) == 0 )
+        {
+        // Пустой артикул и прежний модуль описываются одними и теми же
+        // универсальными данными процесса.
+        n_article = ARTICLE::DEFAULT;
+        return;
+        }
+
+    if ( G_DEBUG )
+        {
+        G_LOG->warning( "%s unknown article \"%s\"",
+            get_name(), new_article );
+        }
+
+    n_article = ARTICLE::DEFAULT;
+    }
+//-----------------------------------------------------------------------------
 void signal_column_iolink::set_string_property( const char* field, const char* value )
     {
     device::set_string_property( field, value );
@@ -126,6 +155,12 @@ void signal_column_iolink::set_string_property( const char* field, const char* v
 //-----------------------------------------------------------------------------
 void signal_column_iolink::process_DO( u_int n, DO_state state, const char* name )
     {
+    if ( n_article == ARTICLE::PXC_PSD_SC_IOL_S9_AE )
+        {
+        process_psd_DO( n, state, name );
+        return;
+        }
+
     bool ch_state = state == DO_state::ON;
     switch ( n )
         {
@@ -157,6 +192,48 @@ void signal_column_iolink::process_DO( u_int n, DO_state state, const char* name
         }
     }
 //-----------------------------------------------------------------------------
+void signal_column_iolink::process_psd_DO( u_int n, DO_state state,
+    const char* name )
+    {
+    bool ch_state = state == DO_state::ON;
+
+    if ( !n )
+        {
+        G_LOG->warning( "%s\t signal_column_iolink::process_psd_DO() - "
+            "no \'%s\'.", get_name(), name );
+        return;
+        }
+
+    if ( n == static_cast<u_int>( siren_channel ) )
+        {
+        // Байт акустической функции: 0 - сирена выключена, 1...10 - один
+        // из десяти настроенных тонов модуля.
+        psd_out_info->acoustic =
+            ch_state ? PSD_DEFAULT_TONE : static_cast<uint8_t>( 0 );
+        return;
+        }
+
+    if ( n > PSD_TIERS_CNT )
+        {
+        G_LOG->warning( "%s\t signal_column_iolink::process_psd_DO() - "
+            "unknown \'%s\'.", get_name(), name );
+        return;
+        }
+
+    // Режим сигнальной колонны: ярус n соответствует биту n - 1
+    // оптической функции.
+    auto tier_mask = static_cast<uint8_t>( 1u << ( n - 1 ) );
+    if ( ch_state )
+        {
+        psd_out_info->optics_lo |= tier_mask;
+        }
+    else
+        {
+        psd_out_info->optics_lo = static_cast<uint8_t>(
+            psd_out_info->optics_lo & ~static_cast<unsigned>( tier_mask ) );
+        }
+    }
+//-----------------------------------------------------------------------------
 void signal_column_iolink::evaluate_io()
     {
     signal_column::evaluate_io();
@@ -164,6 +241,10 @@ void signal_column_iolink::evaluate_io()
     if ( G_PAC_INFO()->is_emulator() )
         {
         // Ничего не делаем.
+        }
+    else if ( n_article == ARTICLE::PXC_PSD_SC_IOL_S9_AE )
+        {
+        psd_out_info = (psd_out_data*)get_AO_write_data( 0 );
         }
     else
         {
@@ -190,6 +271,13 @@ int signal_column_iolink::get_state() const
 
     return signal_column::get_state();
     }
+//-----------------------------------------------------------------------------
+#ifdef PTUSA_TEST
+signal_column_iolink::ARTICLE signal_column_iolink::get_article_n() const
+    {
+    return n_article;
+    }
+#endif
 //-----------------------------------------------------------------------------
 //-----------------------------------------------------------------------------
 camera::camera( const char* dev_name, DEVICE_SUB_TYPE sub_type,

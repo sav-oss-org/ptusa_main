@@ -1562,6 +1562,11 @@ class counter_iolink : public base_counter
 /// @brief Сигнальная колонна с IO-Link.
 ///
 /// Служит для уведомления оператора о событиях.
+///
+/// Кроме универсальных данных процесса поддерживается сигнальная колонна
+/// Phoenix Contact PSD-SC IOL S9 AE (артикул PXC.1801971). Для нее в
+/// режиме сигнальной колонны выводятся данные процесса из IODD: байт
+/// акустической функции и два байта оптической функции.
 class signal_column_iolink : public signal_column
     {
     public:
@@ -1569,14 +1574,33 @@ class signal_column_iolink : public signal_column
 
         void set_string_property( const char* field, const char* value ) override;
 
+        void set_article( const char* new_article ) override;
+
         void evaluate_io() override;
 
         int get_state() const override;
 
         const char* get_error_description() override;
 
+        enum ARTICLE
+            {
+            DEFAULT,                ///< Универсальные данные процесса.
+            PXC_PSD_SC_IOL_S9_AE,   ///< Колонна PSD-SC IOL S9 AE.
+            };
+
+#ifdef PTUSA_TEST
+        ARTICLE get_article_n() const;
+#endif
+
     private:
         void process_DO( u_int n, DO_state state, const char* name ) override;
+
+        /// @brief Установка состояния канала колонны PSD-SC IOL ... AE.
+        ///
+        /// @param n - номер канала в описании последовательности сигналов.
+        /// @param state - новое состояние канала.
+        /// @param name - имя канала для сообщений об ошибках.
+        void process_psd_DO( u_int n, DO_state state, const char* name );
 
         struct out_data
             {
@@ -1589,8 +1613,36 @@ class signal_column_iolink : public signal_column
             uint16_t unused2 : 3;
             };
 
+        constexpr inline static u_int PSD_TIERS_CNT{ 5 };
+
+        constexpr inline static uint8_t PSD_DEFAULT_TONE{ 1 };
+
+        constexpr inline static int PSD_PD_OUT_SIZE{ 3 };
+
+        //| Байт | Назначение                                        |
+        //|------|---------------------------------------------------|
+        //| 0    | Акустика: 0 - выкл, 1...10 - тон из десяти      |
+        //| 1    | Оптика, старший байт (не используется)          |
+        //| 2    | Оптика: биты 0...4 - ярусы сигнальные 1...5     |
+#pragma pack( push, 1 )
+        struct psd_out_data
+            {
+            uint8_t acoustic;   ///< Байт 0 - акустическая функция.
+            uint8_t optics_hi;  ///< Байт 1 - старший байт оптики.
+            uint8_t optics_lo;  ///< Байт 2 - ярусы 1...5 в битах 0...4.
+            };
+#pragma pack( pop )
+
+        static_assert( sizeof( psd_out_data ) == PSD_PD_OUT_SIZE,
+            "Struct `psd_out_data` must be the 3 byte size." );
+
         static out_data stub_out_info;
+        static psd_out_data stub_psd_out_info;
+
         out_data* out_info = &stub_out_info;
+        psd_out_data* psd_out_info{ &stub_psd_out_info };
+
+        ARTICLE n_article{ ARTICLE::DEFAULT };
 
         io_link_device iol_dev;
     };
