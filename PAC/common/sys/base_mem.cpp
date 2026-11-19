@@ -175,16 +175,19 @@ int SRAM::safe_save()
 
     if ( FILE* temp = fopen( tmp_path.string().c_str(), "w+b" ); !temp )
         {
+        // errno нужно сохранить до обращения к другим
+        // функциям, иначе он может быть перезаписан.
+        const int err = errno;
+
         if ( !error_logged )
             {
-            // errno нужно сохранить до обращения к другим функциям, иначе он
-            // может быть перезаписан.
-            const int err = errno;
-
             G_LOG->error( "SRAM() - ERROR: Can't open file (%s) : %s.\n",
                 tmp_path.string().c_str(), strerror( err ) );
             error_logged = true;
             }
+
+        last_error_msg = "cannot create temporary file ("
+            + tmp_path.string() + ") : " + strerror( err );
 
         return 1;
         }
@@ -200,6 +203,10 @@ int SRAM::safe_save()
             {
             G_LOG->error( "SRAM() - ERROR: fwrite (%s) wrote %zu of %u bytes.",
                 tmp_path.string().c_str(), res, get_size() );
+            last_error_msg =
+                "write error: wrote " + std::to_string( res )
+                + " of " + std::to_string( get_size() )
+                + " bytes";
             fclose( temp );
             return 2;
             }
@@ -224,6 +231,9 @@ int SRAM::safe_save()
                     "SRAM() - ERROR: FlushFileBuffers (%s) failed (%lu).",
                     file_path.string().c_str(), GetLastError() );
 
+                last_error_msg =
+                    "flush of the temporary file failed";
+
                 fclose( temp );
                 return 2;
                 }
@@ -246,6 +256,9 @@ int SRAM::safe_save()
             G_LOG->error( "SRAM() - ERROR: Can't rename (%s) to (%s) : %s.\n",
                 tmp_path.string().c_str(), file_path.string().c_str(),
                 ec.message().c_str() );
+            last_error_msg =
+                "cannot replace the parameters file : "
+                + ec.message();
             return 3;
             }
 
@@ -268,7 +281,14 @@ int SRAM::safe_save()
             }
         }
 
+    last_error_msg.clear();
+
     return 0;
+    }
+//-----------------------------------------------------------------------------
+const std::string& SRAM::get_last_error() const
+    {
+    return last_error_msg;
     }
 //-----------------------------------------------------------------------------
 std::byte* SRAM::get_data()
