@@ -12,5 +12,8 @@ paths-ignore:
   # Git submodules: benchmark, googletest, open62541, lua,
   # zlib, fmt, cxxopts, subhook, toluapp, lunarmodules.
   - deps/**
-  # Vendored tolua++ binding layer.
-  - PAC/common/toloa++/**
+  # Vendored tolua++ binding layer. CodeQL filter
+  # patterns do not support the `+` character, so the
+  # directory is matched by its `toloa` prefix: it is
+  # the only entry under `PAC/common` starting with it.
+  - PAC/common/toloa*/**
