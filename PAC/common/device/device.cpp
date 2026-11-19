@@ -271,7 +271,7 @@ void camera::set_string_property( const char* field, const char* value )
             }
 
         std::string host;
-        unsigned int port = 0;
+        unsigned int port {};
         if ( !parse_ip_address( value, host, port ) )
             {
             G_LOG->error( "%s: invalid camera IP address '%s'",
@@ -2301,7 +2301,7 @@ void wages_eth::set_string_property( const char* field, const char* value )
     if ( !weth && strcmp( field, "IP" ) == 0 )
         {
         std::string ip;
-        unsigned int port;
+        unsigned int port {};
         if ( !parse_ip_address( value, ip, port ) )
             {
             G_LOG->error( "%s: invalid scales IP address '%s'", get_name(), value );
@@ -4419,7 +4419,7 @@ void motor_altivar::set_string_property( const char* field, const char* value )
         const unsigned int MODBUS_PORT = 502;
         const unsigned int TIMEOUT = 300;
         std::string host;
-        unsigned int port = 0;
+        unsigned int port {};
 
         if ( !parse_ip_address( value, host, port, MODBUS_PORT ) )
             {
