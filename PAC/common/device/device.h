@@ -86,6 +86,39 @@ class temperature_e : public AI1
             };
     };
 //-----------------------------------------------------------------------------
+/// @brief Виртуальная температура, считываемая из другого устройства.
+class temperature_e_virtual : public AI1
+    {
+    public:
+        explicit temperature_e_virtual( const char* dev_name );
+
+        void direct_set_value( float new_value ) override;
+
+        float get_value() const override;
+
+        void direct_set_state( int new_state ) override;
+
+        int get_state() const override;
+
+        void set_property( const char* field, device* dev ) override;
+
+        void set_string_property( const char* field,
+            const char* value ) override;
+
+    private:
+        bool get_source_temperature( float& temperature ) const;
+
+        u_int start_param_idx;
+        device* source = nullptr;
+
+        enum CONSTANTS
+            {
+            P_ERR = 1,                  ///< Аварийное значение температуры.
+
+            ADDITIONAL_PARAM_COUNT = 1, ///< Количество параметров.
+            };
+    };
+//-----------------------------------------------------------------------------
 /// @brief Температура.
 class temperature_e_analog : public AI1
     {
