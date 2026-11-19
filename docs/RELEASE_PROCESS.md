@@ -11,11 +11,12 @@ tag naming rules live in
 
 ## Source of the version
 
-The project version is the four-component CalVer string in
-`CMakeLists.txt`:
+The project version is a four-part number in the format
+YYYY.MM.DD.N (CalVer), specified in CMakeLists.txt:
 
 ```cmake
 project(ptusa_main VERSION YYYY.MM.DD.N)
+# for example: project(ptusa_main VERSION 2026.11.18.0)
 ```
 
 The version string is compiled into the binaries through
