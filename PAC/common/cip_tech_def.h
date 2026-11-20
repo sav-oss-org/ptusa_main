@@ -419,6 +419,17 @@ enum workParameters
     STP_PODP_WATER,     //количество подпиток на воде
     };
 
+//+++Легкое значение строки 24 рецептов МСА+++
+// Прежнее значение по умолчанию параметра «время циркуляции
+// при ополаскивании» (RV_TM_OP/PTM_OP) составляло 600 секунд.
+// Строка 24 файлов line{N}rec.bin теперь задаёт номер DO
+// сигнала «подающий насос включен» (P_SIGNAL_PUMP_RUNNING),
+// поэтому старые рецепты несут в этом слоте 600. Если DO с
+// номером 600 в проекте нет, значение трактуется как «сигнал
+// не задан» и сбрасывается при инициализации устройств
+// объекта мойки (задача #1595).
+const unsigned int LEGACY_RINSE_CIRC_TIME = 600;
+
 //+++Параметры для самоочистки+++
 enum SELFCLEAN_PARAMS
     {
@@ -716,6 +727,9 @@ class cipline_tech_object: public tech_object
         TRecipeManager* lineRecipes;
         int loadedRecipe;
         int lastloadedRecipe;
+        // Предупреждение о легковом значении строки 24
+        // рецептов уже выдано для этого объекта мойки.
+        bool legacy_line24_warning_shown{ false };
         int loadedProgram;
         char* loadedRecName;
         std::string programList{};

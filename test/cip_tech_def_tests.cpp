@@ -1675,3 +1675,123 @@ TEST( cipline_tech_object, ResetWP )
     G_LUA_MANAGER->free_Lua();
     ClearCipDevices();
     }
+
+TEST( cipline_tech_object, legacy_line24_circ_time_guard )
+    {
+    // Старые line{N}rec.bin хранят в строке 24 прежний дефолт
+    // «время циркуляции при ополаскивании» (600). Слот теперь
+    // задаёт номер DO сигнала «подающий насос включен», и при
+    // отсутствии DO №600 инициализация устройств не должна
+    // падать: значение сбрасывается в «сигнал не задан» с
+    // однократным предупреждением (#1595).
+    InitCipDevices();
+    cipline_tech_object cip1( "CIP1", 1, 1, "CIP1", 1, 1, 200, 200, 200, 200 );
+    lua_manager::get_instance()->set_Lua( lua_open() );
+
+    cip1.initline();
+    InitStationParams();
+
+    virtual_motor np( "LINE1M103" );
+    cip1.NP = reinterpret_cast<i_DO_AO_device*>( &np );
+
+    auto* rm = cip1.lineRecipes;
+    const auto curRec = rm->getCurrentRecipe();
+    rm->ResetRecipeToDefaults( curRec );
+    ASSERT_EQ( 0, rm->setRecipeValue( curRec,
+        TRecipeManager::RV_SIGNAL_PUMP_RUNNING, 600.0f ) );
+    cip1.rt_par_float[ P_SELECT_REC ] =
+        static_cast<float>( curRec + 1 );
+    EXPECT_EQ( 0, cip1.evaluate() );
+    EXPECT_EQ( 600.0f, cip1.rt_par_float[ P_SIGNAL_PUMP_RUNNING ] );
+
+    // Сигнала LINE1DO600 в проекте нет — инициализация
+    // проходит, параметр сброшен в «не задано».
+    EXPECT_EQ( 0, cip1.init_object_devices() );
+    EXPECT_EQ( nullptr, cip1.dev_upr_pump_running );
+    EXPECT_EQ( 0.0f, cip1.rt_par_float[ P_SIGNAL_PUMP_RUNNING ] );
+    EXPECT_TRUE( cip1.legacy_line24_warning_shown );
+
+    // Повторная инициализация проходит без повторного
+    // срабатывания guard — параметр уже обнулён.
+    EXPECT_EQ( 0, cip1.init_object_devices() );
+    EXPECT_EQ( 0.0f, cip1.rt_par_float[ P_SIGNAL_PUMP_RUNNING ] );
+
+    // Завершение.
+    ClearCipDevices();
+    G_LUA_MANAGER->free_Lua();
+    }
+
+TEST( cipline_tech_object, legacy_line24_signal_600_present )
+    {
+    // Если DO №600 в проекте всё же существует, значение 600
+    // остаётся рабочим номером сигнала, а guard не срабатывает.
+    InitCipDevices();
+    auto* dm = device_manager::get_instance();
+    dm->add_io_device( device::DEVICE_TYPE::DT_DO,
+        device::DEVICE_SUB_TYPE::DST_DO_VIRT, "LINE1DO600", "", "" );
+
+    cipline_tech_object cip1( "CIP1", 1, 1, "CIP1", 1, 1, 200, 200, 200, 200 );
+    lua_manager::get_instance()->set_Lua( lua_open() );
+
+    cip1.initline();
+    InitStationParams();
+
+    virtual_motor np( "LINE1M103" );
+    cip1.NP = reinterpret_cast<i_DO_AO_device*>( &np );
+
+    auto* rm = cip1.lineRecipes;
+    const auto curRec = rm->getCurrentRecipe();
+    rm->ResetRecipeToDefaults( curRec );
+    ASSERT_EQ( 0, rm->setRecipeValue( curRec,
+        TRecipeManager::RV_SIGNAL_PUMP_RUNNING, 600.0f ) );
+    cip1.rt_par_float[ P_SELECT_REC ] =
+        static_cast<float>( curRec + 1 );
+    EXPECT_EQ( 0, cip1.evaluate() );
+    EXPECT_EQ( 600.0f, cip1.rt_par_float[ P_SIGNAL_PUMP_RUNNING ] );
+
+    EXPECT_EQ( 0, cip1.init_object_devices() );
+    ASSERT_NE( nullptr, cip1.dev_upr_pump_running );
+    EXPECT_EQ( dm->get_device( "LINE1DO600" ),
+        cip1.dev_upr_pump_running );
+    EXPECT_EQ( 600.0f, cip1.rt_par_float[ P_SIGNAL_PUMP_RUNNING ] );
+    EXPECT_FALSE( cip1.legacy_line24_warning_shown );
+
+    // Завершение.
+    ClearCipDevices();
+    G_LUA_MANAGER->free_Lua();
+    }
+
+TEST( cipline_tech_object, legacy_line24_missing_number_fails )
+    {
+    // Легальный, но отсутствующий в проекте номер сигнала
+    // (не 600) даёт прежнее поведение — ошибку инициализации
+    // устройств, параметр остаётся без изменений.
+    InitCipDevices();
+    cipline_tech_object cip1( "CIP1", 1, 1, "CIP1", 1, 1, 200, 200, 200, 200 );
+    lua_manager::get_instance()->set_Lua( lua_open() );
+
+    cip1.initline();
+    InitStationParams();
+
+    virtual_motor np( "LINE1M103" );
+    cip1.NP = reinterpret_cast<i_DO_AO_device*>( &np );
+
+    auto* rm = cip1.lineRecipes;
+    const auto curRec = rm->getCurrentRecipe();
+    rm->ResetRecipeToDefaults( curRec );
+    ASSERT_EQ( 0, rm->setRecipeValue( curRec,
+        TRecipeManager::RV_SIGNAL_PUMP_RUNNING, 555.0f ) );
+    cip1.rt_par_float[ P_SELECT_REC ] =
+        static_cast<float>( curRec + 1 );
+    EXPECT_EQ( 0, cip1.evaluate() );
+    EXPECT_EQ( 555.0f, cip1.rt_par_float[ P_SIGNAL_PUMP_RUNNING ] );
+
+    EXPECT_EQ( -1, cip1.init_object_devices() );
+    EXPECT_EQ( nullptr, cip1.dev_upr_pump_running );
+    EXPECT_EQ( 555.0f, cip1.rt_par_float[ P_SIGNAL_PUMP_RUNNING ] );
+    EXPECT_FALSE( cip1.legacy_line24_warning_shown );
+
+    // Завершение.
+    ClearCipDevices();
+    G_LUA_MANAGER->free_Lua();
+    }
