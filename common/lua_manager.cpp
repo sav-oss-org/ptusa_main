@@ -13,6 +13,11 @@
 
 #include "lua_manager.h"
 
+#ifdef TRACY_ENABLE
+// TracyLua.hpp expects the Lua headers to be included first.
+#include "tracy/TracyLua.hpp"
+#endif
+
 #include "prj_mngr.h"
 #include "device/device.h"
 #include "tech_def.h"
@@ -196,6 +201,12 @@ int lua_manager::init( lua_State* lua_state, const char* script_name,
 
         lua_gc( L, LUA_GCSTOP, 0 );
         luaL_openlibs( L );    // Open standard libraries.
+#ifdef TRACY_ENABLE
+        // Line level Lua sampling for profiling builds; costs CPU, off unless
+        // the project is configured with -DPTUSA_TRACY=ON.
+        lua_sethook( L, tracy::LuaHook,
+            LUA_MASKCALL | LUA_MASKLINE | LUA_MASKRET, 0 );
+#endif
         }
     else
         {
