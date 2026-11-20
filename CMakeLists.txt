@@ -512,6 +512,18 @@ else()
 ]] )
 endif()
 
+# Unit tests for tools/build.py. The script also writes a Python coverage
+# report to the repository root; the Sonar Python analyzer reads coverage.xml
+# there by default (sonar.python.coverage.reportPaths).
+find_package(Python3 COMPONENTS Interpreter)
+if(Python3_Interpreter_FOUND)
+    add_test(NAME tools_build_py_tests
+        COMMAND Python3::Interpreter ${CMAKE_CURRENT_SOURCE_DIR}/tools/test_build.py)
+    set_tests_properties(tools_build_py_tests PROPERTIES
+        ENVIRONMENT
+            "PTUSA_BUILD_COVERAGE_XML=${CMAKE_CURRENT_SOURCE_DIR}/coverage.xml")
+endif()
+
 # Общие пути в Lua package.path
 set(LUA_MODULES_PATH "${CMAKE_CURRENT_SOURCE_DIR}/deps/lunarmodules")
 set(LUA_BUSTED_PATH_INIT_CMD

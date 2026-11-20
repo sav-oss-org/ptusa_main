@@ -115,6 +115,10 @@ flowchart TD
 
 ## How to build the project ##
 
+To select and build multiple CMake configurations with the `install` target, run
+`python tools/build.py`. See the [build script guide](tools/build.md) for saved
+selections, parallel jobs, and command previews.
+
 You could clone repository by next command:
 `git clone --recurse-submodules
 https://github.com/sav-oss-org/ptusa_main.git`
