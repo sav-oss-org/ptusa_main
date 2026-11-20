@@ -165,12 +165,13 @@ jobs:
     steps:
       - name: Check the title prefix
         run: |
-          pre_re='^(fix|feat|test|build|ci|deps|docs|chore)'
+          pre_re='^(fix|feat|test|build|ci|perf|deps|docs|chore)'
           pre_re=$pre_re'(\([a-z0-9-]+\))?!?: \S'
           if ! printf '%s' "$PR_TITLE" | grep -qE "$pre_re"; then
             msg='PR title must start with a change-type prefix:'
-            msg=$msg' fix:, feat:, test:, build:, ci:, deps:,'
-            msg=$msg' docs: or chore: - see docs/CONTRIBUTING.md.'
+            msg=$msg' fix:, feat:, test:, build:, ci:,'
+            msg=$msg' perf:, deps:, docs: or chore:'
+            msg=$msg' - see docs/CONTRIBUTING.md.'
             if [ "$TITLES_STRICT" = 'true' ]; then
               echo "::error::$msg"
               exit 1

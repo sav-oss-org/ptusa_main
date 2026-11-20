@@ -891,7 +891,7 @@ jobs:
               title=$(gh pr view "$num" --repo "$GITHUB_REPOSITORY" \
                 --json title --jq '.title | split("\n")[0]') ||
                 continue
-              pre='^(fix|feat|test|build|ci|deps|docs|chore)'
+              pre='^(fix|feat|test|build|ci|perf|deps|docs|chore)'
               pre=$pre'(\([a-z0-9-]+\))?!?: .*'
               key=$(printf '%s' "$title" |
                 sed -nE "s/${pre}/\1/p")
@@ -900,7 +900,7 @@ jobs:
                 "https://github.com/$GITHUB_REPOSITORY/pull/$num" \
                 >>"$tmp/$key"
             done
-            for key in feat fix test build ci deps docs chore other; do
+            for key in feat fix test build ci perf deps docs chore other; do
               [ -s "$tmp/$key" ] || continue
               case $key in
                 feat) name=Features ;;
@@ -908,6 +908,7 @@ jobs:
                 test) name=Tests ;;
                 build) name=Build ;;
                 ci) name=CI ;;
+                perf) name=Performance ;;
                 deps) name=Dependencies ;;
                 docs) name=Documentation ;;
                 chore) name=Chores ;;

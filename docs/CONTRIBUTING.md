@@ -36,6 +36,7 @@ Please note we have a code of conduct, please follow it in all your interactions
   - `build:` - CMake, presets, toolchain;
   - `ci:` - workflows, Sonar, merge queue
     (label `github_actions`);
+  - `perf:` - optimizations and speedups;
   - `deps:` - submodule and action bumps (labels
     `dependencies`, `submodules`);
   - `docs:` - documentation (label `documentation`);
