@@ -143,6 +143,10 @@ Include all of this in the sub-agent prompt:
   (`gh issue comment <issue> --repo sav-oss-org/ptusa_main --body
   <pr-url>`): that comment is the claim signal the label protocol
   promises.
+- Request the issue author as a reviewer on the PR
+  (`gh pr edit <PR> --repo sav-oss-org/ptusa_main --add-reviewer
+  <issue-author>`), so the reporter verifies the fix against the
+  reported problem; skip it when the issue author is the PR author.
 - Every GitHub post an agent writes under the maintainer account
   (issue/PR comments, review-thread replies) must end with its own
   final line: `🤖 Posted with AI assistance (Zed agent)`. Bodies
@@ -182,6 +186,7 @@ gh issue list --repo sav-oss-org/ptusa_main --label agent:ok \
 gh issue edit N --repo sav-oss-org/ptusa_main --add-label agent:claimed
 gh pr edit N --repo sav-oss-org/ptusa_main --add-label agent:done
 gh pr edit N --repo sav-oss-org/ptusa_main --remove-label agent:done
+gh pr edit N --repo sav-oss-org/ptusa_main --add-reviewer <author>
 gh pr list --repo sav-oss-org/ptusa_main --state open \
   --label agent:done --json number,title
 gh pr checks N --repo sav-oss-org/ptusa_main
