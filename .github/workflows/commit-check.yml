@@ -30,7 +30,9 @@ env:
   # the top-level warn list and inherit_from are read from the
   # file only, so demotions through them remain a visible risk
   # until the tool can pin a config to a trusted revision.
-  CCHK_CONVENTIONAL_COMMITS: 'false'
+  CCHK_CONVENTIONAL_COMMITS: 'true'
+  # Keep in sync with allow_commit_types in .github/cchk.toml.
+  CCHK_ALLOW_COMMIT_TYPES: 'fix,feat,test,build,ci,perf,deps,docs,chore'
   CCHK_SUBJECT_CAPITALIZED: 'true'
   CCHK_SUBJECT_IMPERATIVE: 'true'
   CCHK_SUBJECT_MAX_LENGTH: '50'
@@ -65,7 +67,12 @@ env:
 
 jobs:
   commit-check:
-    if: github.event_name == 'pull_request'
+    # Dependabot writes `Bump X from A to B` subjects by design
+    # and cannot adopt the prefix policy, so the bot keeps its
+    # own style (#1596).
+    if: >-
+      github.event_name == 'pull_request' &&
+      github.actor != 'dependabot[bot]'
     permissions:
       contents: read
       pull-requests: write
