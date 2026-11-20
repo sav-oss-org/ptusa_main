@@ -32,7 +32,7 @@ env:
   # until the tool can pin a config to a trusted revision.
   CCHK_CONVENTIONAL_COMMITS: 'true'
   # Keep in sync with allow_commit_types in .github/cchk.toml.
-  CCHK_ALLOW_COMMIT_TYPES: 'fix,feat,test,build,ci,deps,docs,chore'
+  CCHK_ALLOW_COMMIT_TYPES: 'fix,feat,test,build,ci,perf,deps,docs,chore'
   CCHK_SUBJECT_CAPITALIZED: 'true'
   CCHK_SUBJECT_IMPERATIVE: 'true'
   CCHK_SUBJECT_MAX_LENGTH: '50'
