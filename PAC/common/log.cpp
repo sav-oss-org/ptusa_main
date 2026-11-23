@@ -35,6 +35,77 @@ log_mngr::~log_mngr()
     lg = nullptr;
     }
 //-----------------------------------------------------------------------------
+void i_log::write_log( PRIORITIES priority )
+    {
+    sanitize_msg();
+    write_log_impl( priority );
+    }
+//-----------------------------------------------------------------------------
+void i_log::sanitize_msg()
+    {
+    size_t escaped_len { 0 };
+    size_t src_len { 0 };
+    bool escaped { false };
+
+    while ( msg[ src_len ] != 0 )
+        {
+        const char symbol = msg[ src_len ];
+        const size_t width = ( symbol == '\n' || symbol == '\r' ||
+            symbol == '\t' ) ? 2 : 1;
+
+        if ( escaped_len + width > C_BUFF_SIZE - 1 )
+            {
+            break; // Экранированный текст не влез, хвост отброшен.
+            }
+
+        if ( width != 1 )
+            {
+            escaped = true;
+            }
+
+        escaped_len += width;
+        ++src_len;
+        }
+
+    if ( !escaped && msg[ src_len ] == 0 )
+        {
+        return; // Экранирование и усечение не потребовались.
+        }
+
+    msg[ escaped_len ] = 0;
+
+    // Заполняем буфер справа налево: позиция записи никогда не
+    // отстаёт от позиции чтения, поэтому временный буфер не нужен.
+    while ( src_len > 0 )
+        {
+        const char symbol = msg[ src_len - 1 ];
+
+        switch ( symbol )
+            {
+            case '\n':
+                msg[ --escaped_len ] = 'n';
+                msg[ --escaped_len ] = '\\';
+                break;
+
+            case '\r':
+                msg[ --escaped_len ] = 'r';
+                msg[ --escaped_len ] = '\\';
+                break;
+
+            case '\t':
+                msg[ --escaped_len ] = 't';
+                msg[ --escaped_len ] = '\\';
+                break;
+
+            default:
+                msg[ --escaped_len ] = symbol;
+                break;
+            }
+
+        --src_len;
+        }
+    }
+//-----------------------------------------------------------------------------
 void i_log::write_log( PRIORITIES priority, const char* debug_message )
     {
     strncpy( msg, debug_message, C_BUFF_SIZE - 1 );

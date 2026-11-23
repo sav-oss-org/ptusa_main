@@ -25,7 +25,7 @@ class w_log: public i_log
 
 #pragma warning( push )
 #pragma warning( disable: 4996 ) //warning C4996: 'localtime': This function or variable may be unsafe.
-		void virtual write_log(PRIORITIES priority)
+		void virtual write_log_impl(PRIORITIES priority)
 			{
             std::tm tm = get_time();
 

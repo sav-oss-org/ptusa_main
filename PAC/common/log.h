@@ -50,10 +50,20 @@ class i_log
 
     /// @brief Запись строки в журнал. Строка должна быть в @msg.
     ///
+    /// CR, LF и TAB в @msg предварительно экранируются, поэтому
+    /// один вызов даёт ровно одну физическую строку журнала.
+    ///
     /// @param priority - приоритет.
-    void virtual write_log( PRIORITIES priority ) = 0;
+    void write_log( PRIORITIES priority );
+
+    /// @brief Платформенная запись одной уже очищенной строки.
+    void virtual write_log_impl( PRIORITIES priority ) = 0;
 
     void write_log( PRIORITIES priority, const char* debug_message );
+
+    /// @brief Экранирует CR, LF и TAB в @msg, чтобы в буфере осталась
+    /// одна строка. Не помещающийся в буфер хвост сообщения отбрасывается.
+    void sanitize_msg();
 
 	void debug(const char* debug_message, ...);
 	void info(const char* info_message, ...);
