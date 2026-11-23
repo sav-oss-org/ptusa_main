@@ -12,6 +12,7 @@
 #define mcaRecipes_h__
 #include "param_ex.h"
 #include "dtime.h"
+#include <string>
 
 ///@brief Множитель размера строки для кодировки UTF-8
 #define UNICODE_MULTIPLIER 3
@@ -21,6 +22,18 @@
 #define BLOCK_SIZE 128L
 ///@brief Интервал проверки изменений в рецепте
 #define RECIPE_SAVE_INTERVAL 30000L
+
+///@brief Собирает путь файла рецептов, добавляя внешнее имя
+/// fileName к каталогу root. Отклоняет с диагностикой пустые
+/// имена, ссылки на сам каталог ".", переходы вверх по "..",
+/// разделители пути, дескрипторы дисков, абсолютные имена, а
+/// также пути, выходящие после нормализации за пределы root.
+///@param root префикс каталога рецептов; может быть пустым.
+///@param fileName проверяемое внешнее имя файла рецептов.
+///@param path собранный безопасный путь при успешной проверке.
+///@return true, если имя принято и path заполнен, иначе false.
+bool MakeSafeRecipePath( const char* root, const char* fileName,
+    std::string& path );
 
 ///@class TRecipeManager mcaRec.h
 ///@brief Класс для хранения и работы с рецептами в энергонезависимой памяти контроллера для МСА
@@ -287,10 +300,12 @@ class TRecipeManager
         /// @fn int TRecipeManager::SaveToFile()
         /// @brief Сохранение рецептов модуля в файл
         /// @return Возвращает 0 в случае успешного завершения
+        /// или 1, если небезопасное имя файла отклонено.
         int SaveToFile(const char* filename);
         /// @fn int TRecipeManager::LoadFromFile()
         /// @brief Загрузка рецептов из сохраненного файла
         /// @return Возвращает 0 в случае успешного завершения
+        /// или 1, если имя отклонено либо файл пуст.
         int LoadFromFile(const char* filename);
         /// @fn  void TRecipeManager::NullifyRecipe()
         /// @brief Обнуляет текущий рецепт
@@ -463,10 +478,12 @@ class TRecipeManager
         /// @fn int TRecipeManager::SaveToFile()
         /// @brief Сохранение рецептов модуля в файл
         /// @return Возвращает 0 в случае успешного завершения
+        /// или 1, если небезопасное имя файла отклонено.
         int SaveToFile(const char* filename);
         /// @fn int TRecipeManager::LoadFromFile()
         /// @brief Загрузка рецептов из сохраненного файла
         /// @return Возвращает 0 в случае успешного завершения
+        /// или 1, если имя отклонено либо файл пуст.
         int LoadFromFile(const char* filename);
         /// @fn  void TRecipeManager::NullifyRecipe()
         /// @brief Обнуляет текущий рецепт

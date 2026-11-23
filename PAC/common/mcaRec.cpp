@@ -14,6 +14,80 @@ using namespace std::string_literals;
 
 #include "utf2cp1251.h"
 
+#include <cstdio>
+#include <filesystem>
+#include <string>
+#include <system_error>
+
+namespace
+{
+
+/// Emits the rejection diagnostic for an external recipe file name.
+void RejectRecipeFileName( const char* fileName, const char* reason )
+{
+    std::fprintf( stderr,
+        "mcaRec: recipe file name \"%s\" rejected: %s.\n",
+        nullptr != fileName ? fileName : "(null)", reason );
+}
+
+} // namespace
+
+bool MakeSafeRecipePath( const char* root, const char* fileName,
+    std::string& path )
+{
+    path.clear();
+    if ( nullptr == fileName || '\0' == fileName[ 0 ] )
+        {
+        RejectRecipeFileName( fileName, "the name is empty" );
+        return false;
+        }
+    const std::string name{ fileName };
+    if ( name == "." )
+        {
+        RejectRecipeFileName( fileName,
+            "the name refers to the directory itself" );
+        return false;
+        }
+    if ( std::string::npos != name.find_first_of( "/\\:" ) )
+        {
+        RejectRecipeFileName( fileName,
+            "the name contains a path separator or a drive" );
+        return false;
+        }
+    if ( std::string::npos != name.find( ".." ) )
+        {
+        RejectRecipeFileName( fileName,
+            "the name contains a parent directory traversal" );
+        return false;
+        }
+    const std::string rootText{ nullptr != root ? root : "" };
+    const std::string composed{ rootText + name };
+    // Check lexically that the composed path stays inside the
+    // root directory. absolute() and relative() use the current
+    // working directory, so no existing file is required here.
+    std::error_code ec;
+    const std::filesystem::path rootPath{ std::filesystem::absolute(
+        rootText.empty() ? std::string{ "." } : rootText, ec ) };
+    if ( ec )
+        {
+        RejectRecipeFileName( fileName, "the recipe root is invalid" );
+        return false;
+        }
+    const std::filesystem::path composedPath{
+        std::filesystem::absolute( composed, ec ).lexically_normal() };
+    const std::filesystem::path inside{ std::filesystem::relative(
+        composedPath, rootPath, ec ) };
+    if ( ec || inside.empty() || ( inside.begin() != inside.end()
+        && *inside.begin() == std::filesystem::path{ ".." } ) )
+        {
+        RejectRecipeFileName( fileName,
+            "the resulting path escapes the recipe root directory" );
+        return false;
+        }
+    path = composed;
+    return true;
+}
+
 int TRecipeManager::startRecipeBlock = 0;
 
 int TRecipeManager::recipePerLine = 25;
@@ -593,17 +667,20 @@ int TRecipeManager::SaveToFile( const char* filename )
 #ifdef DEBUG
     printf( "Saving recipes to file %s\n", filename );
 #endif // DEBUG
-    FILE* memFile = nullptr;
-    char fname[ 50 ];
 #ifdef PAC_PLCNEXT
-    sprintf( fname, "/opt/main/%s", filename );
+    const char* recipeRoot{ "/opt/main/" };
 #else
-    sprintf( fname, "%s", filename );
+    const char* recipeRoot{ "" };
 #endif // PAC_PLCNEXT
-    memFile = fopen( fname, "r+b" );
+    std::string fname;
+    if ( !MakeSafeRecipePath( recipeRoot, filename, fname ) )
+        {
+        return 1;
+        }
+    FILE* memFile = fopen( fname.c_str(), "r+b" );
     if ( nullptr == memFile )
         {
-        memFile = fopen( fname, "w+b" );
+        memFile = fopen( fname.c_str(), "w+b" );
         }
     if ( memFile )
         {
@@ -620,15 +697,18 @@ int TRecipeManager::SaveToFile( const char* filename )
 
 int TRecipeManager::LoadFromFile( const char* filename )
     {
-    FILE* memFile = nullptr;
-    char fname[50];
 #ifdef PAC_PLCNEXT
-    sprintf(fname, "/opt/main/%s", filename);
+    const char* recipeRoot{ "/opt/main/" };
 #else
-    sprintf( fname, "./%s", filename );
+    const char* recipeRoot{ "./" };
 #endif // PAC_PLCNEXT
+    std::string fname;
+    if ( !MakeSafeRecipePath( recipeRoot, filename, fname ) )
+        {
+        return 1;
+        }
     memset(recipeMemory, 0, recipeMemorySize);
-    memFile = fopen(fname, "r+b");
+    FILE* memFile = fopen(fname.c_str(), "r+b");
     if (memFile)
         {
         size_t result = fread(recipeMemory, 1, recipeMemorySize, memFile);
@@ -995,17 +1075,20 @@ int TMediumRecipeManager::SaveToFile( const char* filename )
 #ifdef DEBUG
     printf( "Saving recipes to file %s\n", filename );
 #endif // DEBUG
-    FILE* memFile = nullptr;
-    char fname[ 50 ];
 #ifdef PAC_PLCNEXT
-    sprintf( fname, "/opt/main/%s", filename );
+    const char* recipeRoot{ "/opt/main/" };
 #else
-    sprintf( fname, "%s", filename );
+    const char* recipeRoot{ "" };
 #endif // PAC_PLCNEXT
-    memFile = fopen( fname, "r+b" );
+    std::string fname;
+    if ( !MakeSafeRecipePath( recipeRoot, filename, fname ) )
+        {
+        return 1;
+        }
+    FILE* memFile = fopen( fname.c_str(), "r+b" );
     if ( nullptr == memFile )
         {
-        memFile = fopen( fname, "w+b" );
+        memFile = fopen( fname.c_str(), "w+b" );
         }
     if ( memFile )
         {
@@ -1022,15 +1105,18 @@ int TMediumRecipeManager::SaveToFile( const char* filename )
 
 int TMediumRecipeManager::LoadFromFile(const char* filename)
 {
-    FILE* memFile = nullptr;
-    char fname[50];
-    memset(recipeMemory, 0, recipeMemorySize);
 #ifdef PAC_PLCNEXT
-    sprintf(fname, "/opt/main/%s", filename);
+    const char* recipeRoot{ "/opt/main/" };
 #else
-    sprintf(fname, "%s", filename);
+    const char* recipeRoot{ "" };
 #endif // PAC_PLCNEXT
-    memFile = fopen(fname, "r+b");
+    std::string fname;
+    if ( !MakeSafeRecipePath( recipeRoot, filename, fname ) )
+        {
+        return 1;
+        }
+    memset(recipeMemory, 0, recipeMemorySize);
+    FILE* memFile = fopen(fname.c_str(), "r+b");
     if (memFile)
     {
         size_t result = fread(recipeMemory, 1, recipeMemorySize, memFile);
