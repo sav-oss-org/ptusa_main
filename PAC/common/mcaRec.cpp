@@ -51,6 +51,50 @@ bool IsInsideRoot( const std::filesystem::path& rootPath,
             && *inside.begin() == std::filesystem::path{ ".." } );
 }
 
+/// Writes the recipe image into a validated recipe file.
+int SaveRecipeMemoryToFile( const unsigned char* memory,
+    unsigned long memorySize, const char* fileName )
+{
+    std::string fname;
+    if ( !MakeSafeRecipePath( fileName, fname ) ) return 1;
+    FILE* memFile = fopen( fname.c_str(), "r+b" );
+    if ( nullptr == memFile )
+        {
+        memFile = fopen( fname.c_str(), "w+b" );
+        }
+    if ( memFile )
+        {
+        fseek( memFile, 0, SEEK_SET );
+        fwrite( memory, 1, memorySize, memFile );
+        fclose( memFile );
+#ifdef PAC_PLCNEXT
+        std::string syscommand = "chmod 777 "s + fname;
+        system( syscommand.c_str() );
+#endif // PAC_PLCNEXT
+        }
+    return 0;
+}
+
+/// Reads a validated recipe file into the recipe image.
+int LoadRecipeMemoryFromFile( unsigned char* memory,
+    unsigned long memorySize, const char* fileName )
+{
+    std::string path;
+    if ( !MakeSafeRecipePath( fileName, path ) )
+        {
+        return 1;
+        }
+    memset( memory, 0, memorySize );
+    FILE* memFile = fopen( path.c_str(), "r+b" );
+    if ( memFile )
+        {
+        size_t result = fread( memory, 1, memorySize, memFile );
+        fclose( memFile );
+        if ( 0 == result ) return 1;
+        }
+    return 0;
+}
+
 } // namespace
 
 bool MakeSafeRecipePath( const char* fileName, std::string& path )
@@ -691,39 +735,14 @@ int TRecipeManager::SaveToFile( const char* filename )
 #ifdef DEBUG
     printf( "Saving recipes to file %s\n", filename );
 #endif // DEBUG
-    std::string fname;
-    if ( !MakeSafeRecipePath( filename, fname ) ) return 1;
-    FILE* memFile = fopen( fname.c_str(), "r+b" );
-    if ( nullptr == memFile )
-        {
-        memFile = fopen( fname.c_str(), "w+b" );
-        }
-    if ( memFile )
-        {
-        fseek( memFile, 0, SEEK_SET );
-        fwrite( recipeMemory, 1, recipeMemorySize, memFile );
-        fclose( memFile );
-#ifdef PAC_PLCNEXT
-        std::string syscommand = "chmod 777 "s + fname;
-        system( syscommand.c_str() );
-#endif
-        }
-    return 0;
+    return SaveRecipeMemoryToFile( recipeMemory, recipeMemorySize,
+        filename );
     }
 
 int TRecipeManager::LoadFromFile( const char* filename )
     {
-    std::string fname;
-    if ( !MakeSafeRecipePath( filename, fname ) ) return 1;
-    memset(recipeMemory, 0, recipeMemorySize);
-    FILE* memFile = fopen(fname.c_str(), "r+b");
-    if (memFile)
-        {
-        size_t result = fread(recipeMemory, 1, recipeMemorySize, memFile);
-        fclose(memFile);
-        if (0 == result) return 1;
-        }
-    return 0;
+    return LoadRecipeMemoryFromFile( recipeMemory,
+        recipeMemorySize, filename );
     }
 
 
@@ -1078,42 +1097,17 @@ int TMediumRecipeManager::WriteMem( unsigned long startaddr,
     return 0;
     }
 
-int TMediumRecipeManager::SaveToFile( const char* filename )
+int TMediumRecipeManager::SaveToFile( const char* name )
     {
 #ifdef DEBUG
-    printf( "Saving recipes to file %s\n", filename );
+    printf( "Saving recipes to file %s\n", name );
 #endif // DEBUG
-    std::string fname;
-    if ( !MakeSafeRecipePath( filename, fname ) ) return 1;
-    FILE* memFile = fopen( fname.c_str(), "r+b" );
-    if ( nullptr == memFile )
-        {
-        memFile = fopen( fname.c_str(), "w+b" );
-        }
-    if ( memFile )
-        {
-        fseek( memFile, 0, SEEK_SET );
-        fwrite( recipeMemory, 1, recipeMemorySize, memFile );
-        fclose( memFile );
-#ifdef PAC_PLCNEXT
-        std::string syscommand = "chmod 777 "s + fname;
-        system( syscommand.c_str() );
-#endif
-        }
-    return 0;
+    return SaveRecipeMemoryToFile( recipeMemory, recipeMemorySize,
+        name );
     }
 
-int TMediumRecipeManager::LoadFromFile(const char* filename)
+int TMediumRecipeManager::LoadFromFile( const char* name )
 {
-    std::string fname;
-    if ( !MakeSafeRecipePath( filename, fname ) ) return 1;
-    memset(recipeMemory, 0, recipeMemorySize);
-    FILE* memFile = fopen(fname.c_str(), "r+b");
-    if (memFile)
-    {
-        size_t result = fread(recipeMemory, 1, recipeMemorySize, memFile);
-        fclose(memFile);
-        if (0 == result) return 1;
-    }
-    return 0;
+    return LoadRecipeMemoryFromFile( recipeMemory,
+        recipeMemorySize, name );
 }
