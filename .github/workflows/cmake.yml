@@ -28,10 +28,14 @@ env:
   MINGW_EXCEPT: seh
   MINGW_CRT: ucrt
 
-# One run per pull request at a time; other events group per git ref.
+# One run per pull request at a time; other events group per git
+# ref. The event name is part of the group on purpose: a burst of
+# `pull_request_target` events still collapses into one queued run,
+# but can no longer cancel a queued `pull_request` run of the same
+# pull request (see #1617).
 # Rationale and examples: #1555.
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: false
 
 jobs:
