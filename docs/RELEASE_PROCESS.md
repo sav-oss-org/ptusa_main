@@ -41,9 +41,12 @@ produce honest binaries, so CI rejects such a release
    version has no release yet, drafts a release named after
    the CMake version, targeting the merged commit. GitHub
    creates the tag from that exact commit on publish; the
-   draft body carries automatically generated release notes
-   — the list of pull requests merged since the previous
-   release.
+   draft body lists the pull requests merged since the
+   previous release, grouped by their title prefix
+   (`feat:`, `fix:`, `docs:`, and so on), followed by a
+   link to the full changelog. Without a previous release,
+   or when the comparison spans more than 250 commits,
+   GitHub's own generated notes are used instead.
 3. Publish. Click Publish (or run
    `gh release edit <version> --draft=false`). Publishing
    fires `on: release` in `cmake.yml`: the workflow runs
@@ -77,7 +80,9 @@ written changelog.
   already cut tag — re-upload from the run artifacts manually
   in that case.
 - Regenerate notes (draft): `gh release edit <version>
-  --generate-notes`.
+  --generate-notes`. GitHub replaces the grouped body
+  with its own flat list; the grouped body is produced
+  only once, when `autocut-release` cuts the draft.
 - Hotfix on the same day: bump the `.N` revision and repeat
   this procedure.
 - Deleting a release leaves the release tag behind. The next master
