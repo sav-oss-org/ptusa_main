@@ -14,26 +14,7 @@ updates:
         patterns:
           - "github/codeql-action/analyze"
           - "github/codeql-action/init"
-      # Same-named groups in the pip ecosystem below join the
-      # action and its bundled wheel into one grouped PR, so
-      # the two pins cannot drift apart (issue #1610).
-      commit-check:
-        patterns:
-          - "commit-check/commit-check-action"
   - package-ecosystem: "gitsubmodule"
     directory: "/"
     schedule:
       interval: "monthly"
-  - package-ecosystem: "pip"
-    # Pinned commit-check wheel for the commit-check workflow;
-    # Dependabot rewrites the sha256 digest when it bumps the
-    # version, so the two cannot drift apart.
-    directory: "/.github"
-    schedule:
-      interval: "weekly"
-    groups:
-      # Paired with the github-actions group above; keep the
-      # names identical.
-      commit-check:
-        patterns:
-          - "commit-check"
