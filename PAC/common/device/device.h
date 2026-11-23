@@ -895,14 +895,39 @@ class virtual_device : public device
 
         int get_state() const override;
 
+        void evaluate_io() override;
+
         bool is_active() override;
 
         void set_rt_par(unsigned int idx, float value) override;
 
     private:
+        enum CONSTANTS
+            {
+            /// Дополнительный параметр есть только у виртуального
+            /// дискретного входа: это фильтр P_DT.
+            ADDITIONAL_PARAMS_COUNT = 1,
+
+            P_DT = 1,   ///< Пороговый фильтр времени.
+            };
+
+        /// Виртуальный дискретный вход опознаётся по типу и подтипу:
+        /// значения подтипов повторяются у разных типов устройств.
+        bool is_di_virt() const
+            {
+            return device::DT_DI == get_type()
+                && device::DST_DI_VIRT == get_sub_type();
+            }
+
         float value = .0f;
         int state = 0;
         bool level_logic_invert = false;
+
+        /// Отфильтрованное по времени (P_DT) состояние `state`, оно же
+        /// отдаётся наружу, когда фильтр включен.
+        int filtered_state{ 0 };
+
+        uint32_t state_change_time{ get_millisec() };
      };
 //-----------------------------------------------------------------------------
 /// @brief Устройство с одним аналоговым входом.
