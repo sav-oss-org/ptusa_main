@@ -72,11 +72,11 @@ TEST( TRecipeManager, NullifyRecipe )
 namespace
 {
 
-/// Checks that the helper rejects the name and clears the output.
-void ExpectRejectedRecipeName( const char* root, const char* name )
+/// Checks that the helper rejects the name and clears output.
+void ExpectRejectedRecipeName( const char* name )
     {
     std::string path{ "sentinel" };
-    EXPECT_FALSE( MakeSafeRecipePath( root, name, path ) ) << name;
+    EXPECT_FALSE( MakeSafeRecipePath( name, path ) ) << name;
     EXPECT_TRUE( path.empty() ) << name;
     }
 
@@ -84,13 +84,13 @@ void ExpectRejectedRecipeName( const char* root, const char* name )
 
 TEST( RecipePathValidation, AcceptsPlainFileNames )
     {
-    std::string path;
-    EXPECT_TRUE( MakeSafeRecipePath( "", "tmp3.bin", path ) );
+    std::string path{ "sentinel" };
+    EXPECT_TRUE( MakeSafeRecipePath( "tmp3.bin", path ) );
     EXPECT_EQ( "tmp3.bin", path );
-    EXPECT_TRUE( MakeSafeRecipePath( "./", "tmp3.bin", path ) );
-    EXPECT_EQ( "./tmp3.bin", path );
-    EXPECT_TRUE( MakeSafeRecipePath( "/opt/main/", "tmp3.bin", path ) );
-    EXPECT_EQ( "/opt/main/tmp3.bin", path );
+    EXPECT_TRUE( MakeSafeRecipePath( "line1rec.bin", path ) );
+    EXPECT_EQ( "line1rec.bin", path );
+    EXPECT_TRUE( MakeSafeRecipePath( "recipe 1.bin", path ) );
+    EXPECT_EQ( "recipe 1.bin", path );
     }
 
 TEST( RecipePathValidation, RejectsTraversalSeparatorsAndDrives )
@@ -102,18 +102,15 @@ TEST( RecipePathValidation, RejectsTraversalSeparatorsAndDrives )
         "name..x", "evil/../evil.bin", "." };
     for ( const char* name : badNames )
         {
-        ExpectRejectedRecipeName( "", name );
-        ExpectRejectedRecipeName( "./", name );
-        ExpectRejectedRecipeName( "/opt/main/", name );
+        ExpectRejectedRecipeName( name );
         }
     }
 
 TEST( RecipePathValidation, RejectsEmptyNames )
     {
-    ExpectRejectedRecipeName( "", "" );
-    ExpectRejectedRecipeName( "./", "" );
+    ExpectRejectedRecipeName( "" );
     std::string path{ "sentinel" };
-    EXPECT_FALSE( MakeSafeRecipePath( "", nullptr, path ) );
+    EXPECT_FALSE( MakeSafeRecipePath( nullptr, path ) );
     EXPECT_TRUE( path.empty() );
     }
 
