@@ -4,5 +4,5 @@
 # together with the version, never on its own; Dependabot keeps this
 # file current.  The wheel has no runtime dependencies, so this one
 # hash covers the whole install.
-commit-check==2.20.5 \
-    --hash=sha256:24f36edae319ea1c080729e78e0aff2e2f654ad106d31eb86f856646d4482526
+commit-check==2.23.0 \
+    --hash=sha256:cdd059cc9da69578ce03ce4e6685f537247d3348ce7f1b79f106b2376d4cb7c1
