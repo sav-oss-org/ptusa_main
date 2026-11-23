@@ -51,7 +51,7 @@ TEST( i_log, direct_msg_write_is_escaped )
     journal.write_log( i_log::P_WARNING );
 
     EXPECT_EQ( journal.writes, 1 );
-    EXPECT_EQ( journal.record, "value\\tinjected\\nforged\\r" );
+    EXPECT_EQ( journal.record, "value\tinjected\\nforged\\r" );
     }
 
 TEST( i_log, escaped_record_never_overflows_buffer )

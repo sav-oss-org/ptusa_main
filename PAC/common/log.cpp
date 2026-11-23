@@ -50,8 +50,8 @@ void i_log::sanitize_msg()
     while ( msg[ src_len ] != 0 )
         {
         const char symbol = msg[ src_len ];
-        const size_t width = ( symbol == '\n' || symbol == '\r' ||
-            symbol == '\t' ) ? 2 : 1;
+        const size_t width =
+            ( symbol == '\n' || symbol == '\r' ) ? 2 : 1;
 
         if ( escaped_len + width > C_BUFF_SIZE - 1 )
             {
@@ -89,11 +89,6 @@ void i_log::sanitize_msg()
 
             case '\r':
                 msg[ --escaped_len ] = 'r';
-                msg[ --escaped_len ] = '\\';
-                break;
-
-            case '\t':
-                msg[ --escaped_len ] = 't';
                 msg[ --escaped_len ] = '\\';
                 break;
 
