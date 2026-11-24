@@ -13,10 +13,14 @@ on:
   merge_group:
     types: [ checks_requested ]
 
-# One run per pull request at a time; other events group per git ref.
+# One run per pull request at a time; other events group per git
+# ref. The event name is part of the group on purpose: a burst of
+# `pull_request_target` events still collapses into one queued run,
+# but can no longer cancel a queued `pull_request` run of the same
+# pull request (see #1617).
 # Rationale and examples: #1555.
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: false
 
 jobs:
@@ -104,7 +108,7 @@ jobs:
       SONAR_SHALLOW_TH: ${{ github.event_name == 'merge_group' && '70' || '0' }}
     steps:
       - name: Harden the runner (Audit all outbound calls)
-        uses: step-security/harden-runner@1d88384fd173af6ecb012dfd0264a306b711241a # v2.22.4
+        uses: step-security/harden-runner@aebdcf6156ab6691adf63218240e476564a1ed4c # v2.23.0
         with:
           egress-policy: audit
 
@@ -123,7 +127,7 @@ jobs:
           sudo apt-get install -y unixodbc-dev
 
       - name: Setup ccache (cache restore/save)
-        uses: hendrikmuhs/ccache-action@dbeefd73e8e2ffc1bbc412570072735eb4db3607 # v1.2.25
+        uses: hendrikmuhs/ccache-action@e91f31892a1d1b8c44424b1a94c0b7f52d337168 # v1.2.26
         with:
           key: ${{ runner.os }}-ccache-${{ hashFiles('**/CMakeLists.txt') }}
           restore-keys: |

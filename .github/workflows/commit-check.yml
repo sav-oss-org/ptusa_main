@@ -61,7 +61,7 @@ env:
     *.pem,*.key,*.pfx,*.p12,.env,id_rsa*
   CCHK_FILES_MAX_PATH_LENGTH: '250'
   CCHK_TAG_REGEX: >-
-    ^\d{4}\.(?:(?:[13578]|1[02])\.(?:[1-9]|[12]\d|3[01])|(?:[469]|11)\.(?:[1-9]|[12]\d|30)|2\.(?:[1-9]|1\d|2[0-9]))(?:\.[1-9]\d*)?$
+    ^\d{4}\.(?:(?:[13578]|1[02])\.(?:[1-9]|[12]\d|3[01])|(?:[469]|11)\.(?:[1-9]|[12]\d|30)|2\.(?:[1-9]|1\d|2[0-9]))(?:\.(?:0|[1-9]\d*))?$
 
 jobs:
   commit-check:
@@ -78,7 +78,7 @@ jobs:
           persist-credentials: false
 
       - name: 'Commit check'
-        uses: commit-check/commit-check-action@d68e05baf9511853193e2749f8a64bf2a221619a # v2.22.0
+        uses: commit-check/commit-check-action@3d46238970102271c989e85c58f22748a923384c # v2.24.1
         with:
           message: true
           # The branch rule is off in .github/cchk.toml; the
@@ -86,6 +86,11 @@ jobs:
           branch: false
           author-name: true
           author-email: true
+          # [files] rules (prohibited patterns, size, path
+          # length) ride the same engine now; this replaces
+          # the standalone pinned-wheel step (issue #1615).
+          # Needs fetch-depth: 0, the checkout has it.
+          files: true
           pr-title: true
           job-summary: true
           # Skipped automatically on fork pull requests, which
@@ -95,27 +100,6 @@ jobs:
           # testing. Remove once the baseline is green, then
           # make this check required in branch protection.
           dry-run: true
-
-      - name: 'File checks'
-        # Remove continue-on-error together with dry-run above.
-        continue-on-error: true
-        run: |
-          # Run only the sha256-pinned commit-check wheel: pip
-          # refuses a mismatched digest, so CI never executes an
-          # unverified package.  Dependabot bumps version and
-          # digest together in the pins file below.
-          python3 -m venv "$RUNNER_TEMP/cchk-venv"
-          "$RUNNER_TEMP/cchk-venv/bin/pip" install --no-deps \
-            --require-hashes --quiet \
-            -r "$GITHUB_WORKSPACE/.github/requirements-commit-check.txt"
-          cchk="$RUNNER_TEMP/cchk-venv/bin/commit-check"
-          # No --no-merges: conflict resolutions in merges can
-          # introduce files too, and -f handles merge commits
-          # (verified against a real merge commit locally).
-          for c in $(git rev-list \
-              '${{ github.event.pull_request.base.sha }}..HEAD'); do
-            "$cchk" -f --rev "$c"
-          done
 
       - name: 'AI trailer pair'
         # commit-check ORs the two trailer names (CC015 needs
@@ -140,21 +124,113 @@ jobs:
           done
           exit "$status"
 
+  pr-policy:
+    name: Pull request title and issue policy
+    if: github.event_name == 'pull_request'
+    # The closed prefix set and the linked-issue rule mirror
+    # docs/CONTRIBUTING.md (Pull Request Scope and Titles) and
+    # issue #1575. The autocut-release job groups release notes
+    # from the title prefixes, so this job is the enforcement
+    # side of that contract. It never runs in the merge queue:
+    # merge_group events do not fire pull_request triggers.
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+      issues: read
+    env:
+      PR_NUMBER: ${{ github.event.pull_request.number }}
+      PR_TITLE: ${{ github.event.pull_request.title }}
+      PR_BODY: ${{ github.event.pull_request.body }}
+      PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+      # Flip to 'true' to turn title warnings into errors once
+      # the prefix habit settles across open pull requests.
+      TITLES_STRICT: 'false'
+    steps:
+      - name: Check the title prefix
+        run: |
+          pre_re='^(fix|feat|test|build|ci|perf|deps|docs|chore)'
+          pre_re=$pre_re'(\([a-z0-9-]+\))?!?: \S'
+          if ! printf '%s' "$PR_TITLE" | grep -qE "$pre_re"; then
+            msg='PR title must start with a change-type prefix:'
+            msg=$msg' fix:, feat:, test:, build:, ci:,'
+            msg=$msg' perf:, deps:, docs: or chore:'
+            msg=$msg' - see docs/CONTRIBUTING.md.'
+            if [ "$TITLES_STRICT" = 'true' ]; then
+              echo "::error::$msg"
+              exit 1
+            fi
+            echo "::warning::$msg"
+          fi
+
+      # Rollout plan from issue #1575: product code paths
+      # (PAC, common, test) fail, infrastructure pull requests
+      # only warn until the habit settles.
+      - name: Check the linked issue
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -eu
+          repo="$GITHUB_REPOSITORY"
+          if [ "$PR_AUTHOR" = 'dependabot[bot]' ]; then
+            echo 'dependabot pull requests own their issues'
+            exit 0
+          fi
+          labels=$(gh api "repos/$repo/issues/$PR_NUMBER/labels" \
+            --jq '[.[].name] | join(" ")')
+          if printf '%s' " $labels " | grep -q ' no-issue '; then
+            echo 'the no-issue label exempts this pull request'
+            exit 0
+          fi
+          q='query($owner:String!,$name:String!,$number:Int!){'
+          q=$q'repository(owner:$owner,name:$name){'
+          q=$q'pullRequest(number:$number){'
+          q=$q'closingIssuesReferences(first:1){totalCount}}}}'
+          refs=$(gh api graphql -f owner="${repo%%/*}" \
+            -f name="${repo##*/}" -F number="$PR_NUMBER" \
+            -f query="$q" \
+            --jq '.data.repository.pullRequest
+              .closingIssuesReferences.totalCount')
+          if [ "$refs" != '0' ]; then
+            exit 0
+          fi
+          link_re='(close[sd]?|fix(ed|es)?|resolve[sd]?)'
+          link_re=$link_re'[[:space:]]+(#[0-9]+|https://github.com/'
+          link_re=$link_re'[^/ ]+/[^/ ]+/(issues|pull)/[0-9]+)'
+          if printf '%s' "$PR_BODY" | grep -qiE "$link_re"; then
+            exit 0
+          fi
+          if gh api "repos/$repo/pulls/$PR_NUMBER/files?per_page=100" \
+            --paginate --jq '.[].filename' |
+            grep -qE '^(PAC|common|test)/'; then
+            msg='link the closed issue ("Closes #N") or label'
+            msg=$msg' the pull request no-issue (docs/CONTRIBUTING.md)'
+            echo "::error::$msg"
+            exit 1
+          fi
+          msg='link the closed issue ("Closes #N"): infrastructure'
+          msg=$msg' changes may only warn here for now'
+          echo "::warning::$msg"
+
   tag-check:
     if: github.event_name == 'push'
     runs-on: ubuntu-latest
     steps:
-      - name: 'Checkout tag'
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-
       - name: 'Tag check'
         run: |
-          # Install from the same sha256 pins as the pull-request
-          # job above.
-          python3 -m venv "$RUNNER_TEMP/cchk-venv"
-          "$RUNNER_TEMP/cchk-venv/bin/pip" install --no-deps \
-            --require-hashes --quiet \
-            -r "$GITHUB_WORKSPACE/.github/requirements-commit-check.txt"
-          "$RUNNER_TEMP/cchk-venv/bin/commit-check" --tag
+          # The whole [tag] policy of .github/cchk.toml is
+          # the mirrored CCHK_TAG_REGEX above, and the old
+          # commit-check --tag step only matched the tag
+          # name against it (proved on release tags, issue
+          # #1615), so compare the pushed ref directly.
+          # The workflow triggers on tag pushes only, so
+          # GITHUB_REF_NAME is always a tag name here.
+          if printf '%s\n' "${GITHUB_REF_NAME}" \
+              | grep -qP "${CCHK_TAG_REGEX}"; then
+            echo "Tag ${GITHUB_REF_NAME} matches the CalVer policy."
+          else
+            echo "::error::Tag ${GITHUB_REF_NAME} violates the" \
+              "release tag pattern; see Versioning in" \
+              "docs/CONTRIBUTING.md"
+            exit 1
+          fi

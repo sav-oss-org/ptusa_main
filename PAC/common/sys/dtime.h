@@ -106,6 +106,17 @@ struct stat_time
 #ifdef PTUSA_TEST
 tm get_time_next_hour();
 
+//-----------------------------------------------------------------------------
+/// @brief Получение локального времени на один час позже переданной метки.
+///
+/// Время нормализуется через @c mktime(), поэтому переход через полночь
+/// перематывает дату, день недели и день года.
+///
+/// @param current_time - исходная метка времени.
+///
+/// @return Локальное время на один час позже current_time.
+tm get_time_next_hour_from( const time_t& current_time );
+
 tm get_fixed_time();
 
 const std::string FIXED_TIME_STR = "2025-03-12 00.00.00";
