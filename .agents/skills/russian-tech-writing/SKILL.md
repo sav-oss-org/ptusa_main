@@ -5,6 +5,8 @@ description: Write or edit Russian-language text in ptusa_main -
   notes. Applies the review-enforced style of this repository for
   the APCS (ПАК/АСУ ТП) and CI/release domain: pronoun rules,
   GitHub terminology, language links, anchors, and examples.
+  Keeps the shared ru-en term glossary in `GLOSSARY.md`
+  current.
 ---
 
 # Russian technical text for ptusa_main
@@ -29,8 +31,8 @@ counterpart is `docs/RELEASE_PROCESS.md`.
    instead.
 
    - Bad: `Она добавляется в binaries через version_info.h`.
-   - Good: `Номер версии добавляется в исполняемые файлы
-     (binaries) через version_info.h`.
+   - Good: `Номер версии добавляется в двоичные исполняемые
+     файлы (binaries) через version_info.h`.
 
 2. Name what is added/checked/done, where and in what form. If a
    sentence says what happens, it must not rely on a previous
@@ -50,8 +52,11 @@ counterpart is `docs/RELEASE_PROCESS.md`.
    - `артефакты сборки (`build artifacts`)`
 
    Prefer an established Russian term when one exists
-   (`журнал` = log); never translate identifiers, commands or
-   parameter names.
+   (`журнал (лог)` = log); never translate identifiers,
+   commands or parameter names.  `журнал` is polysemous:
+   every log is a журнал, but not every журнал is a log, so
+   clarify the kind when the context is not obvious
+   (`журнал событий`, `журнал сборки`).
 
 4. Cross-references are anchor links, bare `см. ниже` is not
    enough:
@@ -98,6 +103,15 @@ Name every linked document in the language of its content:
 - Do not switch languages mid-sentence except for terms in
   backticks and the language links above.
 
+## Change and merge lists
+
+- Format change lists, accepted PR lists and release summaries
+  as multi-level lists whenever possible.
+- Top level is the category (`Исправления`, `Новое`, `CI`),
+  inner levels are the items.
+- Each item names the object and links the PR:
+  `- починен `TCP` лог ([#1520](url))`.
+
 ## Technical constraints
 
 - Line length stays <= 80 characters. Count characters, not
@@ -111,6 +125,16 @@ Name every linked document in the language of its content:
   body starts with `🤖 Generated with AI assistance`.
 - Russian replies to review threads end with the footer
   `🤖 Posted with AI assistance (Zed agent)`.
+
+## Glossary file
+
+- The skill directory holds `GLOSSARY.md`, the accumulating
+  Russian-English dictionary of terms used in ptusa_main.
+- Before translating a new term, check `GLOSSARY.md` and
+  reuse the recorded translation.
+- When review approves a term (or a term is newly
+  introduced), append it to `GLOSSARY.md`: term, English,
+  context.  Create the file when it is missing.
 
 ## Domain vocabulary
 
