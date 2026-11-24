@@ -5,8 +5,8 @@ description: Write or edit Russian-language text in ptusa_main -
   notes. Applies the review-enforced style of this repository for
   the APCS (ПАК/АСУ ТП) and CI/release domain: pronoun rules,
   GitHub terminology, language links, anchors, and examples.
-  Keeps the shared ru-en term glossary in `GLOSSARY.md`
-  current.
+  Keeps the shared term glossary in
+  `docs/GLOSSARY_RU.md` current.
 ---
 
 # Russian technical text for ptusa_main
@@ -19,7 +19,7 @@ counterpart is `docs/RELEASE_PROCESS.md`.
 ## When to use
 
 - Writing or editing Russian documentation (`docs/**`,
-  especially `docs/russian_readme/**` and `*_RU.md` files).
+  especially `docs/ru/**` and `*_RU.md` files).
 - Writing Russian code comments or test comments.
 - Answering review threads and posting issue/PR comments (`idzm`
   communicates in Russian).
@@ -128,13 +128,15 @@ Name every linked document in the language of its content:
 
 ## Glossary file
 
-- The skill directory holds `GLOSSARY.md`, the accumulating
-  Russian-English dictionary of terms used in ptusa_main.
-- Before translating a new term, check `GLOSSARY.md` and
-  reuse the recorded translation.
+- The shared glossary lives in `docs/GLOSSARY_RU.md`: an
+  accumulating Russian-English dictionary of ptusa_main
+  terms; every entry has a short explanation and a link to
+  the detailed document when such a document exists.
+- Before translating a new term, check `docs/GLOSSARY_RU.md`
+  and reuse the recorded translation.
 - When review approves a term (or a term is newly
-  introduced), append it to `GLOSSARY.md`: term, English,
-  context.  Create the file when it is missing.
+  introduced), append it to `docs/GLOSSARY_RU.md` following
+  the filling rules at the top of that file.
 
 ## Domain vocabulary
 
