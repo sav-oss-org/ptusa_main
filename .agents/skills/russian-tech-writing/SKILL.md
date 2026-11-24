@@ -1,12 +1,13 @@
 ---
 name: russian-tech-writing
-description: Write or edit Russian-language text in ptusa_main -
+description: >-
+  Write or edit Russian-language text in ptusa_main -
   documentation, code comments, issues, review replies, release
   notes. Applies the review-enforced style of this repository for
   the APCS (ПАК/АСУ ТП) and CI/release domain: pronoun rules,
   GitHub terminology, language links, anchors, and examples.
-  Keeps the shared term glossary in
-  `docs/GLOSSARY_RU.md` current.
+  Keeps the shared term glossary in `docs/GLOSSARY_RU.md`
+  current.
 ---
 
 # Russian technical text for ptusa_main
