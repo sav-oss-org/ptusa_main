@@ -13,17 +13,19 @@ description: >-
 # Russian technical text for ptusa_main
 
 Rules below were established in review on this repository
-(maintainers `idzm` and `Lictwin`). The gold-standard example of
-a Russian document is `docs/RELEASE_PROCESS_RU.md`; the English
-counterpart is `docs/RELEASE_PROCESS.md`.
+(maintainers `idzm` and `Lictwin`).
+
+The gold-standard example of a Russian document is
+`docs/RELEASE_PROCESS_RU.md`; the English counterpart is
+`docs/RELEASE_PROCESS.md`.
 
 ## When to use
 
 - Writing or editing Russian documentation (`docs/**`,
   especially `docs/ru/**` and `*_RU.md` files).
 - Writing Russian code comments or test comments.
-- Answering review threads and posting issue/PR comments (`idzm`
-  communicates in Russian).
+- Answering review threads and posting issue/PR comments
+  if they are written in Russian.
 
 ## Hard rules
 
@@ -124,8 +126,6 @@ Name every linked document in the language of its content:
   with a period, same 80-character limit.
 - Commit messages and pull request bodies are English; the PR
   body starts with `🤖 Generated with AI assistance`.
-- Russian replies to review threads end with the footer
-  `🤖 Posted with AI assistance (Zed agent)`.
 
 ## Glossary file
 
@@ -148,8 +148,9 @@ Name every linked document in the language of its content:
   `params_manager`; `циклическое автосохранение` = periodic
   autosave; `команда принудительного сохранения` = monitor
   command `system cmd 102` (`FORCE_SAVE_PARAMS`).
-- Monitor protocol fields stay as identifiers: `CMD`,
-  `CMD_ANSWER`, `cmd_answer`.
+- Monitor protocol fields stay as identifiers: protocol
+  fields `CMD`, `CMD_ANSWER` and the C buffer `cmd_answer`
+  that holds the answer text.
 - CI terms: `сборочная матрица` (build matrix), `кросс-сборка`
   (cross build), `покрытие нового кода` (new code coverage);
   `плавающий тест` for a flaky test in formal text.
