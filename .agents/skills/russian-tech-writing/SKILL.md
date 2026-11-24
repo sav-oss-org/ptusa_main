@@ -4,7 +4,7 @@ description: >-
   Write or edit Russian-language text in ptusa_main -
   documentation, code comments, issues, review replies, release
   notes. Applies the review-enforced style of this repository for
-  the APCS (ПАК/АСУ ТП) and CI/release domain: pronoun rules,
+  the APCS (PAC/АСУ ТП) and CI/release domain: pronoun rules,
   GitHub terminology, language links, anchors, and examples.
   Keeps the shared term glossary in `docs/GLOSSARY_RU.md`
   current.
@@ -141,9 +141,10 @@ Name every linked document in the language of its content:
 
 ## Domain vocabulary
 
-- `ПАК` = programmable automation controller (`PAC`); АСУ ТП
-  context: технологический объект, операция, датчик,
-  исполнительное устройство.
+- The abbreviation stays English: `PAC` (programmable
+  automation controller); the Cyrillic `ПАК` is not used.
+  АСУ ТП context: технологический объект, операция,
+  датчик, исполнительное устройство.
 - `параметры` = the controller parameter set managed by
   `params_manager`; `циклическое автосохранение` = periodic
   autosave; `команда принудительного сохранения` = monitor
