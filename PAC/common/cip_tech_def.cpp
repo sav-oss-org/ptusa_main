@@ -5989,13 +5989,13 @@ int cipline_tech_object::check_device( device*& outdev, int parno, device::DEVIC
                         // Старые файлы line{N}rec.bin могут
                         // хранить в слоте строки 24 прежний
                         // дефолт «время циркуляции при
-                        // ополаскивании» (600 или 300 с). Если DO
-                        // с
-                        // таким номером в проекте нет, легкое
-                        // значение трактуем как «сигнал не
-                        // задан»: параметр сбрасывается,
-                        // чтобы все потребители, включая
-                        // Lua, видели «не задано» (#1595).
+                        // ополаскивании» (600 или 300 с).
+                        // Если DO с таким номером в проекте
+                        // нет, легкое значение трактуем как
+                        // «сигнал не задан»: параметр
+                        // сбрасывается, чтобы все потребители,
+                        // включая Lua, видели «не задано»
+                        // (#1595).
                         if (parno == P_SIGNAL_PUMP_RUNNING
                             && is_legacy_rinse_circ_time( dev_no ))
                             {
@@ -6003,9 +6003,10 @@ int cipline_tech_object::check_device( device*& outdev, int parno, device::DEVIC
                             if (!legacy_line24_warning_shown)
                                 {
                                 legacy_line24_warning_shown = true;
-                                printf("LINE%d: legacy circulation "
-                                    "time %u found in pump running "
-                                    "signal slot, signal disabled\n\r",
+                                fmt::print("LINE{}: legacy "
+                                    "circulation time {} found in "
+                                    "pump running signal slot, "
+                                    "signal disabled\n\r",
                                     nmr, dev_no);
                                 }
                             return 0;
