@@ -6,7 +6,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(CMAKE_POLICY_DEFAULT_CMP0048 NEW)
 
-project(ptusa_main VERSION 2026.08.21.0)
+project(ptusa_main VERSION 2026.11.11.0)
 
 message(STATUS "CMake version: ${CMAKE_VERSION}")
 message(STATUS "CMake executable: ${CMAKE_COMMAND}")
