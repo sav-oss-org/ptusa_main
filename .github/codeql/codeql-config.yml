@@ -1,12 +1,14 @@
 # CodeQL analysis scope for ptusa_main.
 #
-# The paths-ignore entries drop third-party code from the
-# analysis results. The traced build stays complete, so
-# first-party analysis is unaffected; only findings inside
-# vendored trees stop being reported, and those trees are the
-# responsibility of their upstream projects. The filter applies
-# to every scan: pull requests, master pushes, and the weekly
-# schedule.
+# The paths-ignore entries exclude the listed trees
+# from analyses that run without building the code. The
+# C/C++ analysis builds the whole project, and a built
+# analysis ignores these entries, so the workflow drops
+# results whose primary location is under `deps/` from
+# the SARIF file before uploading it. That filter is what
+# keeps vendored submodules out of the reported findings;
+# these entries document the same intent and apply
+# unchanged if a build-less mode is ever used.
 name: ptusa_main CodeQL config
 paths-ignore:
   # Git submodules: benchmark, googletest, open62541, lua,
