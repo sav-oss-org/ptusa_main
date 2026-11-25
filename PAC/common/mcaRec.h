@@ -153,6 +153,10 @@ class TRecipeManager
     private:
         ///@brief Флаг, сигнализирующий об изменении параметров рецепта
         int recipechanged;
+        ///@brief Номер (+1) рецепта, сброшенного
+        /// за последний вызов EvalRecipe()
+        /// или обнуленного; см. ConsumeResetFlag().
+        int resetFlag{ 0 };
         uint32_t recipechangechecktime;
         int lineNo;
         int currentRecipe;
@@ -268,6 +272,12 @@ class TRecipeManager
         /// @param recipeNo Номер рецепта
         /// @return   int 0 - ошибка !0 - ОК
         int ResetRecipeToDefaults(int recipeNo);
+        /// @fn  int TRecipeManager::ConsumeResetFlag()
+        /// @brief Возвращает номер (+1) последнего
+        /// сброшенного или обнулённого рецепта
+        /// и сбрасывает флаг.
+        /// @return Номер рецепта (+1), 0 - сброса не было
+        int ConsumeResetFlag();
         /// @fn  void TRecipeManager::LoadRecipeName()
         /// @brief Обновляет имя рецепта из энергонезависимой памяти
         /// @return   void

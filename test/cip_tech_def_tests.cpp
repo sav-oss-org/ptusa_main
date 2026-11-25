@@ -1675,3 +1675,40 @@ TEST( cipline_tech_object, ResetWP )
     G_LUA_MANAGER->free_Lua();
     ClearCipDevices();
     }
+
+TEST( cipline_tech_object, recipe_reset_reloads_line_params )
+    {
+    // Сброс рецепта командой редактора «Сброс»
+    // (RV_TO_DEFAULTS = 1) обновляет параметры загруженного
+    // рецепта, включая сторожевой
+    // таймер (#1640).
+    InitCipDevices();
+    cipline_tech_object cip1( "CIP1", 1, 1, "CIP1", 1, 1, 200, 200, 200, 200 );
+    lua_manager::get_instance()->set_Lua( lua_open() );
+
+    cip1.initline();
+    InitStationParams();
+
+    auto* rm = cip1.lineRecipes;
+    const int curRec = rm->getCurrentRecipe();
+    rm->ResetRecipeToDefaults( curRec );
+    ASSERT_EQ( 0, rm->setRecipeValue( curRec,
+        TRecipeManager::RV_WATCHDOG, 1.0f ) );
+
+    // Загружаем рецепт с ненулевым
+    // сторожевым таймером в параметры
+    // линии.
+    cip1.rt_par_float[ P_SELECT_REC ] = static_cast<float>( curRec + 1 );
+    EXPECT_EQ( 0, cip1.evaluate() );
+    EXPECT_EQ( 1.0f, cip1.rt_par_float[ P_WATCHDOG ] );
+
+    // «Сброс»: поля рецепта вернулись к
+    // базовым, а параметры линии обновились
+    // в том же цикле.
+    ASSERT_EQ( 0, rm->setValue( TRecipeManager::RV_TO_DEFAULTS, 1.0f ) );
+    EXPECT_EQ( 0, cip1.evaluate() );
+    EXPECT_EQ( 0.0f, cip1.rt_par_float[ P_WATCHDOG ] );
+
+    G_LUA_MANAGER->free_Lua();
+    ClearCipDevices();
+    }

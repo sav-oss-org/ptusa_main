@@ -117,6 +117,7 @@ void TRecipeManager::EvalRecipe()
             {
         case 1:
             ResetRecipeToDefaults(currentRecipe);
+            resetFlag = currentRecipe + 1;
 #ifdef DEBUG
             printf("Reset recipe %d to defaults",currentRecipe);
 #endif
@@ -129,10 +130,18 @@ void TRecipeManager::EvalRecipe()
             break;
         case 4:
             NullifyRecipe();
+            resetFlag = currentRecipe + 1;
             break;
             }
         setValue(RV_TO_DEFAULTS, 0);
         }
+    }
+
+int TRecipeManager::ConsumeResetFlag()
+    {
+    auto res = resetFlag;
+    resetFlag = 0;
+    return res;
     }
 
 unsigned long TRecipeManager::startAddr()
