@@ -1,0 +1,65 @@
+# Dependabot cannot put code spans into pull request titles, so
+# this workflow rewrites them into the house style: titles like
+# Bump some/dep from 1.2.3 to 1.2.4 become wrapped in backticks,
+# including the optional "in <path>" and "in the <group> group"
+# suffixes (issue #1608). It runs on pull_request_target because
+# dependabot-originated pull_request runs get a read-only token;
+# no pull request code is checked out or executed, and the gate
+# is exactly dependabot pull requests. A retitled pull request
+# only fires pull_request.edited, which no build gate listens to.
+name: Dependabot title format
+
+on:
+  pull_request_target:
+    types: [opened, reopened]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  format-title:
+    if: >-
+      github.event.pull_request.user.login == 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Rewrite the title with code spans
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        with:
+          script: |
+            const bt = String.fromCharCode(96);
+            const q = (s) => bt + s + bt;
+            const title = context.payload.pull_request.title;
+            if (title.includes(bt)) {
+              core.info('Title already carries code spans; kept.');
+            } else {
+              const m = title.match(
+                /^Bump (\S+) from (\S+) to (\S+)(?: in (\S+))?(?: in the (.+) group)?$/
+              );
+              if (!m) {
+                core.info('Title does not match the Bump form; kept.');
+              } else {
+                let next = ['Bump', q(m[1]), 'from', q(m[2]),
+                            'to', q(m[3])].join(' ');
+                if (m[4]) {
+                  next += ' in ' + q(m[4]);
+                }
+                if (m[5]) {
+                  next += ' in the ' + q(m[5]) + ' group';
+                }
+                if (next.length > 256) {
+                  core.warning('Formatted title exceeds 256 ' +
+                               'characters; skipped.');
+                } else if (next === title) {
+                  core.info('Title already formatted; kept.');
+                } else {
+                  await github.rest.pulls.update({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    pull_number: context.payload.pull_request.number,
+                    title: next
+                  });
+                  core.info('Title rewritten to: ' + next);
+                }
+              }
+            }

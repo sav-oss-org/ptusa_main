@@ -25,6 +25,32 @@ Please note we have a code of conduct, please follow it in all your interactions
 - Use Markdown backticks to highlight technical words when useful, for
   example:
   ``Remove `DNS` reverse lookup from `TCP` logging``.
+- Start the title with a change-type prefix from the closed
+  set below, followed by `: `. The release drafter groups
+  release notes by this prefix, so a missing prefix files the
+  change under "Other changes":
+  - `fix:` - bug fixes (issue labels `bug`, `bugfix`);
+  - `feat:` - new functionality, devices, signals
+    (label `enhancement`);
+  - `test:` - test and fixture stabilization;
+  - `build:` - CMake, presets, toolchain;
+  - `ci:` - workflows, Sonar, merge queue
+    (label `github_actions`);
+  - `perf:` - optimizations and speedups;
+  - `deps:` - submodule and action bumps (labels
+    `dependencies`, `submodules`);
+  - `docs:` - documentation (label `documentation`);
+  - `chore:` - everything else.
+- A squash merge copies the title into the commit subject,
+  so keep the prefixed title as concise as the commit
+  subject rules require.
+- Pull requests changing product code (`PAC`, `common`,
+  `test`) must link the issue they close (`Closes #N` in the
+  body or the Development section). The `no-issue` label
+  exempts urgent fixes and `dependabot` is exempt. The
+  `pr-policy` job of `commit-check.yml` reports both rules:
+  titles warn during rollout, missing links fail product
+  changes and only warn for infrastructure ones.
 - Explain why the change is needed, what changed, expected risk and validation
   in the pull request description.
 
@@ -69,15 +95,30 @@ Please note we have a code of conduct, please follow it in all your interactions
 
 ## Versioning and Tags
 
-- Release tags use CalVer: `YYYY.MM.DD`, or `YYYY.MM.DD.N` when a
-  second release happens on the same day. `N` is a hotfix serial
-  number starting at 1.
+- Release tags use CalVer: `YYYY.MM.DD.N`. The serial `N` is `0`
+  for the first release of a day and increments for every same-day
+  hotfix. The tag equals the four-component
+  `project(ptusa_main VERSION ...)` string.
 - Components carry no leading zeros (`2026.1.28`), and new tags carry
   no leading `v`; the legacy `v2024.01.31` is a historical exception.
 - Tags carry no free-form suffixes such as `CP1251`; rule `CC401` in
   `.github/cchk.toml` enforces the pattern.
 - Semantic Versioning is reserved for independently distributed
   libraries or SDKs, should this repository ever publish them.
+
+## Release Process
+
+- The four-component `project(ptusa_main VERSION ...)`
+  string in `CMakeLists.txt` is the single source of truth:
+  the binaries embed it, and the release tag must equal it
+  byte-for-byte.
+- Bump the version in a pull request into `master`; the
+  draft release is cut automatically after the merge, and
+  publishing it builds the archives from the tag commit and
+  attaches them to the release.
+- The full runbook:
+  [English version](RELEASE_PROCESS.md);
+  [Русская версия](RELEASE_PROCESS_RU.md).
 
 ## AI-Assisted Commit Attribution
 
