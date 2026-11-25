@@ -1738,6 +1738,21 @@ TEST( cipline_tech_object, legacy_line24_circ_time_guard )
     EXPECT_EQ( 0.0f, f.cip1.rt_par_float[ P_SIGNAL_PUMP_RUNNING ] );
     }
 
+TEST( cipline_tech_object, legacy_line24_old_circ_time_guard )
+    {
+    // В ещё более старых проектах в слоте строки 24 стоит 300
+    // секунд, и guard обязан срабатывать для этого значения
+    // так же, как для 600 (#1595).
+    legacy_line24_case f( 300.0f );
+
+    // Сигнала LINE1DO300 в проекте нет — инициализация
+    // проходит, параметр сброшен в «не задано».
+    EXPECT_EQ( 0, f.cip1.init_object_devices() );
+    EXPECT_EQ( nullptr, f.cip1.dev_upr_pump_running );
+    EXPECT_EQ( 0.0f, f.cip1.rt_par_float[ P_SIGNAL_PUMP_RUNNING ] );
+    EXPECT_TRUE( f.cip1.legacy_line24_warning_shown );
+    }
+
 TEST( cipline_tech_object, legacy_line24_signal_600_present )
     {
     // Если DO №600 в проекте всё же существует, значение 600
