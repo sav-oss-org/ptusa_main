@@ -185,7 +185,7 @@ class temperature_e_iolink_tm311 : public AI1
                 uint8_t status1 : 2;   ///< Status 2 bits.
                 uint8_t unused : 3;    ///< Unused bits.
                 int8_t scale{ -1 };    ///< Scale factor.
-                ///< Temperature value (with one decimal place).
+                /// Temperature value (with one decimal place).
                 int16_t temperature{};
             };
 
@@ -1752,7 +1752,7 @@ class threshold_regulator : public device
     public:
         enum class PARAM
             {
-            P_is_reverse = 1,  ///Обратного (реверсивного) действия.
+            P_is_reverse = 1,  ///< Обратного (реверсивного) действия.
             P_delta,
 
             PARAMS_COUNT

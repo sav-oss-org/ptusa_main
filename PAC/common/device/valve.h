@@ -134,7 +134,7 @@ class valve : public digital_io_device
         enum CONSTANTS
             {
             ADDITIONAL_PARAMS_COUNT =
-                2,  ///Количество дополнительных параметров.
+                2,  ///< Количество дополнительных параметров.
 
             P_ON_TIME = 1,
             P_FB,
@@ -164,11 +164,11 @@ class valve : public digital_io_device
         /// @brief Определение завершения отключения клапана с задержкой.
         virtual bool is_switching_off_finished();
 
-        bool is_switching_off = false;  ///Выключается ли клапан с задержкой.
+        bool is_switching_off = false;  ///< Выключается ли клапан с задержкой.
         uint32_t start_off_time =
-            0;  ///Время начала выключения клапана с задержкой.
+            0;  ///< Время начала выключения клапана с задержкой.
         bool was_on_auto =
-            false;  ///Признак включения клапана управляющей программой.
+            false;  ///< Признак включения клапана управляющей программой.
 
     public:
         static void clear_switching_off_queue();
@@ -575,7 +575,7 @@ class valve_bottom_mix_proof : public i_mix_proof, public valve
         enum CONSTANTS
             {
             DO_INDEX = 0,  ///< Индекс канала дискретного выхода.
-            ///< Индекс канала дискретного выхода мини клапана.
+            /// Индекс канала дискретного выхода мини клапана.
             DO_INDEX_MINI_V,
             DO_INDEX_L,  ///< Индекс канала дискретного выхода нижнего седла.
 
@@ -997,7 +997,7 @@ class valve_iol_terminal : public valve
             const char* dev_name, device::DEVICE_SUB_TYPE sub_type,
             u_int terminal_size = 1 );
 
-        ///< Конструктор для клапана без обратных связей.
+        /// Конструктор для клапана без обратных связей.
         explicit valve_iol_terminal( const char* dev_name,
             device::DEVICE_SUB_TYPE sub_type, u_int terminal_size = 1 );
 
@@ -1232,7 +1232,7 @@ class analog_valve_iolink : public AO1
             {
             P_FB = 1,
 
-            ADDITIONAL_PARAMS_COUNT,  ///Количество дополнительных параметров.
+            ADDITIONAL_PARAMS_COUNT,  ///< Количество дополнительных параметров.
             };
 
 #ifndef PTUSA_TEST

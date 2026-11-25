@@ -70,7 +70,7 @@ class device_communicator
             // Резервное копирование параметров. -!>
 
             CMD_RM_GET_DEVICES = 200,  ///< Запрос устройств PAC от PAC-мастера.
-            ///< Запрос состояния устройств PAC от PAC-мастера.
+            /// Запрос состояния устройств PAC от PAC-мастера.
             CMD_RM_GET_DEVICES_STATES,
             };
 
