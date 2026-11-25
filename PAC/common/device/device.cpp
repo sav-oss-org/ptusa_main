@@ -1762,6 +1762,12 @@ int counter_iolink::set_cmd( const char* prop, u_int idx, double val )
         {
         case 'A': // Свойство `ABS_V`.
         case 'V': // Свойство `V`.
+            if ( n_article == ARTICLE::IFM_SMFx20 )
+                {
+                // The external SMFx20 unit is a liter, so
+                // the value is set as it comes in.
+                return base_counter::set_cmd( prop, idx, val );
+                }
             // Учитываем коэффициент, который переводит в мл.
             return base_counter::set_cmd( prop, idx, val / mL_in_L );
 
@@ -1812,11 +1818,23 @@ u_int counter_iolink::get_quantity() const
 //-----------------------------------------------------------------------------
 u_int counter_iolink::get_abs_quantity() const
     {
+    if ( n_article == ARTICLE::IFM_SMFx20 )
+        {
+        // The SMFx20 counter accumulates liters, so the
+        // absolute value is reported in liters as well.
+        return static_cast<u_int>( get_abs_value() );
+        }
     return static_cast<u_int>( mL_in_L * get_abs_value() );
     }
 //-----------------------------------------------------------------------------
 float counter_iolink::get_value() const
     {
+    if ( n_article == ARTICLE::IFM_SMFx20 )
+        {
+        // The SMFx20 counter accumulates liters, so the
+        // value is reported in liters without scaling.
+        return base_counter::get_value();
+        }
     return base_counter::get_value() * mL_in_L;
     }
 //-----------------------------------------------------------------------------

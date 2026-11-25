@@ -1458,7 +1458,9 @@ class counter_f : public counter
 /// the temperature in deg C, the conductivity in mS/cm and the
 /// counter raw value in liters, while the raw device units are
 /// m^3, m^3/h, deg C and S/m. SM6100/SM4000 articles keep their
-/// legacy integer handling.
+/// legacy integer handling. The @ref get_value, @ref get_quantity
+/// and @ref get_abs_quantity of IFM.SMFx20 report liters, while the
+/// other articles keep reporting the legacy milliliters.
 class counter_iolink : public base_counter
     {
     public:

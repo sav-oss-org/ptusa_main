@@ -5701,8 +5701,11 @@ TEST_F( iolink_dev_test, counter_iolink_smfx20_evaluate_io_and_getters )
     set_smfx20_payload( 15.5f, 3.25f, 21.5f, 4.56f );
     fqt1.evaluate_io();
 
-    // Totalizer delta 3 m^3 = 3000 l; external quantity is mL.
-    EXPECT_EQ( counter_iolink::mL_in_L * 3000, fqt1.get_quantity() );
+    // Totalizer delta 3 m^3 = 3000 l; the external
+    // interface reports liters.
+    EXPECT_EQ( 3000, fqt1.get_quantity() );
+    EXPECT_NEAR( 3000.f, fqt1.get_value(), 0.001f );
+    EXPECT_EQ( 3000, fqt1.get_abs_quantity() );
     EXPECT_FLOAT_EQ( 15500.f, fqt1.get_raw_value() );
     EXPECT_FLOAT_EQ( 3.25f, fqt1.get_flow() );
     EXPECT_FLOAT_EQ( 21.5f, fqt1.get_temperature() );
@@ -5725,6 +5728,13 @@ TEST_F( iolink_dev_test, counter_iolink_smfx20_evaluate_io_and_getters )
     EXPECT_NEAR( 321.0f, fqt1.get_conductivity(), 0.01f );
     EXPECT_NEAR( 9.9f, fqt1.get_flow(), 0.01f );
     EXPECT_NEAR( 4.2f, fqt1.get_temperature(), 0.01f );
+
+    // The external counter value and its absolute
+    // counterpart are set in liters too.
+    fqt1.set_cmd( "V", 0, 4321.0 );
+    EXPECT_NEAR( 4321.f, fqt1.get_value(), 0.01f );
+    fqt1.set_cmd( "ABS_V", 0, 8765.0 );
+    EXPECT_EQ( 8765, fqt1.get_abs_quantity() );
 
     std::array<char, 300> buff{};
     fqt1.save_device( buff.data() );
