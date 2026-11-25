@@ -275,9 +275,8 @@ const char* PAC_critical_errors_manager::get_alarm_descr( ALARM_CLASS err_class,
             res += fmt::format_to_n( tmp + res, BUFF_SIZE - res, "{}", is_set ?
                 " : Ошибка сетевой работы: " : " : Сетевая работа в норме : " ).size;
 
-            res += fmt::format_to_n( tmp + res, BUFF_SIZE - res, "{}",
-                par == 0 ? "Modbus-устройство 11 №{} : " :
-                    par == 1 ? "Мастер {} : " : "? {} : ", par ).size;
+            res += fmt::format_to_n( tmp + res, BUFF_SIZE - res, "{} : ",
+                par == 0 ? "Мастер" : par == 1 ? "Modbus" : "?" ).size;
 
             res += fmt::format_to_n( tmp + res, BUFF_SIZE - res, "{}",
                 err_sub_class == AS_SOCKET_F ? "вызов функции socket(...)" :

@@ -151,6 +151,14 @@ class params_manager
 
         int get_params_save_counter() const;
 
+#ifdef PTUSA_TEST
+        void reset_params_counters()
+            {
+            params_change_counter = 0;
+            params_save_counter = 0;
+            }
+#endif
+
         /// @brief Результат инициализации параметров.
         ///
         /// @return true - инициализация прошла успешно.

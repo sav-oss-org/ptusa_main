@@ -14,7 +14,7 @@
     https://img.shields.io/github/downloads/sav-oss-org/ptusa_main/total.svg)](
         https://github.com/sav-oss-org/ptusa_main/releases/)
 
-Russian readme is [here](docs/russian_readme/readme.md).
+Russian readme is [here](docs/ru/readme.md).
 
 Program **``ptusa_main``** directly controls technological process.
 
