@@ -6,6 +6,7 @@
 
 #pragma once
 #include <array>
+#include <string>
 
 #include "s_types.h"
 #include "param_ex.h"
@@ -126,6 +127,20 @@ class device : public i_DO_AO_device, public par_device,
     public i_simple_error
     {
     public:
+        /// @brief Разбор адреса TCP-устройства формата `хост[:порт]`.
+        ///
+        /// Допускается необязательный TCP-порт после `:`. Если порт не
+        /// указан, используется default_port. Проверяется длина хоста
+        /// (1..15 символов), что порт состоит только из цифр и лежит в
+        /// диапазоне 1..65535.
+        ///
+        /// @param address [in] - строка адреса устройства.
+        /// @param ip [out] - хост без порта.
+        /// @param port [out] - TCP-порт.
+        /// @param default_port - порт, если он не указан в адресе.
+        static bool parse_ip_address( const char* address, std::string& ip,
+            unsigned int& port, unsigned int default_port = 1001 );
+
         /// @brief Выполнение команды.
         ///
         /// Запись в свойство объекта дробного числа.
