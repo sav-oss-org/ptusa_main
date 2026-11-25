@@ -14,7 +14,7 @@
     https://img.shields.io/github/downloads/sav-oss-org/ptusa_main/total.svg)](
         https://github.com/sav-oss-org/ptusa_main/releases/)
 
-Russian readme is [here](docs/ru/readme.md).
+A [Russian version of this readme](docs/ru/readme.md) is also available.
 
 Program **``ptusa_main``** directly controls technological process.
 
@@ -143,7 +143,8 @@ C++ CMake tools for Windows are installed using:
 `Visual Studio Installer -> Development of classic applications in C++ -> C++
 CMake tools for Windows`
 
-Detailed installation information can be obtained [here](
+Detailed installation information can be obtained in the [CMake projects
+in Visual Studio documentation](
     https://docs.microsoft.com/en-us/cpp/build/cmake-projects-in-visual-studio?view=msvc-160).
 The CMake version required for the build is 3.31 and above.
 
