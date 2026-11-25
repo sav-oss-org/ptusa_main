@@ -79,7 +79,9 @@ int mock_lua_gettop(lua_State *L)
 
 int mock_lua_type(lua_State* L, int idx)
 {
-	return -1;
+    // lua_manager проверяет объект на LUA_TTABLE/LUA_TUSERDATA, а функцию
+    // на не LUA_TNIL. LUA_TTABLE проходит обе проверки.
+    return LUA_TTABLE;
 }
 
 void mock_lua_getfield(lua_State *L, int idx, const char *k)

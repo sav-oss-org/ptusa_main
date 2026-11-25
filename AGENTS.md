@@ -37,6 +37,11 @@ AI-assisted: <agent-name> (model: <model-name>, <execution-mode>)
 Issues and pull requests created by the agent start their body with:
 `🤖 Generated with AI assistance`.
 
+Comments and review replies an agent posts on GitHub end with a footer
+line of their own: `🤖 Posted with AI assistance (<agent-name>)`.
+Take `<agent-name>` from the assistant that posted the comment, the same
+way as for the commit trailers.
+
 See `docs/CONTRIBUTING.md` and `.github/copilot-instructions.md` for the
 project contribution and style rules.
 

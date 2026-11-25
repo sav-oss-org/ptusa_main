@@ -6,7 +6,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(CMAKE_POLICY_DEFAULT_CMP0048 NEW)
 
-project(ptusa_main VERSION 2026.08.21.0)
+project(ptusa_main VERSION 2026.11.11.0)
 
 message(STATUS "CMake version: ${CMAKE_VERSION}")
 message(STATUS "CMake executable: ${CMAKE_COMMAND}")
@@ -620,6 +620,7 @@ set(STDOUT_CAPTURE_LOCKED_FILTER
 	"project_manager.apply_opc_mode:")
 
 set(TCP_SOCKET_LOCKED_FILTER
+    "tcp_communicator_linux_restart.*:"
     "tcp_communicator.evaluate:"
 	"tcp_communicator.recvtimeout:"
     "device_communicator.write_devices_states_service:"
