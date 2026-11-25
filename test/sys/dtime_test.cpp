@@ -154,6 +154,70 @@ TEST( sys, get_time_next_hour )
     EXPECT_LE( time_next.tm_sec, 61 );
     }
 
+TEST( sys, get_time_next_hour_at_23_rolls_to_next_day )
+    {
+    // Regression for issue #1540: between 23:00 and 23:59 the old
+    // implementation returned tm_hour == 24 and left the date fields
+    // of the current day.  Pin the 23:30 boundary explicitly instead
+    // of relying on the wall clock time of the test run.
+    struct tm in_ {};
+    in_.tm_year = 126;    // 2026.
+    in_.tm_mon = 10;      // November.
+    in_.tm_mday = 23;
+    in_.tm_hour = 23;
+    in_.tm_min = 30;
+    in_.tm_sec = 0;
+    in_.tm_isdst = -1;
+    const time_t in_time = mktime( &in_ );
+    ASSERT_NE( in_time, static_cast< time_t >( -1 ) );
+
+    const tm next_ = get_time_next_hour_from( in_time );
+
+    EXPECT_EQ( next_.tm_year, 126 );
+    EXPECT_EQ( next_.tm_mon, 10 );
+    EXPECT_EQ( next_.tm_mday, 24 );
+    EXPECT_EQ( next_.tm_hour, 0 );
+    EXPECT_EQ( next_.tm_min, 30 );
+    EXPECT_EQ( next_.tm_sec, 0 );
+
+    // tm_wday and tm_yday must be recomputed for the next day, not
+    // left as the values of the input day.
+    struct tm expected_ = in_;  // Filled in by the mktime() call above.
+    expected_.tm_mday = 24;
+    expected_.tm_hour = 0;
+    expected_.tm_isdst = -1;
+    ASSERT_NE( mktime( &expected_ ), static_cast< time_t >( -1 ) );
+    EXPECT_EQ( next_.tm_wday, expected_.tm_wday );
+    EXPECT_EQ( next_.tm_yday, expected_.tm_yday );
+    EXPECT_NE( next_.tm_yday, in_.tm_yday );
+    }
+
+TEST( sys, get_time_next_hour_rolls_to_new_year )
+    {
+    // Midnight rollover across the year boundary: 23:59:30 on
+    // Dec 31 2025 must normalize to 00:59:30 on Jan 1 2026.
+    struct tm in_ {};
+    in_.tm_year = 125;    // 2025.
+    in_.tm_mon = 11;      // December.
+    in_.tm_mday = 31;
+    in_.tm_hour = 23;
+    in_.tm_min = 59;
+    in_.tm_sec = 30;
+    in_.tm_isdst = -1;
+    const time_t in_time = mktime( &in_ );
+    ASSERT_NE( in_time, static_cast< time_t >( -1 ) );
+
+    const tm next_ = get_time_next_hour_from( in_time );
+
+    EXPECT_EQ( next_.tm_year, 126 );
+    EXPECT_EQ( next_.tm_mon, 0 );
+    EXPECT_EQ( next_.tm_mday, 1 );
+    EXPECT_EQ( next_.tm_hour, 0 );
+    EXPECT_EQ( next_.tm_min, 59 );
+    EXPECT_EQ( next_.tm_sec, 30 );
+    EXPECT_EQ( next_.tm_yday, 0 );
+    }
+
 TEST( sys, get_fixed_time )
     {
     // Test that get_fixed_time returns the expected fixed time.
