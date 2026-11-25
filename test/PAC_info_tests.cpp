@@ -210,6 +210,8 @@ TEST( PAC_info, save_device )
         io_manager::io_node::TYPES::PHOENIX_BK_ETH, 100, "127.0.0.1", "A100",
         0, 0, 0, 0, 0, 0 );
 
+    params_manager::get_instance()->reset_params_counters();
+
     // Узел должен быть активен и в состоянии ST_OK, как в штатном
     // порядке прогонов: соседние тесты могут оставить иное состояние.
     auto node = io_manager::get_instance()->get_node( 0 );
@@ -227,7 +229,6 @@ TEST( PAC_info, save_device )
     const bool was_emulator = G_PAC_INFO()->is_emulator();
     G_PAC_INFO()->emulation_on();
     G_PAC_INFO()->reset_commun_errors();
-
     G_PAC_INFO()->reset_params();
     G_PAC_INFO()->set_cmd( "CMD", 0,
         static_cast<double>( PAC_info::COMMANDS::CLEAR_RESULT_CMD ) );
@@ -336,6 +337,7 @@ TEST( PAC_info, save_device )
     G_PAC_INFO()->save_device( buff );
     DeltaMilliSecSubHooker::set_default_time();
     EXPECT_EQ( REF_STR_1s, buff );
+    params_manager::get_instance()->reset_params_counters();
 
     if ( !was_emulator )
         {
