@@ -1,6 +1,7 @@
 #include "iot_altivar.h"
 #include "modbus_client.h"
 
+#include "fmt/format.h"
 
 altivar_manager::~altivar_manager()
 	{
@@ -24,7 +25,8 @@ altivar_manager* altivar_manager::get_instance()
 	return instance;
 	}
 
-void altivar_manager::add_node(const char* IP_address, unsigned int port, unsigned int timeout, const char* article)
+void altivar_manager::add_node(const char* IP_address, unsigned int port,
+    unsigned int timeout, const char* article, const char* name )
 	{
 	std::string nodeip = std::string(IP_address);
 	int type = altivar_node::TYPE_ATV320;
@@ -37,7 +39,8 @@ void altivar_manager::add_node(const char* IP_address, unsigned int port, unsign
 	nodeip.append(std::to_string(port));
 	nodeip.append(" ");
 	nodeip.append(std::to_string(timeout));
-	altivar_node* new_node = new altivar_node(SOCKID_ALTIVAR + index, IP_address, port, timeout, type);
+	auto new_node = new altivar_node(
+        SOCKID_ALTIVAR + index, IP_address, port, timeout, type, name );
 	nodes.emplace(nodeip, new_node);
 	num_nodes.emplace(index, new_node);
 	index++;
@@ -96,11 +99,16 @@ altivar_manager * G_ALTIVAR_MANAGER()
 	return altivar_manager::get_instance();
 	}
 
-
-altivar_node::altivar_node(unsigned int id, const char* ip, unsigned int port, uint32_t exchangetimeout, int type) :
+altivar_node::altivar_node(unsigned int id, const char* ip,
+    unsigned int port, uint32_t exchangetimeout, int type,
+    const char* motor_name ) :
 	type(type)
 	{
-	mc = new modbus_client(id, (char*)ip, port, exchangetimeout);
+    fmt::format_to_n( name.data(), name.size() - 1, "{}",
+        motor_name ? motor_name : fmt::to_string( id ) );
+
+    mc = std::make_unique < modbus_client>(
+        id, ip, port, exchangetimeout, name.data() );
 	strcpy(ip_address, ip);
 	configure = true;
 	querystep = RUN_STEP_CHECK_CONFIG;
@@ -120,12 +128,7 @@ altivar_node::altivar_node(unsigned int id, const char* ip, unsigned int port, u
 	frq_max = FRQ_MAX_SETTING;
 	amperage = 0;
 	remote_state = 0;
-	}
-
-altivar_node::~altivar_node()
-	{
-	delete mc;
-	}
+    }
 
 void altivar_node::Evaluate()
 	{
@@ -365,23 +368,23 @@ void altivar_node::Evaluate()
 
 	}
 
-	void altivar_node::Enable()
-		{
-		enabled = true;
-		ismodbuserror = 0;
-		}
+void altivar_node::Enable()
+	{
+	enabled = true;
+	ismodbuserror = 0;
+	}
 
-	void altivar_node::Disable()
-		{
-		enabled = false;
-		}
+void altivar_node::Disable()
+	{
+	enabled = false;
+	}
 
-	void altivar_node::set_output_in_percent( float value )
-		{
-		frq_setpoint = value / 100.0f * frq_max;
-		}
+void altivar_node::set_output_in_percent( float value )
+	{
+	frq_setpoint = value / 100.0f * frq_max;
+	}
 
-	float altivar_node::get_output_in_percent( )
-		{
-		return frq_setpoint / frq_max * 100.0f;
-		}
+float altivar_node::get_output_in_percent( )
+	{
+	return frq_setpoint / frq_max * 100.0f;
+	}

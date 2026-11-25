@@ -1,0 +1,46 @@
+# Normalize line endings: keep LF in the repository regardless of the
+# per-developer core.autocrlf setting, and detect file types by content.
+* text=auto
+
+# Store sources, scripts and documentation as text explicitly so that
+# content heuristics can never classify them as binary.
+*.cmake text
+*.cpp text
+*.def text
+*.doxygen text
+*.h text
+*.hh text
+*.hpp text
+*.in text
+*.json text
+*.md text
+*.properties text
+*.proj text
+*.rc text
+*.sh text eol=lf
+*.svg text
+*.txt text
+*.yml text
+*.yaml text
+CMakeLists.txt text
+
+# Mark binaries so Git never converts their line endings.
+*.7z binary
+*.a binary
+*.chm binary
+*.dll binary
+*.eap binary
+*.exe binary
+*.gif binary
+*.gz binary
+*.ico binary
+*.jpeg binary
+*.jpg binary
+*.lib binary
+*.o binary
+*.obj binary
+*.pdf binary
+*.png binary
+*.so binary
+*.tar binary
+*.zip binary

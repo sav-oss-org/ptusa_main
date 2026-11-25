@@ -1,5 +1,6 @@
 #include "cip_tech_def_tests.h"
 #include "lua_manager.h"
+#include "scoped_fake_clock.h"
 #include <cstring>
 
 using namespace ::testing;
@@ -448,6 +449,7 @@ TEST( cipline_tech_object, waterTankIsEmpty )
 
 TEST( cipline_tech_object, OpolRR )
     {
+    scoped_fake_clock vclock;
     InitCipDevices();
     cipline_tech_object cip1( "CIP1", 1, 1, "CIP1", 1, 1, 200, 200, 200, 200 );
     lua_manager::get_instance()->set_Lua( lua_open() );
@@ -455,7 +457,10 @@ TEST( cipline_tech_object, OpolRR )
     cip1.initline();
     InitStationParams();
 
-    cip1.T[ TMR_CHK_CONC ]->set_countdown_time( 0 );
+    // Virtual clock plus a one-millisecond countdown make the
+    // boundary checks deterministic: expiry follows only the
+    // advance() calls below, never the wall clock (issue #1569).
+    cip1.T[ TMR_CHK_CONC ]->set_countdown_time( 1 );
     float currentConcentration;
     float cVal;
     float testVal;
@@ -475,7 +480,7 @@ TEST( cipline_tech_object, OpolRR )
             else
                 {
                 EXPECT_EQ( 0, cip1.OpolRR( TANK_K ) );
-                std::this_thread::sleep_for( std::chrono::milliseconds( 1 ) );
+                vclock.advance( 2 );
                 EXPECT_EQ( 1, cip1.OpolRR( TANK_K ) );
                 isCheckPoint = true;
                 }
@@ -503,7 +508,7 @@ TEST( cipline_tech_object, OpolRR )
             else
                 {
                 EXPECT_EQ( 0, cip1.OpolRR( TANK_S ) );
-                std::this_thread::sleep_for( std::chrono::milliseconds( 1 ) );
+                vclock.advance( 2 );
                 EXPECT_EQ( 1, cip1.OpolRR( TANK_S ) );
                 isCheckPoint = true;
                 }
@@ -734,6 +739,7 @@ TEST( cipline_tech_object, _Circ_timer_behavior )
     // The main logic change (removal of wasflip) is tested via _DoStep
     // and _ToObject tests.
 
+    scoped_fake_clock vclock;
     InitCipDevices();
     cipline_tech_object cip1( "CIP1", 1, 1, "CIP1", 1, 1, 200, 200, 200, 200 );
     lua_manager::get_instance()->set_Lua( lua_open() );
@@ -752,7 +758,7 @@ TEST( cipline_tech_object, _Circ_timer_behavior )
 
     cip1.T[ TMR_OP_TIME ]->set_countdown_time( 1 );
     cip1.T[ TMR_OP_TIME ]->start();
-    sleep_ms( 2 );
+    vclock.advance( 2 );
 
     // Test with can_continue ON.
     can_continue_signal.set_state( 1 );
@@ -790,7 +796,6 @@ TEST( cipline_tech_object, save_device )
 
     InitCipDevices();
     cipline_tech_object cip1( "CIP1", 1, 1, "CIP1", 1, 1, 200, 200, 200, 200 );
-    lua_manager::get_instance()->set_Lua( lua_open() );
 
     cip1.initline();
     InitStationParams();
@@ -875,7 +880,7 @@ t.CIP1=
 	{
 		0.00, 0.00, 200.00, 250.00, 1.00, 15.00, 0.00, 10.00, 30.00, 30.00, 30.00, 5.00, )"
         "80.00, 70.00, 95.00, 20.00, 1000.00, 750.00, 750.00, 500.00, 75.00, 30.00, 75.00, "
-        "600.00, 600.00, 600.00, 600.00, 600.00, 600.00, 600.00, 2500.00, 0.00, 0.00, 0.00, "
+        "0.00, 600.00, 600.00, 600.00, 600.00, 600.00, 600.00, 2500.00, 0.00, 0.00, 0.00, "
         "0.00, 5113.00, 5.00, 600.00, 5.00, 600.00, 15.00, 8.00, 50.00, 5.00, 20.00, 25.00, "
         "30.00, 95.00, 1.50, 15.00, 0.20, 500.00, 130.00, 0.00, 15.00, 0.00, 30.00, 0.00, "
         "15.00, 0.50, 10.00, 0.10, 1000.00, 66.00, 0.00, 2.00, 0.00, 15.00, 0.00, 120.00, "
@@ -920,7 +925,6 @@ TEST( cipline_tech_object, set_cmd )
 
     InitCipDevices();
     cipline_tech_object cip1( "CIP1", 1, 1, "CIP1", 1, 1, 200, 200, 200, 200 );
-    lua_manager::get_instance()->set_Lua( lua_open() );
 
     cip1.initline();
     InitStationParams();
@@ -1010,7 +1014,6 @@ TEST( cipline_tech_object, SCInitPumping )
     InitCipDevices();
     cipline_tech_object cip1( "CIP1", 1, TECH_TYPE_SELF_CLEAN,
         "CIP1", 1, 1, 200, 200, 200, 200 );
-    lua_manager::get_instance()->set_Lua( lua_open() );
 
     cip1.initline();
     InitStationParams();
@@ -1029,7 +1032,6 @@ TEST( cipline_tech_object, InitFilRR )
     InitCipDevices();
     cipline_tech_object cip1( "CIP1", 1, TECH_TYPE_SELF_CLEAN,
         "CIP1", 1, 1, 200, 200, 200, 200 );
-    lua_manager::get_instance()->set_Lua( lua_open() );
 
     cip1.initline();
     InitStationParams();
@@ -1048,7 +1050,6 @@ TEST( cipline_tech_object, InitCircRR )
     InitCipDevices();
     cipline_tech_object cip1( "CIP1", 1, TECH_TYPE_SELF_CLEAN,
         "CIP1", 1, 1, 200, 200, 200, 200 );
-    lua_manager::get_instance()->set_Lua( lua_open() );
 
     cip1.initline();
     InitStationParams();
@@ -1067,7 +1068,6 @@ TEST( cipline_tech_object, CircRR )
     InitCipDevices();
     cipline_tech_object cip1( "CIP1", 1, TECH_TYPE_SELF_CLEAN,
         "CIP1", 1, 1, 200, 200, 200, 200 );
-    lua_manager::get_instance()->set_Lua( lua_open() );
 
     cip1.initline();
     InitStationParams();
@@ -1086,7 +1086,6 @@ TEST( cipline_tech_object, timeIsOut )
     InitCipDevices();
     cipline_tech_object cip1( "CIP1", 1, TECH_TYPE_SELF_CLEAN,
         "CIP1", 1, 1, 200, 200, 200, 200 );
-    lua_manager::get_instance()->set_Lua( lua_open() );
 
     cip1.initline();
     InitStationParams();
@@ -1105,7 +1104,6 @@ TEST( cipline_tech_object, InitCheckConc )
     InitCipDevices();
     cipline_tech_object cip1( "CIP1", 1, TECH_TYPE_SELF_CLEAN,
         "CIP1", 1, 1, 200, 200, 200, 200 );
-    lua_manager::get_instance()->set_Lua( lua_open() );
 
     cip1.initline();
     InitStationParams();
@@ -1124,7 +1122,6 @@ TEST( cipline_tech_object, InitAddRR )
     InitCipDevices();
     cipline_tech_object cip1( "CIP1", 1, TECH_TYPE_SELF_CLEAN,
         "CIP1", 1, 1, 200, 200, 200, 200 );
-    lua_manager::get_instance()->set_Lua( lua_open() );
 
     cip1.initline();
     InitStationParams();
@@ -1143,7 +1140,6 @@ TEST( cipline_tech_object, InitOpolRR )
     InitCipDevices();
     cipline_tech_object cip1( "CIP1", 1, TECH_TYPE_SELF_CLEAN,
         "CIP1", 1, 1, 200, 200, 200, 200 );
-    lua_manager::get_instance()->set_Lua( lua_open() );
 
     cip1.initline();
     InitStationParams();
@@ -1162,7 +1158,6 @@ TEST( cipline_tech_object, _InitToObject )
     InitCipDevices();
     cipline_tech_object cip1( "CIP1", 1, TECH_TYPE_SELF_CLEAN,
         "CIP1", 1, 1, 200, 200, 200, 200 );
-    lua_manager::get_instance()->set_Lua( lua_open() );
 
     cip1.initline();
     InitStationParams();
@@ -1181,7 +1176,6 @@ TEST( cipline_tech_object, _InitFromObject )
     InitCipDevices();
     cipline_tech_object cip1( "CIP1", 1, TECH_TYPE_SELF_CLEAN,
         "CIP1", 1, 1, 200, 200, 200, 200 );
-    lua_manager::get_instance()->set_Lua( lua_open() );
 
     cip1.initline();
     InitStationParams();
@@ -1203,7 +1197,6 @@ TEST( cipline_tech_object, _InitOporCIP )
     InitCipDevices();
     cipline_tech_object cip1( "CIP1", 1, TECH_TYPE_SELF_CLEAN,
         "CIP1", 1, 1, 200, 200, 200, 200 );
-    lua_manager::get_instance()->set_Lua( lua_open() );
 
     cip1.initline();
     InitStationParams();
@@ -1222,7 +1215,6 @@ TEST( cipline_tech_object, _InitFilCirc )
     InitCipDevices();
     cipline_tech_object cip1( "CIP1", 1, TECH_TYPE_SELF_CLEAN,
         "CIP1", 1, 1, 200, 200, 200, 200 );
-    lua_manager::get_instance()->set_Lua( lua_open() );
 
     cip1.initline();
     InitStationParams();
@@ -1241,7 +1233,6 @@ TEST( cipline_tech_object, _InitOporCirc )
     InitCipDevices();
     cipline_tech_object cip1( "CIP1", 1, TECH_TYPE_SELF_CLEAN,
         "CIP1", 1, 1, 200, 200, 200, 200 );
-    lua_manager::get_instance()->set_Lua( lua_open() );
 
     cip1.initline();
     InitStationParams();
@@ -1260,7 +1251,6 @@ TEST( cipline_tech_object, _InitCirc )
     InitCipDevices();
     cipline_tech_object cip1( "CIP1", 1, TECH_TYPE_SELF_CLEAN,
         "CIP1", 1, 1, 200, 200, 200, 200 );
-    lua_manager::get_instance()->set_Lua( lua_open() );
 
     cip1.initline();
     InitStationParams();
@@ -1291,7 +1281,6 @@ TEST( cipline_tech_object, _InitDoseRR )
     InitCipDevices();
     cipline_tech_object cip1( "CIP1", 1, TECH_TYPE_SELF_CLEAN,
         "CIP1", 1, 1, 200, 200, 200, 200 );
-    lua_manager::get_instance()->set_Lua( lua_open() );
 
     cip1.initline();
     InitStationParams();
@@ -1492,6 +1481,90 @@ TEST( cipline_tech_object, recipe_RV_WATCHDOG_mapping_and_device_init )
     EXPECT_EQ( 0, cip1._CheckErr() ); // всё ещё ок
 
     // Завершение.
+    G_LUA_MANAGER->free_Lua();
+    ClearCipDevices();
+    }
+
+TEST( cipline_tech_object, signal_supply_pump_running )
+    {
+    // Параметр RV_SIGNAL_PUMP_RUNNING (строка 24 редактора рецептов,
+    // параметр линии P_SIGNAL_PUMP_RUNNING)
+    // задаёт номер DO сигнала "подающий насос включен" (задача #1459).
+    InitCipDevices();
+    auto* dm = device_manager::get_instance();
+    dm->add_io_device( device::DEVICE_TYPE::DT_DO, device::DEVICE_SUB_TYPE::DST_DO_VIRT, "LINE1DO101", "", "" );
+
+    cipline_tech_object cip1( "CIP1", 1, 1, "CIP1", 1, 1, 200, 200, 200, 200 );
+    lua_manager::get_instance()->set_Lua( lua_open() );
+
+    cip1.initline();
+    InitStationParams();
+
+    // Подающий насос - виртуальный мотор.
+    virtual_motor np( "LINE1M103" );
+    cip1.NP = reinterpret_cast<i_DO_AO_device*>( &np );
+
+    // Значение рецепта по умолчанию 0 — сигнал не используется.
+    EXPECT_EQ( 0.0f, cip1.rt_par_float[ P_SIGNAL_PUMP_RUNNING ] );
+    EXPECT_EQ( 0, cip1.init_object_devices() );
+    EXPECT_EQ( nullptr, cip1.dev_upr_pump_running );
+
+    // В рецепте задаём номер сигнала DO №101 и загружаем рецепт в рантайм-параметры.
+    auto* rm = cip1.lineRecipes;
+    const auto curRec = rm->getCurrentRecipe();
+    rm->ResetRecipeToDefaults( curRec );
+    ASSERT_EQ( 0, rm->setRecipeValue( curRec,
+        TRecipeManager::RV_SIGNAL_PUMP_RUNNING, 101.0f ) );
+    cip1.rt_par_float[ P_SELECT_REC ] =
+        static_cast<float>( curRec + 1 ); // Нумерация рецептов в UI — с 1.
+    EXPECT_EQ( 0, cip1.evaluate() );
+    EXPECT_EQ( 101.0f, cip1.rt_par_float[ P_SIGNAL_PUMP_RUNNING ] );
+
+    EXPECT_EQ( 0, cip1.init_object_devices() );
+    ASSERT_NE( nullptr, cip1.dev_upr_pump_running );
+
+    device* signal_dev = dm->get_device( "LINE1DO101" );
+    ASSERT_NE( nullptr, signal_dev );
+    ASSERT_NE( nullptr, cip1.dev_upr_pump_running );
+    EXPECT_EQ( signal_dev, cip1.dev_upr_pump_running );
+
+    // Подающий насос выключен - сигнал выключен.
+    np.direct_set_state( 0 );
+    EXPECT_EQ( 0, cip1.evaluate() );
+    EXPECT_EQ( 0, signal_dev->get_state() );
+
+    // Подающий насос включен - сигнал включен.
+    np.direct_set_state( ON );
+    EXPECT_EQ( 0, cip1.evaluate() );
+    EXPECT_EQ( ON, signal_dev->get_state() );
+
+    // Подающий насос снова выключен - сигнал выключен.
+    np.direct_set_state( 0 );
+    EXPECT_EQ( 0, cip1.evaluate() );
+    EXPECT_EQ( 0, signal_dev->get_state() );
+
+    // При блокировке модуля насос останавливается в _StopDev,
+    // а evaluate() возвращается раньше блока сигнала - сигнал гаснет там же.
+    np.direct_set_state( ON );
+    EXPECT_EQ( 0, cip1.evaluate() );
+    EXPECT_EQ( ON, signal_dev->get_state() );
+
+    cip1.blocked = 1;
+    EXPECT_EQ( -1, cip1.evaluate() );
+    EXPECT_EQ( 0, signal_dev->get_state() );
+
+    // После разблокировки насос остановлен - сигнал выключен.
+    cip1.blocked = 0;
+    cip1.state = 0;
+    EXPECT_EQ( 0, cip1.evaluate() );
+    EXPECT_EQ( 0, signal_dev->get_state() );
+
+    // Сброс устройств линии должен погасить сигнал.
+    np.direct_set_state( ON );
+    cip1.evaluate();
+    cip1._ResetLinesDevicesBeforeReset();
+    EXPECT_EQ( 0, signal_dev->get_state() );
+
     G_LUA_MANAGER->free_Lua();
     ClearCipDevices();
     }

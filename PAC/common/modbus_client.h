@@ -1,27 +1,41 @@
 #ifndef modbus_client_h__
 #define modbus_client_h__
+#include <array>
 #include "tcp_client.h"
+#include "iot_base.h"
+#include "device/i_tech_dev_error_device.h"
 
-class modbus_client
+class modbus_client: public i_simple_error
     {
     protected:
-        tcp_client* tcpclient;
-        int modbus_expected_length;
-        int modbus_async_result;
-        unsigned char stationid;
-        unsigned int ormask;
-        unsigned int andmask;
-        static const int write_buff_start = 13; //Начало буфера данных для операций записи
-        static const int read_buff_start = 9;  //Начало буфера данных для операций чтения
-        int prev_connected_state; ///< Previous connection state for change detection.
-        uint32_t disconnected_state_start_time; ///< Disconnect start time.
-        bool is_disconnect_reported; ///< Disconnect event has been reported.
+        std::array<char, 50 > name{};
 
+        tcp_client* tcpclient;
+        saved_params_u_int_4* error_params = nullptr;
+        int modbus_expected_length{ 0 };
+        int modbus_async_result{ 0 };
+        unsigned char stationid{ 1 };
+        unsigned int ormask{ 0 };
+        unsigned int andmask{ 0xFFFF };
+
+        ///< Начало буфера данных для операций записи
+        static const int write_buff_start = 13;
+        ///< Начало буфера данных для операций чтения
+        static const int read_buff_start = 9;
         void init_frame(unsigned int address, unsigned int value, unsigned int seventh_byte);
-        void check_connection_state_changed();
 
     public:
-        modbus_client(unsigned int id, const char* ip, unsigned int port = 502, uint32_t exchangetimeout = 50);
+        modbus_client(unsigned int id, const char* ip, unsigned int port = 502,
+            uint32_t exchangetimeout = 50, const char * name = nullptr );
+
+        void set_error_params( saved_params_u_int_4* err_par ) override;
+        const char* get_name() const override;
+        const char* get_error_description() override;
+        int get_error_id() override;
+        int get_state() const override;
+        u_int_4 get_serial_n() const override;
+        int get_error_type() const override;
+
         int get_id();
         //реализация функций протокола modbus
         int read_discrete_inputs(unsigned int start_address, unsigned int quantity);
@@ -71,5 +85,25 @@ class modbus_client
         unsigned char reverse(unsigned char b);
         int swapBits(int x, int p1, int p2, int n);
         ~modbus_client();
+
+        // Explicitly delete the copy constructors.
+        modbus_client( modbus_client const& ) = delete;
+        modbus_client( modbus_client&& ) = delete;
+        modbus_client& operator=( modbus_client const& ) = delete;
+        modbus_client& operator=( modbus_client&& ) = delete;
+
+#ifndef PTUSA_TEST
+    private:
+#endif
+        inline static std::vector<unsigned int> ids{};
+
+#ifdef PTUSA_TEST
+        void static clear_ids()
+            {
+            ids.clear();
+            }
+#endif
+
+        static constexpr int ERROR_TYPE = 200;
     };
 #endif // modbus_client_h__

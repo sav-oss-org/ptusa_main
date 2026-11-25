@@ -132,6 +132,11 @@ int main( int argc, const char *argv[] )
     G_LOG->info( "Starting main loop! Sleep time is %u ms.",
         G_PROJECT_MANAGER->sleep_time_ms );
 
+    if ( !params_manager::get_instance()->was_successful_init() )
+        {
+        params_manager::get_instance()->save_params();
+        }
+
     while ( running )
         {
         main_cycle();

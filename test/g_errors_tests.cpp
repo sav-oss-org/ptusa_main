@@ -38,6 +38,11 @@ TEST( errors_manager, evaluate )
     G_ERRORS_MANAGER->evaluate();
     EXPECT_EQ( 1, G_ERRORS_MANAGER->get_errors_id() );
 
+    // Should not get new error id (incorrect command parameters).
+    G_ERRORS_MANAGER->set_cmd( base_error::C_CMD_ACCEPT, 1, 0, 1 );
+    EXPECT_EQ( 1, G_ERRORS_MANAGER->get_errors_id() );
+
+
     //Should get a new error id due to set_cmd() with C_CMD_ACCEPT.
     G_ERRORS_MANAGER->set_cmd( base_error::C_CMD_ACCEPT, 7, 0, 1 );
     EXPECT_EQ( 2, G_ERRORS_MANAGER->get_errors_id() );

@@ -2,11 +2,16 @@
 #include <cstring>
 #include <cstdlib>
 
-iot_wages_eth::iot_wages_eth( unsigned int id, const char* ip, unsigned int port ) :
+#include "fmt/format.h"
+
+iot_wages_eth::iot_wages_eth( unsigned int id, const char* ip,
+    unsigned int port, const char* wages_name ) :
     tc( std::unique_ptr<tcp_client>( tcp_client::Create( ip, port, id, 0,
     static_cast<unsigned int> ( CONSTANTS::BUFF_SIZE ),
     static_cast<unsigned long> ( CONSTANTS::SEND_RECEIVE_TIMEOUT ) ) ) )
     {
+    fmt::format_to_n( name.data(), name.size() - 1, "{}",
+        wages_name ? wages_name : fmt::to_string( id ) );
     }
 
 void iot_wages_eth::evaluate()

@@ -835,10 +835,14 @@ TEST( tech_object_manager, save_params_as_Lua_str )
 	G_LUA_MANAGER->set_Lua( L );
 
 
-    tech_object tank1( "TANK", 1, 1, "TANK1", 2, 1, 10, 10, 10, 10 );
-    tank1.get_modes_manager()->add_operation( "Test operation" );
+    // Объект живёт в куче и не удаляется: менеджер сохраняет его в
+    // синглтоне и не удаляет из него, поэтому после выхода из
+    // стековой области соседние тесты с init_params() получили бы
+    // висячий указатель (падает final_init -> lua_init_params).
+    auto tank1 = new tech_object( "TANK", 1, 1, "TANK1", 2, 1, 10, 10, 10, 10 );
+    tank1->get_modes_manager()->add_operation( "Test operation" );
 
-    G_TECH_OBJECT_MNGR()->add_tech_object( &tank1 );
+    G_TECH_OBJECT_MNGR()->add_tech_object( tank1 );
 
     const auto BUFF_SIZE = 1000;
     char buff[ BUFF_SIZE ];

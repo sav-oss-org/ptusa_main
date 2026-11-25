@@ -1,0 +1,21 @@
+# CodeQL analysis scope for ptusa_main.
+#
+# The paths-ignore entries exclude the listed trees
+# from analyses that run without building the code. The
+# C/C++ analysis builds the whole project, and a built
+# analysis ignores these entries, so the workflow drops
+# results whose primary location is under `deps/` from
+# the SARIF file before uploading it. That filter is what
+# keeps vendored submodules out of the reported findings;
+# these entries document the same intent and apply
+# unchanged if a build-less mode is ever used.
+name: ptusa_main CodeQL config
+paths-ignore:
+  # Git submodules: benchmark, googletest, open62541, lua,
+  # zlib, fmt, cxxopts, subhook, toluapp, lunarmodules.
+  - deps/**
+  # Vendored tolua++ binding layer. CodeQL filter
+  # patterns do not support the `+` character, so the
+  # directory is matched by its `toloa` prefix: it is
+  # the only entry under `PAC/common` starting with it.
+  - PAC/common/toloa*/**

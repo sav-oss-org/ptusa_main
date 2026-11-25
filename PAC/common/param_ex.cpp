@@ -24,10 +24,21 @@ params_manager::params_manager(): par( 0 ), project_id( 0 )
     {
     last_idx = 0;
 
+#ifdef PAC_PLCNEXT
+    // Прошивка начиная с версии 2025.0 предоставляет приложениям для
+    // записей постоянный каталог /opt/plcnext/custom - см. справку
+    // PLCnext Engineer, тему FILE_OPEN. Запись в /opt/main для логики
+    // недоступна, что проверено на контроллере AXC F 2152.
+    CRC_mem = new SRAM( "/opt/plcnext/custom/nvram.bin",
+        static_cast<size_t>( CONSTANTS::C_SYS_MEM_SIZE ) );
+    params_mem = new SRAM( "/opt/plcnext/custom/eeprom.bin",
+        static_cast<size_t>( CONSTANTS::C_TOTAL_PARAMS_SIZE ) );
+#else
     CRC_mem = new SRAM( "./nvram.bin",
         static_cast<size_t>( CONSTANTS::C_SYS_MEM_SIZE ) );
     params_mem = new SRAM( "./eeprom.bin",
         static_cast<size_t>( CONSTANTS::C_TOTAL_PARAMS_SIZE ) );
+#endif // PAC_PLCNEXT
     }
 //-----------------------------------------------------------------------------
 u_int_2 params_manager::solve_CRC()
@@ -84,14 +95,20 @@ int params_manager::get_params_save_counter() const
     return params_save_counter;
     }
 //-----------------------------------------------------------------------------
+bool params_manager::was_successful_init() const
+    {
+    return successful_init;
+    }
+//-----------------------------------------------------------------------------
 int params_manager::init( unsigned int project_id )
     {
     params_manager::project_id = project_id;
 
-    params_mem->load_data();
-    CRC_mem->load_data();
+    auto res = params_mem->load_data();
+    res += CRC_mem->load_data();
 
-    return 0;
+    successful_init = ( res == 0 );
+    return res;
     }
 //-----------------------------------------------------------------------------
 void params_manager::final_init( int auto_init_params /*= 1*/,
@@ -126,7 +143,9 @@ void params_manager::final_init( int auto_init_params /*= 1*/,
     auto solved_CRC = solve_CRC();
     if ( saved_CRC != solved_CRC )
         {
-        G_LOG->notice( "Params CRC is not valid (%d != %d), re-initialization.",
+        G_LOG->notice(
+            "Parameters CRC is not valid (saved %d != solved %d), "
+            "re-initialization.",
             saved_CRC, solved_CRC );
 
         reset_to_default( custom_init_params_function, auto_init_params,
@@ -256,10 +275,6 @@ int params_manager::save_params()
 //-----------------------------------------------------------------------------
 int params_manager::evaluate()
     {
-    // После запуска управляющей программы при первом вызове метода evaluate()
-    // будет произведена запись параметров в энергонезависимую память при
-    // наличии изменений.
-
     if ( is_changed )
         {
         auto since_save = get_delta_millisec( last_save_ms );
@@ -269,13 +284,12 @@ int params_manager::evaluate()
         const auto stable_delay =
              G_PAC_INFO()->par[ PAC_info::P_STABLE_SAVE_DELAY_MS ];
 
-        if ( ( params_save_counter == 0 || since_save >= min_interval ) &&
-            since_change >= stable_delay )
+        if ( since_save >= min_interval && since_change >= stable_delay )
             {
             // Проверка на наличие свободного места в файловой системе.
             std::error_code ec;
             if ( const auto AVAILABLE_SPACE = std::filesystem::space(
-                std::filesystem::current_path(), ec ).available,
+                params_mem->get_directory(), ec ).available,
                 SPACE_LIMIT = static_cast<uintmax_t>(
                     CONSTANTS::C_TOTAL_PARAMS_SIZE );
                 AVAILABLE_SPACE < SPACE_LIMIT )

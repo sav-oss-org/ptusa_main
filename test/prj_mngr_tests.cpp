@@ -9,8 +9,6 @@
 #include "lua_manager.h"
 #include "dtime.h"
 
-extern const char* FILES[ FILE_CNT ];
-
 const char * const PROGRAM_STARTED =
 #ifndef WIN_OS
     "\x1B[32m"

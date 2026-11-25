@@ -109,6 +109,8 @@ void PAC_info::reset_params()
     par[ P_STABLE_SAVE_DELAY_MS ] = 60'000;     // 1 minute.
     par[ P_MIN_SAVE_INTERVAL_MS ] = 3'600'000;  // 1 hour (60 * 60 * 1'000).
 
+    par[ P_POST_START_ERROR_PROCESSING_DELAY_MS ] = 5'000; // 5 seconds.
+
     par.save_all();
     }
 //-----------------------------------------------------------------------------
@@ -240,15 +242,15 @@ int PAC_info::set_cmd( const char* prop, u_int idx, double val )
             {
             case COMMANDS::CLEAR_RESULT_CMD:
                 cmd = 0;
+                cmd_answer[ 0 ] = 0;
                 break;
 
             case COMMANDS::RELOAD_RESTRICTIONS:
                 {
                 G_LOG->notice( "Reload restrictions (remote monitor "
                     "client command)." );
-                const int SCRIPT_N = 7;
-                cmd = G_LUA_MANAGER->reload_script( SCRIPT_N, "restrictions",
-                    cmd_answer, sizeof( cmd_answer ) );
+                cmd = G_LUA_MANAGER->reload_script( RESTRICTIONS_SCRIPT_N,
+                    "restrictions", cmd_answer, sizeof( cmd_answer ) );
                 return cmd;
                 }
 

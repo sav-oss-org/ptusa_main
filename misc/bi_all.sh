@@ -6,7 +6,7 @@ SECONDS=0
 configs=(
     "build-windows-AXCF2152-2024-LTS-Release build-windows-AXCF2152-2024-LTS-Release AXCF2152"
     "build-windows-AXCF3152-2024-LTS-Release build-windows-AXCF3152-2024-LTS-Release AXCF3152"
-    "windows-VS2022-default build-windows-VS2022-release windows"
+    "windows-VS2026-default build-windows-VS2026-release windows"
     "linux-default build-linux-Release linux wsl"
 )
 

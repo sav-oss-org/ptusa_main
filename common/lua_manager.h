@@ -1,25 +1,25 @@
+#include <string>
+
 #include "smart_ptr.h"
 
-#ifdef  __cplusplus
 extern "C" {
-#endif
 
 #include    "lua.h"
 #include    "lauxlib.h"
 #include    "lualib.h"
-
-#ifdef  __cplusplus
-    };
-#endif
+}
 
 #include    "tolua++.h"
 //-----------------------------------------------------------------------------
 TOLUA_API int tolua_PAC_dev_open ( lua_State* tolua_S );
-
-TOLUA_API int tolua_IOT_dev_open(lua_State* tolua_S);
 //-----------------------------------------------------------------------------
 const int SYS_FILE_CNT = 3;
 const int FILE_CNT     = 7;
+/// Index of `main.restrictions.lua` in FILES[]. Keep it last so the
+/// restrictions hot reload survives adding or removing earlier scripts.
+const int RESTRICTIONS_SCRIPT_N = FILE_CNT - 1;
+//-----------------------------------------------------------------------------
+extern const char *FILES[ FILE_CNT ];
 //-----------------------------------------------------------------------------
 const int FILES_VERSION[ FILE_CNT ] =
     {
@@ -47,6 +47,25 @@ class lua_manager
             {
             is_print_stack_traceback = true;
             }
+
+        static int get_lua_error_count()
+            {
+            return lua_error_count;
+            }
+
+        /// @brief Текст последней ошибки Lua (пустая строка, если ошибок не
+        /// было).
+        ///
+        /// Нужен тестам, чтобы показать, какая именно ошибка была погашена
+        /// внутри lua_pcall, когда счётчик ошибок вырос.
+        static const char* get_last_lua_error()
+            {
+            return last_lua_error.c_str();
+            }
+
+#ifdef PTUSA_TEST
+        static void reset_lua_error_count();
+#endif
 
         static lua_manager* get_instance();
 
@@ -97,11 +116,15 @@ class lua_manager
 #endif
 
     private:
-        lua_manager() : L( 0 ), err_func( 0 ), is_free_lua( 0 )
+        lua_manager() : L{ 0 }, is_free_lua{ 0 }
             {
             }
 
         static int error_trace( lua_State * L );
+
+        static void count_lua_error( const char* message = nullptr );
+
+        static void note_lua_error( lua_State* L, const char* message );
 
         static auto_smart_ptr< lua_manager > instance;
 
@@ -113,8 +136,9 @@ class lua_manager
             int is_use_lua_return_value = 0, int cnt = 0, ... ) const;
 
         static bool is_print_stack_traceback;
+        static int lua_error_count;
+        static std::string last_lua_error;
 
-        int err_func;
         lua_State * L;
 
         int is_free_lua;

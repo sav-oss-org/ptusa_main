@@ -20,7 +20,6 @@ const u_int_2 G_CURRENT_PROTOCOL_VERSION = 104;
 
 std::vector< i_Lua_save_device* > device_communicator::dev;
 
-bool device_communicator::use_compression = true;
 //-----------------------------------------------------------------------------
 void print_str( const char *err_str, char is_need_CR )
     {
@@ -154,7 +153,7 @@ long device_communicator::write_devices_states_service(
                 }
             else
                 {
-                res = lua_manager::get_instance()->exec_Lua_str( 
+                res = lua_manager::get_instance()->exec_Lua_str(
                     str, "CMD_EXEC_DEVICE_COMMAND " );
                 }
 
@@ -178,37 +177,41 @@ long device_communicator::write_devices_states_service(
 #ifdef DEBUG_DEV_CMCTR
             printf( "CMD_GET_PAC_ERRORS\n" );
 #endif
-            static u_int_2 errors_id = get_millisec() % 100;
-
-            unsigned char project_descr_id = data[ 1 ];
-            char *str = ( char* ) outdata;
+            auto project_descr_id = data[ 1 ];
+            auto* str = reinterpret_cast<char*>( outdata );
             str[ 0 ] = 0;
 
-            answer_size = sprintf( str, "alarms[ %d ] = \n  {}",
-                project_descr_id );
-            answer_size += sprintf( str + answer_size, "alarms[ %d ] = \n  {",
-                project_descr_id );
+            // LCOV_EXCL_START
+            answer_size = static_cast<u_int_2>( fmt::format_to_n(
+                str + answer_size, MAX_COPY_SIZE,
+                "alarms[ {} ] =\n  {{\n", project_descr_id ).size );
+            // LCOV_EXCL_STOP
 
             u_int_2         err_id = 0;
             static u_int_2  prev_PAC_err_id = 0;
             static u_int_2  prev_dev_err_id = 0;
 
-            int err_size =
-                PAC_critical_errors_manager::get_instance()->save_as_Lua_str(
-                str + answer_size, err_id );
+            auto CRITICAL_ERR_MANAGER = PAC_critical_errors_manager::get_instance();
+            auto err_size = CRITICAL_ERR_MANAGER->save_as_Lua_str( str +
+                answer_size, err_id );
             if ( err_id != prev_PAC_err_id )
                 {
                 prev_PAC_err_id = err_id;
                 errors_id++;
                 }
 
-            static uint32_t start_time = get_millisec();
+            static const auto START_TIME = get_millisec();
             answer_size += err_size;
-            if ( err_size == 0 &&                   //Нет критических ошибок.
-                get_delta_millisec( start_time ) > 5000 )
+            // Нет критических ошибок и прошло более xx секунд (параметр) с
+            // момента запуска управляющей программы.
+            if ( const auto DELAY_MS = G_PAC_INFO()->par[
+                PAC_info::P_POST_START_ERROR_PROCESSING_DELAY_MS ];
+                !CRITICAL_ERR_MANAGER->is_any_critical_error() &&
+                get_delta_millisec( START_TIME ) > DELAY_MS )
                 {
                 answer_size +=
-                    G_ERRORS_MANAGER->save_as_Lua_str( str + answer_size, err_id );
+                    G_ERRORS_MANAGER->save_as_Lua_str( str + answer_size,
+                        err_id );
                 if ( err_id != prev_dev_err_id )
                     {
                     prev_dev_err_id = err_id;
@@ -216,8 +219,11 @@ long device_communicator::write_devices_states_service(
                     }
                 }
 
-            answer_size += sprintf( str + answer_size, "  %s %d,\n", "id =", errors_id );
-            answer_size += sprintf( str + answer_size, "  %s\n", "}" );
+            // LCOV_EXCL_START
+            answer_size += static_cast<u_int_2>( fmt::format_to_n(
+                str + answer_size, MAX_COPY_SIZE,
+                "  id = {},\n  }}\n", errors_id ).size );
+            // LCOV_EXCL_STOP
 
 #ifdef DEBUG_DEV_CMCTR
             printf( "Critical errors = \n%s", outdata );

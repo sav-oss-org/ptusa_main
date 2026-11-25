@@ -267,7 +267,7 @@ int TRecipeManager::ResetRecipeToDefaults( int recipeNo )
         setRecipeValue(recipeNo, RV_RET_STOP, 75);
         setRecipeValue(recipeNo, RV_V_RAB_ML, 30);
         setRecipeValue(recipeNo, RV_V_RET_DEL, 75);
-        setRecipeValue(recipeNo, RV_TM_OP, 600);
+        setRecipeValue(recipeNo, RV_SIGNAL_PUMP_RUNNING, 0);
         setRecipeValue(recipeNo, RV_TM_S, 600);
         setRecipeValue(recipeNo, RV_TM_K, 600);
         setRecipeValue(recipeNo, RV_TM_S_SK, 600);

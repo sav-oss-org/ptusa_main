@@ -1431,21 +1431,24 @@ bool valve_iolink_mix_proof::get_off_fb_value() const
     {
     if ( G_PAC_INFO()->is_emulator() ) return valve::get_off_fb_value();
 
-    return out_info->sv1 == false && in_info.main && in_info.st;
+    return out_info->sv1 == false && in_info.de_en && in_info.st;
     }
 //-----------------------------------------------------------------------------
 bool valve_iolink_mix_proof::get_on_fb_value() const
     {
     if ( G_PAC_INFO()->is_emulator() ) return valve::get_on_fb_value();
 
-    return out_info->sv1 == true && in_info.de_en && in_info.st;
+    return out_info->sv1 == true && in_info.main && in_info.st;
     }
 //-----------------------------------------------------------------------------
 void valve_iolink_mix_proof::direct_on()
     {
     if ( G_PAC_INFO()->is_emulator() ) return valve::direct_on();
 
-    if ( false == in_info.main )
+    // Таймер переключения запускаем только при переходе команды, иначе
+    // циклический вызов on() из операции сбрасывает льготный период
+    // get_fb_state() и клапан не переходит в ошибку ОС (#1414).
+    if ( false == out_info->sv1 || out_info->sv2 || out_info->sv3 )
         {
         start_switch_time = get_millisec();
         }
@@ -1511,9 +1514,10 @@ void valve_iolink_mix_proof::direct_set_state( int new_state )
 
         case V_UPPER_SEAT:
             {
-            direct_off();
-            if ( !out_info->sv2 )
+            // Перезапускаем таймер только при смене команды (#1414).
+            if ( false == out_info->sv2 || out_info->sv1 || out_info->sv3 )
                 {
+                direct_off();
                 start_switch_time = get_millisec();
                 }
             out_info->sv2 = true;
@@ -1522,9 +1526,10 @@ void valve_iolink_mix_proof::direct_set_state( int new_state )
 
         case V_LOWER_SEAT:
             {
-            direct_off();
-            if ( !out_info->sv3 )
+            // Перезапускаем таймер только при смене команды (#1414).
+            if ( false == out_info->sv3 || out_info->sv1 || out_info->sv2 )
                 {
+                direct_off();
                 start_switch_time = get_millisec();
                 }
             out_info->sv3 = true;
@@ -1693,7 +1698,8 @@ void valve_iolink_shut_off_sorio::direct_on()
     {
     if ( G_PAC_INFO()->is_emulator() ) return valve::direct_on();
 
-    if ( false == in_info.main )
+    // Таймер переключения запускаем только при переходе команды (#1414).
+    if ( false == out_info->sv1 )
         {
         start_switch_time = get_millisec();
         }
@@ -2172,7 +2178,8 @@ void valve_iolink_shut_off_thinktop::direct_on()
     {
     if ( G_PAC_INFO()->is_emulator() ) return valve::direct_on();
 
-    if ( false == in_info.main )
+    // Таймер переключения запускаем только при переходе команды (#1414).
+    if ( false == out_info->sv1 )
         {
         start_switch_time = get_millisec();
         }
@@ -2691,9 +2698,7 @@ analog_valve_iolink::analog_valve_iolink( const char* dev_name ) : AO1(
     in_info.closed = true;
     in_info.opened = false;
 
-    auto fb_par_idx = static_cast<int>( PAR_CONSTANTS::P_FB );
-    set_par_name( fb_par_idx, 0, "P_FB" );
-    set_par( fb_par_idx, 0, 1.0f );
+    set_par_name( static_cast<int>( PAR_CONSTANTS::P_FB ), 0, "P_FB" );
     }
 //-----------------------------------------------------------------------------
 void analog_valve_iolink::evaluate_io()

@@ -17,6 +17,44 @@
 using namespace ::testing;
 using B = std::byte;
 
+/// Frees the digital channel cells allocated by
+/// io_device::init_and_alloc_DO_DI(). ~io_device() frees only the channel
+/// pointer arrays, so the per-channel cells that tests allocated must be
+/// freed explicitly. The freed slots are nulled, so ~io_device() and
+/// repeated calls stay safe.
+///
+/// Call only for devices whose DO/DI cells can come solely from
+/// io_device::init_and_alloc_DO_DI(). io_device::init_channel() replaces a
+/// slot with a pointer into io_manager-owned node buffers, and deleting
+/// such a slot corrupts the heap. Never call this helper on devices whose
+/// digital channels were bound by io_device::init_channel().
+static void free_DO_DI_cells( io_device& io_dev )
+    {
+    io_device::IO_channels& do_ch = io_dev.DO_channels;
+    for ( u_int i{ 0 }; i < do_ch.count; ++i )
+        {
+        if ( nullptr != do_ch.char_read_values )
+            {
+            delete do_ch.char_read_values[ i ];
+            do_ch.char_read_values[ i ] = nullptr;
+            }
+        if ( nullptr != do_ch.char_write_values )
+            {
+            delete do_ch.char_write_values[ i ];
+            do_ch.char_write_values[ i ] = nullptr;
+            }
+        }
+    io_device::IO_channels& di_ch = io_dev.DI_channels;
+    for ( u_int i{ 0 }; i < di_ch.count; ++i )
+        {
+        if ( nullptr != di_ch.char_read_values )
+            {
+            delete di_ch.char_read_values[ i ];
+            di_ch.char_read_values[ i ] = nullptr;
+            }
+        }
+    }
+
 class iolink_dev_test : public ::testing::Test
     {
     protected:
@@ -36,7 +74,7 @@ class iolink_dev_test : public ::testing::Test
 
         void init_channels( io_device& io_dev ) const
             {
-            io_dev.init_and_alloc( 0, 0, 0, 2 );
+            io_dev.init_and_alloc_AO_AI( 0, 2 );
             io_dev.init_channel( io_device::IO_channels::CT_AI, 0, 0, 0, 1, 1 );
             }
 
@@ -781,7 +819,7 @@ void test_temperature( AI1* TE1 )
     EXPECT_EQ( TE1->get_state(), 1 );
 
     G_PAC_INFO()->emulation_off();
-    TE1->init_and_alloc( 0, 0, 0, 1 );
+    TE1->init_and_alloc_AO_AI( 0, 1 );
     TE1->init_channel( io_device::IO_channels::CT_AI, 0, 0, 0 );
     EXPECT_EQ( TE1->get_state(), 1 );
 
@@ -1284,6 +1322,29 @@ TEST( device_manager, clear_io_devices )
     G_DEVICE_MANAGER()->clear_io_devices();
     EXPECT_EQ( G_DEVICE_MANAGER()->get_stub_device(),
         G_DEVICE_MANAGER()->get_TE( "T1" ) );   // Search shouldn't find device.
+    }
+
+TEST( device_manager, get_FQT_IOLINK )
+    {
+    G_DEVICE_MANAGER()->clear_io_devices();
+
+    auto* missing = G_DEVICE_MANAGER()->get_FQT_IOLINK( "NO_FQT" );
+    ASSERT_NE( nullptr, missing );
+    EXPECT_STREQ( "stub", missing->get_name() );
+
+    G_DEVICE_MANAGER()->add_io_device(
+        device::DT_FQT, device::DST_FQT, "FQT_BASE", "Base counter", "" );
+    auto* wrong_type = G_DEVICE_MANAGER()->get_FQT_IOLINK( "FQT_BASE" );
+    ASSERT_NE( nullptr, wrong_type );
+    EXPECT_STREQ( "stub", wrong_type->get_name() );
+
+    G_DEVICE_MANAGER()->add_io_device(
+        device::DT_FQT, device::DST_FQT_IOLINK, "FQT_IOL", "IOL counter", "IFM.SMF420" );
+    auto* iol = G_DEVICE_MANAGER()->get_FQT_IOLINK( "FQT_IOL" );
+    ASSERT_NE( nullptr, iol );
+    EXPECT_STREQ( "FQT_IOL", iol->get_name() );
+
+    G_DEVICE_MANAGER()->clear_io_devices();
     }
 
 TEST( device_manager, get_device )
@@ -2227,7 +2288,7 @@ TEST( DI_signal, get_state )
     EXPECT_EQ( DI1.get_state(), 0 );
 
     G_PAC_INFO()->emulation_off();
-    DI1.init_and_alloc( 0, 1 );
+    DI1.init_and_alloc_DO_DI( 0, 1 );
     DI1.evaluate_io();
     EXPECT_EQ( DI1.get_state(), 0 );
 
@@ -2253,6 +2314,7 @@ TEST( DI_signal, get_state )
 
     DeltaMilliSecSubHooker::set_default_time();
     G_PAC_INFO()->emulation_on();
+    free_DO_DI_cells( DI1 );
     }
 
 
@@ -2584,11 +2646,12 @@ TEST( valve_DO1_DI2, get_fb_state )
     EXPECT_EQ( valve::VALVE_STATE::V_OFF, V1.get_valve_state() );
 
     G_PAC_INFO()->emulation_off();
-    V1.init_and_alloc( 1, 2 );
+    V1.init_and_alloc_DO_DI( 1, 2 );
 
     check_fb( &V1 );
 
     G_PAC_INFO()->emulation_on();
+    free_DO_DI_cells( V1 );
     }
 
 TEST( valve_DO2_DI2, valve_DO2_DI2 )
@@ -2610,7 +2673,7 @@ TEST( valve_DO2_DI2, get_fb_state )
     EXPECT_EQ( valve::VALVE_STATE::V_OFF, V1.get_valve_state() );
 
     G_PAC_INFO()->emulation_off();
-    V1.init_and_alloc( 2, 2 );
+    V1.init_and_alloc_DO_DI( 2, 2 );
 
     // Нет управления и нет обратных связей.
     EXPECT_FALSE( V1.get_fb_state() );
@@ -2640,6 +2703,7 @@ TEST( valve_DO2_DI2, get_fb_state )
     EXPECT_EQ( valve::VALVE_STATE::V_ON, V1.get_valve_state() );
 
     G_PAC_INFO()->emulation_on();
+    free_DO_DI_cells( V1 );
     }
 
 
@@ -2663,7 +2727,7 @@ TEST( valve_DO1, get_fb_state )
 
 
     G_PAC_INFO()->emulation_off();
-    V1.init_and_alloc( 1 );
+    V1.init_and_alloc_DO_DI( 1 );
 
     V1.instant_off();
     EXPECT_TRUE( V1.get_fb_state() );
@@ -2686,6 +2750,7 @@ TEST( valve_DO1, get_fb_state )
     EXPECT_FALSE( V1.is_closed() );
 
     G_PAC_INFO()->emulation_on();
+    free_DO_DI_cells( V1 );
     }
 
 
@@ -2695,7 +2760,7 @@ TEST( valve_DO1_DI1_off, get_fb_state )
     EXPECT_TRUE( V1.get_fb_state() );
 
     G_PAC_INFO()->emulation_off();
-    V1.init_and_alloc( 1, 1 );
+    V1.init_and_alloc_DO_DI( 1, 1 );
 
     // Нет обратной связи для отключенного состояния.
     EXPECT_FALSE( V1.get_fb_state() );
@@ -2707,6 +2772,7 @@ TEST( valve_DO1_DI1_off, get_fb_state )
     EXPECT_TRUE( V1.get_off_fb_value() );
 
     G_PAC_INFO()->emulation_on();
+    free_DO_DI_cells( V1 );
     }
 
 TEST( valve_DO1_DI1_off, direct_off )
@@ -2715,7 +2781,7 @@ TEST( valve_DO1_DI1_off, direct_off )
     EXPECT_EQ( V1.get_state(), valve::VALVE_STATE::V_OFF );
 
     G_PAC_INFO()->emulation_off();
-    V1.init_and_alloc( 1, 1 );
+    V1.init_and_alloc_DO_DI( 1, 1 );
     V1.set_cmd( "P_FB", 0, 1 );
 
     V1.direct_on();
@@ -2734,6 +2800,7 @@ TEST( valve_DO1_DI1_off, direct_off )
     EXPECT_EQ( V1.get_state(), valve::VALVE_STATE::V_OFF );
 
     G_PAC_INFO()->emulation_on();
+    free_DO_DI_cells( V1 );
     }
 
 TEST( valve_DO1_DI1_off, get_on_fb_value )
@@ -2755,7 +2822,7 @@ TEST( valve_DO1_DI1_on, get_fb_state )
     EXPECT_TRUE( V1.get_fb_state() );
 
     G_PAC_INFO()->emulation_off();
-    V1.init_and_alloc( 1, 1 );
+    V1.init_and_alloc_DO_DI( 1, 1 );
 
     EXPECT_TRUE( V1.get_fb_state() );
     EXPECT_FALSE( V1.get_on_fb_value() );
@@ -2766,6 +2833,7 @@ TEST( valve_DO1_DI1_on, get_fb_state )
     EXPECT_TRUE( V1.get_on_fb_value() );
 
     G_PAC_INFO()->emulation_on();
+    free_DO_DI_cells( V1 );
     }
 
 TEST( valve_DO1_DI1_on, direct_off )
@@ -2774,7 +2842,7 @@ TEST( valve_DO1_DI1_on, direct_off )
     EXPECT_EQ( V1.get_state(), valve::VALVE_STATE::V_OFF );
 
     G_PAC_INFO()->emulation_off();
-    V1.init_and_alloc( 1, 1 );
+    V1.init_and_alloc_DO_DI( 1, 1 );
     V1.set_cmd( "P_FB", 0, 1 );
 
     V1.direct_on();
@@ -2794,6 +2862,7 @@ TEST( valve_DO1_DI1_on, direct_off )
     EXPECT_EQ( V1.get_state(), valve::VALVE_STATE::V_OFF );
 
     G_PAC_INFO()->emulation_on();
+    free_DO_DI_cells( V1 );
     }
 
 TEST( valve_DO1_DI1_on, get_on_fb_value )
@@ -2827,7 +2896,7 @@ TEST( valve_mix_proof, get_fb_state )
     EXPECT_TRUE( V1.get_fb_state() );
 
     G_PAC_INFO()->emulation_off();
-    V1.init_and_alloc( 3, 2 );
+    V1.init_and_alloc_DO_DI( 3, 2 );
 
     check_fb( &V1 );
 
@@ -2843,6 +2912,7 @@ TEST( valve_mix_proof, get_fb_state )
     EXPECT_TRUE( V1.get_fb_state() );
 
     G_PAC_INFO()->emulation_on();
+    free_DO_DI_cells( V1 );
     }
 
 TEST( valve_mix_proof, direct_set_state )
@@ -2850,7 +2920,7 @@ TEST( valve_mix_proof, direct_set_state )
     valve_mix_proof V1( "V1" );
 
     G_PAC_INFO()->emulation_off();
-    V1.init_and_alloc( 3, 2 );
+    V1.init_and_alloc_DO_DI( 3, 2 );
 
     V1.set_cmd( "P_FB", 0, 1 );
     V1.direct_set_state( valve::VALVE_STATE::V_UPPER_SEAT );
@@ -2869,6 +2939,7 @@ TEST( valve_mix_proof, direct_set_state )
     EXPECT_EQ( V1.get_state(), valve::VALVE_STATE::V_ON );
 
     G_PAC_INFO()->emulation_on();
+    free_DO_DI_cells( V1 );
     }
 
 
@@ -3044,7 +3115,7 @@ TEST( valve_bottom_mix_proof, get_fb_state )
     EXPECT_TRUE( V1.get_fb_state() );
 
     G_PAC_INFO()->emulation_off();
-    V1.init_and_alloc( 3, 2 );
+    V1.init_and_alloc_DO_DI( 3, 2 );
 
     check_fb( &V1 );
 
@@ -3055,6 +3126,7 @@ TEST( valve_bottom_mix_proof, get_fb_state )
     EXPECT_TRUE( V1.get_fb_state() );
 
     G_PAC_INFO()->emulation_on();
+    free_DO_DI_cells( V1 );
     }
 
 TEST( valve_bottom_mix_proof, is_switching_off_finished )
@@ -3082,7 +3154,7 @@ TEST( valve_bottom_mix_proof, on )
     valve_bottom_mix_proof V1( "V1" );
 
     G_PAC_INFO()->emulation_off();
-    V1.init_and_alloc( 3, 2 );
+    V1.init_and_alloc_DO_DI( 3, 2 );
 
     V1.on();
     EXPECT_FALSE( V1.get_fb_state() );
@@ -3093,6 +3165,7 @@ TEST( valve_bottom_mix_proof, on )
     EXPECT_TRUE( V1.get_fb_state() );
 
     G_PAC_INFO()->emulation_on();
+    free_DO_DI_cells( V1 );
     }
 
 
@@ -3115,7 +3188,7 @@ TEST( valve_mini_flushing, get_state )
 TEST( valve_mini_flushing, get_fb_state )
     {
     valve_mini_flushing V1( "V1" );
-    V1.init_and_alloc( 2, 2 );
+    V1.init_and_alloc_DO_DI( 2, 2 );
 
     EXPECT_TRUE( V1.get_fb_state() );
 
@@ -3133,6 +3206,7 @@ TEST( valve_mini_flushing, get_fb_state )
     EXPECT_FALSE( V1.get_on_fb_value() );
 
     G_PAC_INFO()->emulation_on();
+    free_DO_DI_cells( V1 );
     }
 
 
@@ -3145,7 +3219,7 @@ TEST( valve_DO2_DI2_bistable, get_fb_state )
     EXPECT_TRUE( V1.get_off_fb_value() );
 
     G_PAC_INFO()->emulation_off();
-    V1.init_and_alloc( 2, 2 );
+    V1.init_and_alloc_DO_DI( 2, 2 );
 
     check_fb( &V1 );
 
@@ -3165,6 +3239,7 @@ TEST( valve_DO2_DI2_bistable, get_fb_state )
     EXPECT_FALSE( V1.get_off_fb_value() );
 
     G_PAC_INFO()->emulation_on();
+    free_DO_DI_cells( V1 );
     }
 
 
@@ -3230,6 +3305,61 @@ TEST( valve_iolink_shut_off_sorio, get_fb_state )
     G_PAC_INFO()->emulation_on();
     }
 
+/// @brief Проверка, что циклическое повторение уже активной команды не
+/// перезапускает таймер переключения клапана (#1414).
+///
+/// @param dev - тестируемый клапан с методом подготовки промежуточного
+///   положения prepare_intermediate_position().
+/// @param cmd - команда клапана, которую шаг операции вызывает каждый цикл.
+template < typename Dev, typename Cmd >
+void checkCyclicCommandDoesNotRestartSwitchTimer( Dev& dev, Cmd cmd )
+    {
+    G_PAC_INFO()->emulation_off();
+
+    dev.set_cmd( "P_FB", 0, 1 );       // Включаем проверку обратных связей.
+    dev.set_cmd( "P_ON_TIME", 0, 100 );// Задаем время проверки обратных связей.
+
+    // Промежуточное положение: битов крайнего положения нет.
+    dev.prepare_intermediate_position();
+
+    cmd( dev );
+    // Имитируем истечение P_ON_TIME с момента перехода команды.
+    dev.set_start_switch_time( get_millisec() - 101UL );
+
+    // Шаг операции циклически вызывает команду. Повторные вызовы при уже
+    // активной команде не должны перезапускать таймер переключения.
+    cmd( dev );
+    cmd( dev );
+
+    // P_ON_TIME истек без подтверждения крайнего положения - ошибка ОС.
+    EXPECT_EQ( valve::VALVE_STATE_EX::VX_OFF_FB_ERR, dev.get_state() );
+
+    G_PAC_INFO()->emulation_on();
+    }
+
+TEST( valve_iolink_shut_off_sorio, cyclic_on_does_not_restart_switch_timer )
+    {
+    class valve_iolink_shut_off_sorio_testable : public valve_iolink_shut_off_sorio
+        {
+        public:
+            using valve_iolink_shut_off_sorio::valve_iolink_shut_off_sorio;
+
+            void set_start_switch_time( uint32_t time )
+                {
+                start_switch_time = time;
+                }
+
+            // in_info обнулен при создании - клапан в промежуточном
+            // положении по умолчанию.
+            void prepare_intermediate_position()
+                {
+                }
+        };
+
+    valve_iolink_shut_off_sorio_testable V1( "V1" );
+    checkCyclicCommandDoesNotRestartSwitchTimer( V1,
+        []( valve_iolink_shut_off_sorio& dev ) { dev.on(); } );
+    }
 
 TEST( valve_iolink_gea_tvis_a15_ds, save_device_ex )
     {
@@ -3990,6 +4120,18 @@ class valve_iolink_mix_proof_testable : public valve_iolink_mix_proof
             {
             in_info.err = err;
             }
+
+        void set_start_switch_time( uint32_t time )
+            {
+            start_switch_time = time;
+            }
+
+        void prepare_intermediate_position()
+            {
+            in_info.st = true;
+            in_info.main = false;
+            in_info.de_en = false;
+            }
     };
 
 TEST( valve_iolink_mix_proof, get_error_description )
@@ -4086,6 +4228,47 @@ TEST( valve_iolink_mix_proof, get_state_with_feedback_enabled_and_al_error )
     G_PAC_INFO()->emulation_on();
     }
 
+TEST( valve_iolink_mix_proof, on_off_fb_values )
+    {
+    valve_iolink_mix_proof V1( "V1" );
+    G_PAC_INFO()->emulation_off();
+
+    // Открытое крайнее положение подтверждается битом main.
+    V1.direct_on();
+    V1.in_info.st = true;
+    V1.in_info.main = true;
+    V1.in_info.de_en = false;
+    EXPECT_EQ( 1, V1.get_on_fb_value() );
+    EXPECT_EQ( 0, V1.get_off_fb_value() );
+
+    // Закрытое крайнее положение подтверждается битом de_en.
+    V1.direct_off();
+    V1.in_info.main = false;
+    V1.in_info.de_en = true;
+    EXPECT_EQ( 0, V1.get_on_fb_value() );
+    EXPECT_EQ( 1, V1.get_off_fb_value() );
+
+    // Промежуточное положение - подтверждения нет.
+    V1.in_info.de_en = false;
+    EXPECT_EQ( 0, V1.get_on_fb_value() );
+    EXPECT_EQ( 0, V1.get_off_fb_value() );
+
+    G_PAC_INFO()->emulation_on();
+    }
+
+TEST( valve_iolink_mix_proof, cyclic_on_does_not_restart_switch_timer )
+    {
+    valve_iolink_mix_proof_testable V1( "V1" );
+    checkCyclicCommandDoesNotRestartSwitchTimer( V1,
+        []( valve_iolink_mix_proof& dev ) { dev.on(); } );
+    }
+
+TEST( valve_iolink_mix_proof, cyclic_open_upper_seat_does_not_restart_switch_timer )
+    {
+    valve_iolink_mix_proof_testable V1( "V1" );
+    checkCyclicCommandDoesNotRestartSwitchTimer( V1,
+        []( valve_iolink_mix_proof& dev ) { dev.open_upper_seat(); } );
+    }
 
 class valve_iolink_shut_off_thinktop_testable : public valve_iolink_shut_off_thinktop
     {
@@ -4095,6 +4278,18 @@ class valve_iolink_shut_off_thinktop_testable : public valve_iolink_shut_off_thi
         void set_err( uint16_t err )
             {
             in_info.err = err;
+            }
+
+        void set_start_switch_time( uint32_t time )
+            {
+            start_switch_time = time;
+            }
+
+        void prepare_intermediate_position()
+            {
+            in_info.st = true;
+            in_info.main = false;
+            in_info.de_en = false;
             }
     };
 
@@ -4173,6 +4368,13 @@ TEST( valve_iolink_shut_off_thinktop, get_fb_state )
     EXPECT_FALSE( V1.get_fb_state() );
 
     G_PAC_INFO()->emulation_on();
+    }
+
+TEST( valve_iolink_shut_off_thinktop, cyclic_on_does_not_restart_switch_timer )
+    {
+    valve_iolink_shut_off_thinktop_testable V1( "V1" );
+    checkCyclicCommandDoesNotRestartSwitchTimer( V1,
+        []( valve_iolink_shut_off_thinktop& dev ) { dev.on(); } );
     }
 
 
@@ -4269,7 +4471,7 @@ TEST( analog_valve_iolink, analog_valve_iolink )
     V1.save_device( buff );
     EXPECT_STREQ(
         "V1={M=0, ST=0, V=0, NAMUR_ST=0, OPENED=0, CLOSED=1, "
-        "BLINK=0, P_FB=1},\n", buff );
+        "BLINK=0, P_FB=0},\n", buff );
     }
 
 
@@ -4498,7 +4700,7 @@ TEST( i_motor, get_amperage )
 TEST( motor, direct_off )
     {
     motor M1( "M1", device::DST_M_FREQ );
-    M1.init_and_alloc( 1, 1 );
+    M1.init_and_alloc_DO_DI( 1, 1 );
 
     EXPECT_EQ( M1.get_state(), 0 );
 
@@ -4513,6 +4715,7 @@ TEST( motor, direct_off )
     EXPECT_EQ( M1.get_state(), 0 );
 
     G_PAC_INFO()->emulation_on();
+    free_DO_DI_cells( M1 );
     }
 
 TEST( motor, direct_set_state )
@@ -4539,7 +4742,8 @@ TEST( motor, save_device )
     EXPECT_STREQ( "M1={M=0, ST=0, V=0, R=0, ERRT=0, P_ON_TIME=0},\n", buff );
 
     G_PAC_INFO()->emulation_off();
-    M1.init_and_alloc( 2, 1, 1 );
+    M1.init_and_alloc_DO_DI( 2, 1 );
+    M1.init_and_alloc_AO_AI( 1 );
     M1.init_channel( io_device::IO_channels::CT_AO, 0, 0, 0 );
     *M1.DI_channels.char_read_values[ 0 ] = 1;
     *M1.DO_channels.char_write_values[ 1 ] = 1;
@@ -4551,6 +4755,7 @@ TEST( motor, save_device )
 
 
     G_PAC_INFO()->emulation_on();
+    free_DO_DI_cells( M1 );
     io_manager::replace_instance( prev_mngr );
     }
 
@@ -4646,6 +4851,23 @@ TEST( motor_altivar, set_string_property )
     EXPECT_NE( nullptr, M1.get_atv() );
     }
 
+TEST( motor_altivar, set_string_property_with_port )
+    {
+    motor_altivar_linear M2( "M2" );
+    EXPECT_EQ( nullptr, M2.get_atv() );
+    M2.set_string_property( "IP", "127.0.0.2:5021" );
+    EXPECT_NE( nullptr, M2.get_atv() );
+
+    // Второй двигатель на том же адресе использует тот же узел.
+    motor_altivar_linear M2b( "M2b" );
+    M2b.set_string_property( "IP", "127.0.0.2:5021" );
+    EXPECT_NE( nullptr, M2b.get_atv() );
+
+    motor_altivar_linear M3( "M3" );
+    M3.set_string_property( "IP", "127.0.0.3:abc" );
+    EXPECT_EQ( nullptr, M3.get_atv() );
+    }
+
 TEST( motor_altivar_linear, get_linear_speed )
     {
     motor_altivar_linear m1( "M1" );
@@ -4689,6 +4911,14 @@ TEST( camera, set_string_property )
 
     test_dev.set_string_property( "IP", "127.0.0.1" );
     EXPECT_EQ( "127.0.0.1", test_dev.ip );
+
+    test_dev.set_string_property( "IP", "192.168.1.10:8080" ); // NOSONAR
+    EXPECT_EQ( "192.168.1.10", test_dev.ip );
+
+    // Порт вне допустимого диапазона - адрес не принимается,
+    // предыдущее значение сохраняется.
+    test_dev.set_string_property( "IP", "192.168.1.10:70000" ); // NOSONAR
+    EXPECT_EQ( "192.168.1.10", test_dev.ip );
     }
 
 TEST( camera, get_result )
@@ -5444,6 +5674,87 @@ TEST( counter_iolink, article_sm6100 )
     test_counter_iolink_article( "IFM.SM6100", 0.01f );
     }
 
+TEST_F( iolink_dev_test, counter_iolink_get_state_iolink_errors )
+    {
+    counter_iolink fqt1( "FQT1" );
+    init_channels( fqt1 );
+    G_PAC_INFO()->emulation_off();
+
+    EXPECT_EQ( -io_device::IOLINKSTATE::NOTCONNECTED, fqt1.get_state() );
+
+    // Bit 0 - IO-Link connected.
+    *fqt1.AI_channels.int_module_read_values[ 0 ] = 0b1;
+    EXPECT_EQ( -io_device::IOLINKSTATE::DEVICEERROR, fqt1.get_state() );
+
+    set_iol_state_to_OK( fqt1 );
+    EXPECT_EQ( static_cast<int>( i_counter::STATES::S_WORK ), fqt1.get_state() );
+
+    G_PAC_INFO()->emulation_on();
+    }
+
+TEST_F( iolink_dev_test, counter_iolink_smfx20_evaluate_io_and_getters )
+    {
+    counter_iolink fqt1( "FQT1" );
+    fqt1.set_article( "IFM.SMF420" );
+
+    init_channels( fqt1 );
+    fqt1.AI_channels.int_read_values[ 0 ] = new int_2[ 8 ]{ 0 };
+    auto data = reinterpret_cast<std::byte*>( fqt1.AI_channels.int_read_values[ 0 ] );
+    set_iol_state_to_OK( fqt1 );
+    G_PAC_INFO()->emulation_off();
+
+    auto set_smfx20_payload = [&]( float totalizer, int16_t flow, int16_t temp,
+                                   uint16_t conductivity )
+        {
+        std::memset( data, 0, 16 );
+
+        std::memcpy( data, &totalizer, sizeof( totalizer ) );
+        std::swap( data[ 3 ], data[ 0 ] );
+        std::swap( data[ 1 ], data[ 2 ] );
+
+        std::memcpy( data + 4, &flow, sizeof( flow ) );
+        std::swap( data[ 4 ], data[ 5 ] );
+
+        std::memcpy( data + 6, &temp, sizeof( temp ) );
+        std::swap( data[ 6 ], data[ 7 ] );
+
+        std::memcpy( data + 8, &conductivity, sizeof( conductivity ) );
+        std::swap( data[ 8 ], data[ 9 ] );
+        };
+
+    // First read initializes internal base values.
+    set_smfx20_payload( 10.0f, 0, 0, 0 );
+    fqt1.evaluate_io();
+    EXPECT_EQ( 0, fqt1.get_quantity() );
+
+    set_smfx20_payload( 20.0f, 111, 333, 250 );
+    fqt1.evaluate_io();
+
+    EXPECT_EQ( counter_iolink::mL_in_L * 10, fqt1.get_quantity() );
+    EXPECT_FLOAT_EQ( 20.0f, fqt1.get_raw_value() );
+    EXPECT_NEAR( 11.1f, fqt1.get_flow(), 0.01f );
+    EXPECT_FLOAT_EQ( 33.3f, fqt1.get_temperature() );
+    EXPECT_FLOAT_EQ( 250.0f, fqt1.get_conductivity() );
+
+    fqt1.set_cmd( "C", 0, 321.0 );
+    fqt1.set_cmd( "F", 0, 9.9 );
+    fqt1.set_cmd( "T", 0, 4.2 );
+
+    EXPECT_FLOAT_EQ( 321.0f, fqt1.get_conductivity() );
+    EXPECT_NEAR( 9.9f, fqt1.get_flow(), 0.01f );
+    EXPECT_FLOAT_EQ( 4.2f, fqt1.get_temperature() );
+
+    std::array<char, 300> buff{};
+    fqt1.save_device( buff.data() );
+    EXPECT_THAT( std::string( buff.data() ), HasSubstr( "C=321" ) );
+    EXPECT_THAT( std::string( buff.data() ), HasSubstr( "F=9.90" ) );
+    EXPECT_THAT( std::string( buff.data() ), HasSubstr( "T=4.2" ) );
+
+    delete[] fqt1.AI_channels.int_read_values[ 0 ];
+    fqt1.AI_channels.int_read_values[ 0 ] = nullptr;
+    G_PAC_INFO()->emulation_on();
+    }
+
 
 TEST( virtual_wages, get_value )
     {
@@ -5639,10 +5950,63 @@ TEST( wages_eth, evaluate_io )
     w1.evaluate_io();
     EXPECT_EQ( 0, w1.get_value() );
 
-    iot_wages_eth w2( 1, "127.0.0.1", 10000 );
+    // Корректное создание с именем в виде пустой строки.
+    iot_wages_eth w( 10, "127.0.0.2", 10000, nullptr );
+
+    iot_wages_eth w2( 1, "127.0.0.1", 10000, "W2" );
 
     w2.evaluate();
     EXPECT_EQ( 0, w2.get_wages_value() );
+    }
+
+TEST( wages_eth, parse_ip_address )
+    {
+    std::string ip;
+    unsigned int port = 0;
+
+    ASSERT_TRUE( wages_eth::parse_ip_address( "192.168.1.1", ip, port ) );
+    EXPECT_EQ( "192.168.1.1", ip );
+    EXPECT_EQ( 1001u, port );
+
+    ASSERT_TRUE( wages_eth::parse_ip_address( "192.168.1.1:8888", ip, port ) );
+    EXPECT_EQ( "192.168.1.1", ip );
+    EXPECT_EQ( 8888u, port );
+
+    ASSERT_TRUE( wages_eth::parse_ip_address( "192.168.1.1:65535", ip, port ) );
+    EXPECT_EQ( 65535u, port );
+
+    EXPECT_FALSE( wages_eth::parse_ip_address( "192.168.1.1:", ip, port ) );
+    EXPECT_FALSE( wages_eth::parse_ip_address( "192.168.1.1:0", ip, port ) );
+    EXPECT_FALSE( wages_eth::parse_ip_address( "192.168.1.1:65536", ip, port ) );
+    EXPECT_FALSE( wages_eth::parse_ip_address( "192.168.1.1:abc", ip, port ) );
+    EXPECT_FALSE( wages_eth::parse_ip_address( "192.168.1.1:8888:1", ip, port ) );
+
+    // Парсер в базовом классе device принимает порт по умолчанию.
+    ASSERT_TRUE( device::parse_ip_address( "10.0.0.1", ip, port, 502 ) );
+    EXPECT_EQ( "10.0.0.1", ip );
+    EXPECT_EQ( 502u, port );
+
+    ASSERT_TRUE( device::parse_ip_address( "10.0.0.1:8888", ip, port, 502 ) );
+    EXPECT_EQ( 8888u, port );
+    }
+
+TEST( wages_eth, set_ip_with_port )
+    {
+    wages_eth w1( "W1" );
+    w1.set_string_property( "IP", "192.168.1.1:8888" ); // NOSONAR
+    w1.evaluate_io();
+    EXPECT_EQ( 0.0f, w1.get_value() );
+    }
+
+TEST( wages_eth, set_invalid_ip )
+    {
+    wages_eth w1( "W1" );
+
+    // Некорректный адрес не создает узел, evaluate_io работает
+    // и без узла.
+    w1.set_string_property( "IP", "192.168.1.1:0" ); // NOSONAR
+    w1.evaluate_io();
+    EXPECT_EQ( 0.0f, w1.get_value() );
     }
 
 TEST( wages_eth, get_value )
@@ -7015,6 +7379,10 @@ TEST_F( iolink_dev_test, converter_iolink_ao_get_state )
 TEST_F( iolink_dev_test, analog_valve_iolink_get_error_description_and_state )
     {
     analog_valve_iolink VC1( "VC1" );
+    // Включаем параметр P_FB, чтобы проверка ошибок IO-Link была активна.
+    VC1.set_par( static_cast<int>( analog_valve_iolink::PAR_CONSTANTS::P_FB ),
+        0, 1.0f );
+
     // Повторно используем универсальную проверку ошибок IO-Link.
     // Ожидаемое состояние при OK — in_info.status, по умолчанию 0.
     test_dev_err( VC1, VC1, 0 );
@@ -7028,8 +7396,10 @@ TEST_F( iolink_dev_test, analog_valve_iolink_get_state_respects_P_FB )
     // Настраиваем только AI-канал для проверки IOLINK state.
     init_channels( VC1 );
 
-    // Без подключения IO-Link и P_FB=1 (по умолчанию) —
-    // ожидаем ошибку NOTCONNECTED.
+    // Включаем обратную связь (P_FB=1).
+    VC1.set_par( static_cast<int>( analog_valve_iolink::PAR_CONSTANTS::P_FB ),
+        0, 1.0f );
+    // Без подключения IO-Link и P_FB=1 — ожидаем ошибку NOTCONNECTED.
     VC1.evaluate_io();
     EXPECT_EQ( VC1.get_state(), -io_device::IOLINKSTATE::NOTCONNECTED );
 
@@ -7394,7 +7764,7 @@ class DO1_test : public ::testing::Test
             mngr.add_node( 0, io_manager::io_node::TYPES::PHOENIX_BK_ETH,
                 1, "127.0.0.1", "A100", 1, 0, 0, 0, 0, 0 );
 
-            dev.init_and_alloc( 1, 0, 0, 0 );
+            dev.init_and_alloc_DO_DI( 1, 0 );
             dev.init_channel( io_device::IO_channels::CT_DO, 0, 0, 0 );
 
             // Set DO channel value to 1.
