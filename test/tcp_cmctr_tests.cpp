@@ -1,7 +1,136 @@
 #include "tcp_cmctr_tests.h"
 #include "PAC_info.h"
 
+#ifdef LINUX_OS
+#include "l_tcp_cmctr.h"
+#include "PAC_err.h"
+#include <dirent.h>
+#endif
+
 using namespace ::testing;
+
+#ifdef LINUX_OS
+namespace
+    {
+    class tcp_communicator_linux_restart : public Test
+        {
+        protected:
+            int master_reservation = -1;
+            int modbus_reservation = -1;
+            int original_port = tcp_communicator::get_port();
+            int original_modbus_port = tcp_communicator::get_modbus_port();
+
+            static void close_socket( int& descriptor )
+                {
+                if ( descriptor >= 0 ) close( descriptor );
+                descriptor = -1;
+                }
+
+            static int reserve_port( int& descriptor )
+                {
+                descriptor = socket( AF_INET, SOCK_STREAM, 0 );
+                if ( descriptor < 0 ) return -1;
+                sockaddr_in address{};
+                address.sin_family = AF_INET;
+                address.sin_addr.s_addr = htonl( INADDR_ANY );
+                if ( bind( descriptor, reinterpret_cast<sockaddr*>( &address ),
+                    sizeof( address ) ) < 0 || listen( descriptor, 1 ) < 0 )
+                    return -1;
+                socklen_t size = sizeof( address );
+                if ( getsockname( descriptor,
+                    reinterpret_cast<sockaddr*>( &address ), &size ) < 0 )
+                    return -1;
+                return ntohs( address.sin_port );
+                }
+
+            static int descriptor_count()
+                {
+                auto directory = opendir( "/proc/self/fd" );
+                if ( !directory ) return -1;
+                int count = 0;
+                while ( readdir( directory ) ) ++count;
+                closedir( directory );
+                return count;
+                }
+
+            void SetUp() override
+                {
+                tcp_communicator::clear_instance();
+                PAC_critical_errors_manager::get_instance()->reset_all_error();
+                int master_port = reserve_port( master_reservation );
+                int modbus_port = reserve_port( modbus_reservation );
+                ASSERT_GT( master_port, 0 );
+                ASSERT_GT( modbus_port, 0 );
+                tcp_communicator::set_port( master_port, modbus_port );
+                }
+
+            void TearDown() override
+                {
+                tcp_communicator::clear_instance();
+                close_socket( master_reservation );
+                close_socket( modbus_reservation );
+                tcp_communicator::set_port( original_port, original_modbus_port );
+                PAC_critical_errors_manager::get_instance()->reset_all_error();
+                }
+        };
+    }
+
+TEST_F( tcp_communicator_linux_restart, restarts_after_active_modbus_connection )
+    {
+    close_socket( master_reservation );
+    close_socket( modbus_reservation );
+    for ( int restart = 0; restart < 3; ++restart )
+        {
+        tcp_communicator::init_instance( "Тест", "Test" );
+        ASSERT_EQ( 0, G_CMMCTR->evaluate() );
+        // The server closes first so the accepted connection enters TIME_WAIT.
+        modbus_reservation = socket( AF_INET, SOCK_STREAM, 0 );
+        ASSERT_GE( modbus_reservation, 0 );
+        sockaddr_in address{};
+        address.sin_family = AF_INET;
+        address.sin_addr.s_addr = htonl( INADDR_LOOPBACK );
+        address.sin_port = htons( tcp_communicator::get_modbus_port() );
+        ASSERT_EQ( 0, connect( modbus_reservation,
+            reinterpret_cast<sockaddr*>( &address ), sizeof( address ) ) );
+        ASSERT_EQ( 0, G_CMMCTR->evaluate() );
+        tcp_communicator::clear_instance();
+        timeval timeout{ 1, 0 };
+        ASSERT_EQ( 0, setsockopt( modbus_reservation, SOL_SOCKET, SO_RCVTIMEO,
+            &timeout, sizeof( timeout ) ) );
+        char byte{};
+        ASSERT_EQ( 0, recv( modbus_reservation, &byte, 1, 0 ) );
+        close_socket( modbus_reservation );
+        }
+    tcp_communicator::init_instance( "Тест", "Test" );
+    EXPECT_EQ( 0, G_CMMCTR->evaluate() );
+    }
+
+TEST_F( tcp_communicator_linux_restart, retries_busy_modbus_without_leaking_sockets )
+    {
+    close_socket( master_reservation );
+    tcp_communicator::init_instance( "Тест", "Test" );
+    auto initial_count = descriptor_count();
+    ASSERT_GT( initial_count, 0 );
+    for ( int attempt = 0; attempt < 3; ++attempt )
+        {
+        EXPECT_EQ( -100, G_CMMCTR->evaluate() );
+        EXPECT_EQ( initial_count, descriptor_count() );
+        EXPECT_EQ( -1, tcp_communicator::get_master_socket() );
+        }
+    close_socket( modbus_reservation );
+    EXPECT_EQ( 0, G_CMMCTR->evaluate() );
+    }
+
+TEST_F( tcp_communicator_linux_restart, waits_for_existing_master_listener )
+    {
+    close_socket( modbus_reservation );
+    tcp_communicator::init_instance( "Тест", "Test" );
+    EXPECT_EQ( -100, G_CMMCTR->evaluate() );
+    EXPECT_EQ( -1, tcp_communicator::get_master_socket() );
+    close_socket( master_reservation );
+    EXPECT_EQ( 0, G_CMMCTR->evaluate() );
+    }
+#endif
 
 #ifndef WIN_OS // For linux to deal with __stdcall.
 #define __stdcall

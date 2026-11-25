@@ -311,6 +311,37 @@ void device::evaluate_io()
     //Do nothing by default.
     }
 //-----------------------------------------------------------------------------
+bool device::parse_ip_address( const char* address, std::string& ip,
+    unsigned int& port, unsigned int default_port )
+    {
+    if ( !address ) return false;
+
+    const std::string endpoint( address );
+    const auto separator = endpoint.find( ':' );
+    const auto host = endpoint.substr( 0, separator );
+    if ( host.empty() || host.size() > 15 ) return false;
+
+    unsigned int parsed_port = default_port;
+    if ( separator != std::string::npos )
+        {
+        if ( separator + 1 == endpoint.size() ) return false;
+        parsed_port = 0;
+        for ( auto i = separator + 1; i < endpoint.size(); ++i )
+            {
+            const char digit = endpoint[ i ];
+            if ( digit < '0' || digit > '9' ) return false;
+            const auto value = static_cast<unsigned int>( digit - '0' );
+            if ( parsed_port > ( 65535 - value ) / 10 ) return false;
+            parsed_port = parsed_port * 10 + value;
+            }
+        if ( parsed_port == 0 ) return false;
+        }
+
+    ip = host;
+    port = parsed_port;
+    return true;
+    }
+//-----------------------------------------------------------------------------
 /// @brief Отладочная печать объекта в консоль.
 const char* device::get_name_in_Lua() const
     {
