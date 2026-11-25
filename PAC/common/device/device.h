@@ -185,8 +185,8 @@ class temperature_e_iolink_tm311 : public AI1
                 uint8_t status1 : 2;   ///< Status 2 bits.
                 uint8_t unused : 3;    ///< Unused bits.
                 int8_t scale{ -1 };    ///< Scale factor.
-                int16_t
-                    temperature{};  ///< Temperature value (with one decimal place).
+                ///< Temperature value (with one decimal place).
+                int16_t temperature{};
             };
 
 #pragma pack( pop )

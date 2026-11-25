@@ -575,7 +575,8 @@ class valve_bottom_mix_proof : public i_mix_proof, public valve
         enum CONSTANTS
             {
             DO_INDEX = 0,  ///< Индекс канала дискретного выхода.
-            DO_INDEX_MINI_V,  ///< Индекс канала дискретного выхода мини клапана.
+            ///< Индекс канала дискретного выхода мини клапана.
+            DO_INDEX_MINI_V,
             DO_INDEX_L,  ///< Индекс канала дискретного выхода нижнего седла.
 
             DI_INDEX_OPEN = 0,  ///< Индекс канала дискретного входа Открыт.
