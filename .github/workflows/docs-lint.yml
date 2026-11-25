@@ -63,7 +63,7 @@ jobs:
             echo "any=true" >> "$GITHUB_OUTPUT"
             # One space-separated line: the project keeps spaces
             # out of Markdown paths (enforced by git checkout).
-            files=$(echo "$list" | tr '\n' ' ')
+            files=$(echo "$list" | paste -sd' ' -)
             printf 'files=%s\n' "$files" >> "$GITHUB_OUTPUT"
           fi
 
@@ -76,10 +76,15 @@ jobs:
     # job turns green either way; remove to enforce later (#1641).
     continue-on-error: true
     steps:
+      # Default checkout (merge commit) so the job sees both the
+      # changed Markdown from the head and the lint configuration
+      # that only exists on the base branch.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: DavidAnson/markdownlint-cli2-action@3ce8f712b5d8f31acd8e201be6d97e3d2bb23eb7 # v25.1.0
         with:
           config: .github/markdownlint-cli2.jsonc
-          files: ${{ needs.changed-markdown.outputs.files }}
+          globs: ${{ needs.changed-markdown.outputs.files }}
+          separator: ' '
 
   links:
     name: Check links in changed Markdown
