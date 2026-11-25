@@ -9,19 +9,23 @@ using namespace ::testing;
 namespace
     {
 
-/// @brief In-memory journal sink that records sanitized records.
+/// @brief In-memory sink that records both views of a record:
+/// the raw console message and the single-line copy read by
+/// line-oriented journal sinks.
 class recording_log : public i_log
     {
     public:
         void write_log_impl( PRIORITIES priority ) override
             {
             last_priority = priority;
-            record = msg;
+            console = msg;
+            line = msg_journal;
             ++writes;
             }
 
         PRIORITIES last_priority { P_INFO };
-        std::string record;
+        std::string console;
+        std::string line;
         int writes { 0 };
     };
 
@@ -29,45 +33,52 @@ class recording_log : public i_log
 
 TEST( i_log, crlf_injection_stays_single_line )
     {
-    recording_log journal;
+    recording_log sink;
 
-    journal.write_log( i_log::P_INFO,
+    sink.write_log( i_log::P_INFO,
         "cmd ok\r\n2026-01-01 ALERT  (1) -> forged line" );
 
-    EXPECT_EQ( journal.writes, 1 );
-    EXPECT_EQ( journal.last_priority, i_log::P_INFO );
-    EXPECT_EQ( journal.record,
+    EXPECT_EQ( sink.writes, 1 );
+    EXPECT_EQ( sink.last_priority, i_log::P_INFO );
+    EXPECT_EQ( sink.line,
         "cmd ok\\r\\n2026-01-01 ALERT  (1) -> forged line" );
-    EXPECT_EQ( journal.record.find( '\n' ), std::string::npos );
-    EXPECT_EQ( journal.record.find( '\r' ), std::string::npos );
+    EXPECT_EQ( sink.line.find( '\n' ), std::string::npos );
+    EXPECT_EQ( sink.line.find( '\r' ), std::string::npos );
+
+    // The console view reaches sinks untouched.
+    EXPECT_EQ( sink.console,
+        "cmd ok\r\n2026-01-01 ALERT  (1) -> forged line" );
     }
 
-TEST( i_log, direct_msg_write_is_escaped )
+TEST( i_log, direct_msg_write_keeps_console_view_raw )
     {
-    recording_log journal;
+    recording_log sink;
 
-    std::snprintf( journal.msg, sizeof( journal.msg ),
+    std::snprintf( sink.msg, sizeof( sink.msg ),
         "value\tinjected\nforged\r" );
-    journal.write_log( i_log::P_WARNING );
+    sink.write_log( i_log::P_WARNING );
 
-    EXPECT_EQ( journal.writes, 1 );
-    EXPECT_EQ( journal.record, "value\tinjected\\nforged\\r" );
+    EXPECT_EQ( sink.writes, 1 );
+    EXPECT_EQ( sink.console, "value\tinjected\nforged\r" );
+    EXPECT_EQ( sink.line, "value\tinjected\\nforged\\r" );
     }
 
-TEST( i_log, escaped_record_never_overflows_buffer )
+TEST( i_log, line_copy_never_overflows_buffer )
     {
-    recording_log journal;
+    recording_log sink;
 
     // Fill the whole buffer so escaping has to truncate the tail.
-    for ( size_t i = 0; i < sizeof( journal.msg ) - 1; ++i )
+    for ( size_t i = 0; i < sizeof( sink.msg ) - 1; ++i )
         {
-        journal.msg[ i ] = ( i % 2 == 0 ) ? 'a' : '\n';
+        sink.msg[ i ] = ( i % 2 == 0 ) ? 'a' : '\n';
         }
-    journal.msg[ sizeof( journal.msg ) - 1 ] = '\0';
+    sink.msg[ sizeof( sink.msg ) - 1 ] = '\0';
 
-    journal.write_log( i_log::P_ERR );
+    sink.write_log( i_log::P_ERR );
 
-    EXPECT_LE( journal.record.size(), sizeof( journal.msg ) - 1 );
-    EXPECT_EQ( journal.record.find( '\n' ), std::string::npos );
-    EXPECT_EQ( std::strlen( journal.msg ), journal.record.size() );
+    EXPECT_LE( sink.line.size(), sizeof( sink.msg ) - 1 );
+    EXPECT_EQ( sink.line.find( '\n' ), std::string::npos );
+
+    // @msg survives unchanged for the console rendering.
+    EXPECT_EQ( sink.console.size(), sizeof( sink.msg ) - 1 );
     }

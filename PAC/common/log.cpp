@@ -1,6 +1,8 @@
 #include "log.h"
 #include <stdarg.h>
 
+#include <iostream>
+
 #if defined  WIN_OS
 #include "w_log.h"
 #elif defined LINUX_OS
@@ -43,61 +45,68 @@ void i_log::write_log( PRIORITIES priority )
 //-----------------------------------------------------------------------------
 void i_log::sanitize_msg()
     {
-    size_t escaped_len { 0 };
-    size_t src_len { 0 };
-    bool escaped { false };
+    const char* in = msg;
+    char* out = msg_journal;
+    const size_t max_len = C_BUFF_SIZE - 1;
 
-    while ( msg[ src_len ] != 0 )
+    while ( *in != 0 )
         {
-        const char symbol = msg[ src_len ];
+        const char symbol = *in;
         const size_t width =
             ( symbol == '\n' || symbol == '\r' ) ? 2 : 1;
 
-        if ( escaped_len + width > C_BUFF_SIZE - 1 )
+        if ( static_cast< size_t >( out - msg_journal ) + width > max_len )
             {
             break; // Экранированный текст не влез, хвост отброшен.
             }
 
-        if ( width != 1 )
+        if ( width == 2 )
             {
-            escaped = true;
+            *out++ = '\\';
+            *out++ = ( symbol == '\n' ) ? 'n' : 'r';
+            }
+        else
+            {
+            *out++ = symbol;
             }
 
-        escaped_len += width;
-        ++src_len;
+        ++in;
         }
 
-    if ( !escaped && msg[ src_len ] == 0 )
+    *out = 0;
+    }
+//-----------------------------------------------------------------------------
+void i_log::print_console_msg() const
+    {
+    static const char continuation[] = "\n        ";
+
+    const char* run = msg;
+
+    for ( const char* ch = msg; ; ++ch )
         {
-        return; // Экранирование и усечение не потребовались.
-        }
-
-    msg[ escaped_len ] = 0;
-
-    // Заполняем буфер справа налево: позиция записи никогда не
-    // отстаёт от позиции чтения, поэтому временный буфер не нужен.
-    while ( src_len > 0 )
-        {
-        const char symbol = msg[ src_len - 1 ];
-
-        switch ( symbol )
+        if ( *ch != 0 && *ch != '\n' && *ch != '\r' )
             {
-            case '\n':
-                msg[ --escaped_len ] = 'n';
-                msg[ --escaped_len ] = '\\';
-                break;
-
-            case '\r':
-                msg[ --escaped_len ] = 'r';
-                msg[ --escaped_len ] = '\\';
-                break;
-
-            default:
-                msg[ --escaped_len ] = symbol;
-                break;
+            continue;
             }
 
-        --src_len;
+        std::cout.write( run, static_cast< std::streamsize >( ch - run ) );
+
+        if ( *ch == 0 )
+            {
+            break;
+            }
+        else if ( *ch == '\n' )
+            {
+            std::cout << continuation;
+            }
+        else
+            {
+            // Одиночный CR перерисовывает строку терминала,
+            // поэтому он выводится только как литерал.
+            std::cout << "\\r";
+            }
+
+        run = ch + 1;
         }
     }
 //-----------------------------------------------------------------------------

@@ -73,7 +73,8 @@ class w_log: public i_log
                     break;
                 }
 
-            std::cout << msg << std::endl;
+            print_console_msg();
+            std::cout << std::endl;
             SetColor( RESET );
 
             fflush( stdout );

@@ -42,7 +42,7 @@ class l_log: public i_log
     void virtual write_log_impl( PRIORITIES priority )
         {
 #ifdef SIMPLE_LOG
-        printf( "%s\n", msg );
+        printf( "%s\n", msg_journal );
 #else
         std::tm tm = get_time();
 
@@ -91,22 +91,17 @@ class l_log: public i_log
                 break;
             }
 
-        std::cout << msg << std::endl;
+        print_console_msg();
+        std::cout << std::endl;
         SetColor( RESET );
 
         fflush( stdout );
-
-        int len = strlen( msg ) - 1;
-        for ( int i = 0; i < len; i++ )
-            {
-            if ( msg[ i ] == '\n' ) msg[ i ] = ';';
-            }
 
         //Using openlog() because kbus functions also use it
         //(openlog( "kbus", ...)).
         openlog( "ptusa", LOG_PID, LOG_USER );
 
-        syslog( (int) priority, "%s", msg );
+        syslog( (int) priority, "%s", msg_journal );
         closelog();
 #endif
         }

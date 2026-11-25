@@ -36,6 +36,11 @@ class i_log
 
     char msg[ C_BUFF_SIZE ];
 
+    /// @brief Однострочная копия @msg для приёмников журнала,
+    /// читающих вывод построчно (syslog, файл). Заполняется
+    /// методом sanitize_msg().
+    char msg_journal[ C_BUFF_SIZE ];
+
     enum PRIORITIES
         {
         P_EMERG, 	// System is unusable
@@ -48,10 +53,12 @@ class i_log
         P_DEBUG,	// Debug-level messages
         };
 
-    /// @brief Запись строки в журнал. Строка должна быть в @msg.
+    /// @brief Запись строки из @msg в журнал.
     ///
-    /// CR и LF в @msg предварительно экранируются, поэтому
-    /// один вызов даёт ровно одну физическую строку журнала.
+    /// Плоскостные приёмники (syslog, файл журнала) читают
+    /// однострочную копию @msg_journal, поэтому один вызов даёт
+    /// ровно одну физическую строку. Консоль печатает @msg через
+    /// print_console_msg() без экранирования.
     ///
     /// @param priority - приоритет.
     void write_log( PRIORITIES priority );
@@ -61,9 +68,16 @@ class i_log
 
     void write_log( PRIORITIES priority, const char* debug_message );
 
-    /// @brief Экранирует CR и LF в @msg, чтобы в буфере осталась
-    /// одна строка. Не помещающийся в буфер хвост сообщения отбрасывается.
+    /// @brief Готовит однострочную копию @msg в @msg_journal:
+    /// CR и LF заменяются видимыми двухсимвольными последовательностями.
+    /// Не помещающийся в буфер хвост сообщения отбрасывается,
+    /// @msg остаётся неизменным.
     void sanitize_msg();
+
+    /// @brief Печатает @msg в консоль: LF даёт перенос строки
+    /// с фиксированным отступом строк продолжения, одиночный CR
+    /// выводится литералом и не перерисовывает строку терминала.
+    void print_console_msg() const;
 
 	void debug(const char* debug_message, ...);
 	void info(const char* info_message, ...);
@@ -79,6 +93,7 @@ class i_log
     i_log()
         {
         memset( msg, 0, C_BUFF_SIZE );
+        memset( msg_journal, 0, C_BUFF_SIZE );
         }
     };
 //-----------------------------------------------------------------------------
