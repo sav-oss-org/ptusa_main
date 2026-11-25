@@ -1,0 +1,33 @@
+{
+  // Repository Markdown style (#1641). Advisory mode today: the
+  // docs-lint workflow turns findings into annotations only. The
+  // choices mirror the contribution guide (80-character lines)
+  // and the current documentation corpus, so enabling the lint
+  // does not demand unrelated cleanup.
+  "line-length": {
+    // The contribution guide limits lines to 80 characters; code
+    // blocks and tables are exempt because rewrapping them breaks
+    // commands and column alignment.
+    "line_length": 80,
+    "code_blocks": false,
+    "tables": false
+  },
+  // Readme files and generated pages legitimately repeat section
+  // titles across documents (Usage, Examples).
+  "duplicate-heading": false,
+  // The generated release notes corpus and title blocks repeat
+  // the document title as a section heading.
+  "single-title": false,
+  // Russian guides and readme badges use <br>, <img> and <p>
+  // intentionally; markdownlint cannot express those in Markdown.
+  "no-inline-html": false,
+  // Several guides start with an intro sentence or badge block
+  // before the first heading.
+  "first-line-heading": false,
+  // Links written as raw URLs predate the reference style and are
+  // still readable.
+  "no-bare-urls": false,
+  // Historical heading emphasis differs between guides (ATX vs
+  // setext); normalizing is a separate cleanup pass.
+  "heading-style": false
+}

@@ -255,8 +255,8 @@ class io_device
         static int last_err;
 
 #ifdef PTUSA_TEST
-        void init_and_alloc( int DO_count = 1, int DI_count = 0,
-            int AO_count = 0, int AI_count = 0 );
+        void init_and_alloc_DO_DI( int DO_count, int DI_count = 0 );
+        void init_and_alloc_AO_AI( int AO_count, int AI_count = 0 );
 #endif
     };
 //-----------------------------------------------------------------------------
