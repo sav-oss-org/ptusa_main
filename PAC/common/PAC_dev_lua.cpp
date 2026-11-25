@@ -1,6 +1,6 @@
 /*
 ** Lua binding: PAC_dev
-** Generated automatically by tolua++-1.0.92 on Tue Aug 11 09:59:08 2026.
+** Generated automatically by tolua++-1.0.92 on Wed Aug 26 12:58:59 2026.
 */
 
 #ifndef __cplusplus
@@ -93,6 +93,7 @@ static void tolua_reg_types (lua_State* tolua_S)
  tolua_usertype(tolua_S,"device");
  tolua_usertype(tolua_S,"io_manager");
  tolua_usertype(tolua_S,"virtual_counter");
+ tolua_usertype(tolua_S,"counter_iolink");
  tolua_usertype(tolua_S,"errors_manager");
  tolua_usertype(tolua_S,"tech_object_manager");
  tolua_usertype(tolua_S,"tech_object");
@@ -2901,6 +2902,35 @@ static int tolua_PAC_dev_virtual_FQT00(lua_State* tolua_S)
 }
 #endif //#ifndef TOLUA_DISABLE
 
+/* function: FQT_IOLINK */
+#ifndef TOLUA_DISABLE_tolua_PAC_dev_FQT_IOLINK00
+static int tolua_PAC_dev_FQT_IOLINK00(lua_State* tolua_S)
+{
+#ifndef TOLUA_RELEASE
+ tolua_Error tolua_err;
+ if (
+     !tolua_isstring(tolua_S,1,0,&tolua_err) ||
+     !tolua_isnoobj(tolua_S,2,&tolua_err)
+ )
+  goto tolua_lerror;
+ else
+#endif
+ {
+  const char* dev_name = ((const char*)  tolua_tostring(tolua_S,1,0));
+  {
+   counter_iolink* tolua_ret = (counter_iolink*)  FQT_IOLINK(dev_name);
+    tolua_pushusertype(tolua_S,(void*)tolua_ret,"counter_iolink");
+  }
+ }
+ return 1;
+#ifndef TOLUA_RELEASE
+ tolua_lerror:
+ tolua_error(tolua_S,"#ferror in function 'FQT_IOLINK'.",&tolua_err);
+ return 0;
+#endif
+}
+#endif //#ifndef TOLUA_DISABLE
+
 /* function: TE */
 #ifndef TOLUA_DISABLE_tolua_PAC_dev_TE00
 static int tolua_PAC_dev_TE00(lua_State* tolua_S)
@@ -4534,6 +4564,70 @@ static int tolua_PAC_dev_virtual_counter_eval00(lua_State* tolua_S)
 #ifndef TOLUA_RELEASE
  tolua_lerror:
  tolua_error(tolua_S,"#ferror in function 'eval'.",&tolua_err);
+ return 0;
+#endif
+}
+#endif //#ifndef TOLUA_DISABLE
+
+/* method: get_temperature of class  counter_iolink */
+#ifndef TOLUA_DISABLE_tolua_PAC_dev_counter_iolink_get_temperature00
+static int tolua_PAC_dev_counter_iolink_get_temperature00(lua_State* tolua_S)
+{
+#ifndef TOLUA_RELEASE
+ tolua_Error tolua_err;
+ if (
+     !tolua_isusertype(tolua_S,1,"counter_iolink",0,&tolua_err) ||
+     !tolua_isnoobj(tolua_S,2,&tolua_err)
+ )
+  goto tolua_lerror;
+ else
+#endif
+ {
+  counter_iolink* self = (counter_iolink*)  tolua_tousertype(tolua_S,1,0);
+#ifndef TOLUA_RELEASE
+  if (!self) tolua_error(tolua_S,"invalid 'self' in function 'get_temperature'", NULL);
+#endif
+  {
+   float tolua_ret = (float)  self->get_temperature();
+   tolua_pushnumber(tolua_S,(lua_Number)tolua_ret);
+  }
+ }
+ return 1;
+#ifndef TOLUA_RELEASE
+ tolua_lerror:
+ tolua_error(tolua_S,"#ferror in function 'get_temperature'.",&tolua_err);
+ return 0;
+#endif
+}
+#endif //#ifndef TOLUA_DISABLE
+
+/* method: get_conductivity of class  counter_iolink */
+#ifndef TOLUA_DISABLE_tolua_PAC_dev_counter_iolink_get_conductivity00
+static int tolua_PAC_dev_counter_iolink_get_conductivity00(lua_State* tolua_S)
+{
+#ifndef TOLUA_RELEASE
+ tolua_Error tolua_err;
+ if (
+     !tolua_isusertype(tolua_S,1,"counter_iolink",0,&tolua_err) ||
+     !tolua_isnoobj(tolua_S,2,&tolua_err)
+ )
+  goto tolua_lerror;
+ else
+#endif
+ {
+  counter_iolink* self = (counter_iolink*)  tolua_tousertype(tolua_S,1,0);
+#ifndef TOLUA_RELEASE
+  if (!self) tolua_error(tolua_S,"invalid 'self' in function 'get_conductivity'", NULL);
+#endif
+  {
+   float tolua_ret = (float)  self->get_conductivity();
+   tolua_pushnumber(tolua_S,(lua_Number)tolua_ret);
+  }
+ }
+ return 1;
+#ifndef TOLUA_RELEASE
+ tolua_lerror:
+ tolua_error(tolua_S,"#ferror in function 'get_conductivity'.",&tolua_err);
  return 0;
 #endif
 }
@@ -13064,7 +13158,8 @@ static int tolua_PAC_dev_modbus_client_new00(lua_State* tolua_S)
      !tolua_isstring(tolua_S,3,0,&tolua_err) ||
      !tolua_isnumber(tolua_S,4,1,&tolua_err) ||
      !tolua_isnumber(tolua_S,5,1,&tolua_err) ||
-     !tolua_isnoobj(tolua_S,6,&tolua_err)
+     !tolua_isstring(tolua_S,6,1,&tolua_err) ||
+     !tolua_isnoobj(tolua_S,7,&tolua_err)
  )
   goto tolua_lerror;
  else
@@ -13074,8 +13169,9 @@ static int tolua_PAC_dev_modbus_client_new00(lua_State* tolua_S)
   const char* ip = ((const char*)  tolua_tostring(tolua_S,3,0));
   unsigned int port = ((unsigned int)  tolua_tonumber(tolua_S,4,502));
   unsigned long exchangetimeout = ((unsigned long)  tolua_tonumber(tolua_S,5,50));
+  const char* name = ((const char*)  tolua_tostring(tolua_S,6,nullptr));
   {
-   modbus_client* tolua_ret = (modbus_client*)  Mtolua_new((modbus_client)(id,ip,port,exchangetimeout));
+   modbus_client* tolua_ret = (modbus_client*)  Mtolua_new((modbus_client)(id,ip,port,exchangetimeout,name));
     tolua_pushusertype(tolua_S,(void*)tolua_ret,"modbus_client");
   }
  }
@@ -13100,7 +13196,8 @@ static int tolua_PAC_dev_modbus_client_new00_local(lua_State* tolua_S)
      !tolua_isstring(tolua_S,3,0,&tolua_err) ||
      !tolua_isnumber(tolua_S,4,1,&tolua_err) ||
      !tolua_isnumber(tolua_S,5,1,&tolua_err) ||
-     !tolua_isnoobj(tolua_S,6,&tolua_err)
+     !tolua_isstring(tolua_S,6,1,&tolua_err) ||
+     !tolua_isnoobj(tolua_S,7,&tolua_err)
  )
   goto tolua_lerror;
  else
@@ -13110,8 +13207,9 @@ static int tolua_PAC_dev_modbus_client_new00_local(lua_State* tolua_S)
   const char* ip = ((const char*)  tolua_tostring(tolua_S,3,0));
   unsigned int port = ((unsigned int)  tolua_tonumber(tolua_S,4,502));
   unsigned long exchangetimeout = ((unsigned long)  tolua_tonumber(tolua_S,5,50));
+  const char* name = ((const char*)  tolua_tostring(tolua_S,6,nullptr));
   {
-   modbus_client* tolua_ret = (modbus_client*)  Mtolua_new((modbus_client)(id,ip,port,exchangetimeout));
+   modbus_client* tolua_ret = (modbus_client*)  Mtolua_new((modbus_client)(id,ip,port,exchangetimeout,name));
     tolua_pushusertype(tolua_S,(void*)tolua_ret,"modbus_client");
     tolua_register_gc(tolua_S,lua_gettop(tolua_S));
   }
@@ -15506,6 +15604,7 @@ TOLUA_API int tolua_PAC_dev_open (lua_State* tolua_S)
   tolua_function(tolua_S,"AO",tolua_PAC_dev_AO00);
   tolua_function(tolua_S,"FQT",tolua_PAC_dev_FQT00);
   tolua_function(tolua_S,"virtual_FQT",tolua_PAC_dev_virtual_FQT00);
+  tolua_function(tolua_S,"FQT_IOLINK",tolua_PAC_dev_FQT_IOLINK00);
   tolua_function(tolua_S,"TE",tolua_PAC_dev_TE00);
   tolua_function(tolua_S,"LT",tolua_PAC_dev_LT00);
   tolua_function(tolua_S,"GS",tolua_PAC_dev_GS00);
@@ -15580,6 +15679,11 @@ TOLUA_API int tolua_PAC_dev_open (lua_State* tolua_S)
    tolua_function(tolua_S,"abs_reset",tolua_PAC_dev_virtual_counter_abs_reset00);
    tolua_function(tolua_S,"set",tolua_PAC_dev_virtual_counter_set00);
    tolua_function(tolua_S,"eval",tolua_PAC_dev_virtual_counter_eval00);
+  tolua_endmodule(tolua_S);
+  tolua_cclass(tolua_S,"counter_iolink","counter_iolink","device",NULL);
+  tolua_beginmodule(tolua_S,"counter_iolink");
+   tolua_function(tolua_S,"get_temperature",tolua_PAC_dev_counter_iolink_get_temperature00);
+   tolua_function(tolua_S,"get_conductivity",tolua_PAC_dev_counter_iolink_get_conductivity00);
   tolua_endmodule(tolua_S);
   #ifdef __cplusplus
   tolua_cclass(tolua_S,"tech_object","tech_object","",tolua_collect_tech_object);

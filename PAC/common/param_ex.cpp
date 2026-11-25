@@ -17,32 +17,42 @@ char params_manager::is_init = 0;
 #include "g_errors.h"
 
 #include "log.h"
+
+#include <cstring>
 //-----------------------------------------------------------------------------
 params_manager::params_manager(): par( 0 ), project_id( 0 )
     {
     last_idx = 0;
-    CRC_mem = NV_memory_manager::get_instance()->get_memory_block(
-        NV_memory_manager::MT_NVRAM, C_SYS_MEM_SIZE );
 
-    params_mem = NV_memory_manager::get_instance()->get_memory_block(
-        NV_memory_manager::MT_EEPROM, C_TOTAL_PARAMS_SIZE );
-
-    memset( params, 0, C_TOTAL_PARAMS_SIZE );
+#ifdef PAC_PLCNEXT
+    // Прошивка начиная с версии 2025.0 предоставляет приложениям для
+    // записей постоянный каталог /opt/plcnext/custom - см. справку
+    // PLCnext Engineer, тему FILE_OPEN. Запись в /opt/main для логики
+    // недоступна, что проверено на контроллере AXC F 2152.
+    CRC_mem = new SRAM( "/opt/plcnext/custom/nvram.bin",
+        static_cast<size_t>( CONSTANTS::C_SYS_MEM_SIZE ) );
+    params_mem = new SRAM( "/opt/plcnext/custom/eeprom.bin",
+        static_cast<size_t>( CONSTANTS::C_TOTAL_PARAMS_SIZE ) );
+#else
+    CRC_mem = new SRAM( "./nvram.bin",
+        static_cast<size_t>( CONSTANTS::C_SYS_MEM_SIZE ) );
+    params_mem = new SRAM( "./eeprom.bin",
+        static_cast<size_t>( CONSTANTS::C_TOTAL_PARAMS_SIZE ) );
+#endif // PAC_PLCNEXT
     }
 //-----------------------------------------------------------------------------
 u_int_2 params_manager::solve_CRC()
     {
-    int     idx;
-    char    Flag;
+    char Flag;
 
     u_int_2 CRC = 65535;
-    unsigned int datlen = C_TOTAL_PARAMS_SIZE;
+    auto datlen = static_cast<unsigned int>( CONSTANTS::C_TOTAL_PARAMS_SIZE );
     int bufidx = 0;
 
     while ( datlen > 0 )
         {
-        CRC = CRC ^ params[ bufidx ];
-        for ( idx = 0; idx <= 7; idx++ )
+        CRC = CRC ^ static_cast<u_int_2>( params_mem->get_data()[ bufidx ] );
+        for ( int idx = 0; idx <= 7; idx++ )
             {
             Flag = CRC & 1;
             CRC = CRC >> 1;
@@ -53,14 +63,14 @@ u_int_2 params_manager::solve_CRC()
         }
     char* p = ( char* ) &project_id;
     CRC = CRC ^ p[ 0 ];
-    for ( idx = 0; idx <= 7; idx++ )
+    for ( int idx = 0; idx <= 7; idx++ )
         {
         Flag = CRC & 1;
         CRC = CRC >> 1;
         if ( Flag ) CRC = CRC ^ 0x0A001;
         }
     CRC = CRC ^ p[ 1 ];
-    for ( idx = 0; idx <= 7; idx++ )
+    for ( int idx = 0; idx <= 7; idx++ )
         {
         Flag = CRC & 1;
         CRC = CRC >> 1;
@@ -70,20 +80,35 @@ u_int_2 params_manager::solve_CRC()
     return CRC;
     }
 //-----------------------------------------------------------------------------
-void params_manager::reset_params_size()
+void params_manager::reset_CRC_mem()
     {
-    unsigned char buff[ 4 ] = { 0 };
-    CRC_mem->write( ( char* )buff, 4, C_LAST_IDX_OFFSET );
+    CRC_mem->zero_fill();
+    }
+//-----------------------------------------------------------------------------
+int params_manager::get_params_change_counter() const
+    {
+    return params_change_counter;
+    }
+//-----------------------------------------------------------------------------
+int params_manager::get_params_save_counter() const
+    {
+    return params_save_counter;
+    }
+//-----------------------------------------------------------------------------
+bool params_manager::was_successful_init() const
+    {
+    return successful_init;
     }
 //-----------------------------------------------------------------------------
 int params_manager::init( unsigned int project_id )
     {
     params_manager::project_id = project_id;
 
-    memset( params, 0, C_TOTAL_PARAMS_SIZE );
-    params_mem->read( params, C_TOTAL_PARAMS_SIZE, 0 );
+    auto res = params_mem->load_data();
+    res += CRC_mem->load_data();
 
-    return 0;
+    successful_init = ( res == 0 );
+    return res;
     }
 //-----------------------------------------------------------------------------
 void params_manager::final_init( int auto_init_params /*= 1*/,
@@ -91,23 +116,37 @@ void params_manager::final_init( int auto_init_params /*= 1*/,
                                 void ( *custom_init_params_function )() /*= 0 */ )
     {
     sprintf( G_LOG->msg, "Total memory used: %u of %u bytes[ %.2f%c ].",
-            last_idx, C_TOTAL_PARAMS_SIZE,
-            100. * last_idx / C_TOTAL_PARAMS_SIZE, '%' );
+            last_idx, static_cast<unsigned int>( CONSTANTS::C_TOTAL_PARAMS_SIZE ),
+            100. * last_idx / static_cast<float>( CONSTANTS::C_TOTAL_PARAMS_SIZE ), '%' );
     G_LOG->write_log( i_log::P_DEBUG );
 
     //Проверка на изменение количества параметров.
-    unsigned char buff[ 4 ] = { 0 };
-    CRC_mem->read( ( char* ) buff, 4, C_LAST_IDX_OFFSET );
-    u_int* last_idx_ = ( u_int* ) buff;
-    if ( *last_idx_ != last_idx )
+    u_int last_idx_{};
+    std::memcpy( &last_idx_, CRC_mem->get_data(), sizeof( last_idx ) );
+    if ( last_idx_ != last_idx )
         {
-        sprintf( G_LOG->msg,
-            "Total params size has changed (%d != %d), reinitialization.",
-            last_idx, *last_idx_ );
-        G_LOG->write_log( i_log::P_NOTICE );
+        G_LOG->notice( "Params count is changed (%d != %d), re-initialization.",
+            last_idx_, last_idx );
 
-        char *buff = ( char* ) &last_idx;   //Запись количества параметров.
-        CRC_mem->write( buff, 4, C_LAST_IDX_OFFSET );
+        //Запись количества параметров.
+        std::memcpy( CRC_mem->get_data(), &last_idx, sizeof( last_idx ) );
+
+        reset_to_default( custom_init_params_function, auto_init_params,
+            auto_init_work_params );
+        }
+
+    // Проверка контрольной суммы.
+    u_int_2 saved_CRC{};
+    constexpr std::size_t OFFSET = sizeof( last_idx );
+    std::memcpy( &saved_CRC, CRC_mem->get_data() + OFFSET,
+        sizeof( saved_CRC ) );
+    auto solved_CRC = solve_CRC();
+    if ( saved_CRC != solved_CRC )
+        {
+        G_LOG->notice(
+            "Parameters CRC is not valid (saved %d != solved %d), "
+            "re-initialization.",
+            saved_CRC, solved_CRC );
 
         reset_to_default( custom_init_params_function, auto_init_params,
             auto_init_work_params );
@@ -117,7 +156,7 @@ void params_manager::final_init( int auto_init_params /*= 1*/,
 void params_manager::reset_to_default( void( *custom_init_params_function )( ),
     int auto_init_params, int auto_init_work_params )
     {
-    memset( params, 0, C_TOTAL_PARAMS_SIZE );
+    params_mem->zero_fill();
 
     if ( custom_init_params_function != 0 )
         {
@@ -154,31 +193,26 @@ void params_manager::reset_to_default( void( *custom_init_params_function )( ),
 #endif // KEY_CONFIRM
         }
 //-----------------------------------------------------------------------------
-void params_manager::save( int start_pos, int count )
+void params_manager::save()
     {
-    if ( 0 == count )
-        {
-        count = C_TOTAL_PARAMS_SIZE;
-        }
+    params_change_counter++;
 
-    params_mem->write( params + start_pos, count, start_pos );
+    is_changed = true;
+    last_change_ms = get_millisec();
     }
 //-----------------------------------------------------------------------------
-char* params_manager::get_params_data( int size, int &start_pos )
+std::byte* params_manager::reserve_params_region( int size, int &start_pos )
     {
-    char *res = nullptr;
-
     if ( last_idx + size > params_mem->get_size() )
         {
-        if ( G_DEBUG )
-            {
-            printf( "params_manager::get_params_data() - is not enough memory ( %d + %d < %d ) !\n",
-                last_idx, size, params_mem->get_size() );
-            }
-        return 0;
+        G_LOG->debug( "params_manager::reserve_params_region() - is not enough "
+            "memory ( %d + %d > %d ) !",
+            last_idx, size, params_mem->get_size() );
+
+        return nullptr;
         }
 
-    res = params + last_idx;
+    auto res = params_mem->get_data() + last_idx;
     start_pos = last_idx;
     last_idx += size;
 
@@ -199,7 +233,7 @@ params_manager* params_manager::get_instance()
 //-----------------------------------------------------------------------------
 params_manager::~params_manager()
     {
-    if ( CRC_mem )
+    if ( params_mem )
         {
         delete params_mem;
         params_mem = nullptr;
@@ -212,6 +246,65 @@ params_manager::~params_manager()
 
     delete par;
     par = nullptr;
+    }
+//-----------------------------------------------------------------------------
+int params_manager::save_params()
+    {
+    const auto CRC = solve_CRC();
+    constexpr std::size_t OFFSET = sizeof( last_idx );
+    std::memcpy( CRC_mem->get_data() + OFFSET, &CRC, sizeof( CRC ) );
+    auto res = CRC_mem->safe_save();
+    if ( res != 0 )
+        {
+        return res;
+        }
+    res = params_mem->safe_save();
+    if ( res != 0 )
+        {
+        return res;
+        }
+
+    is_changed = false;
+    last_save_ms = get_millisec();
+
+    params_save_counter++;
+    G_LOG->debug( "params_mem::safe_save() - call %d", params_save_counter );
+
+    return 0;
+    }
+//-----------------------------------------------------------------------------
+int params_manager::evaluate()
+    {
+    if ( is_changed )
+        {
+        auto since_save = get_delta_millisec( last_save_ms );
+        auto since_change = get_delta_millisec( last_change_ms );
+        const auto min_interval =
+             G_PAC_INFO()->par[ PAC_info::P_MIN_SAVE_INTERVAL_MS ];
+        const auto stable_delay =
+             G_PAC_INFO()->par[ PAC_info::P_STABLE_SAVE_DELAY_MS ];
+
+        if ( since_save >= min_interval && since_change >= stable_delay )
+            {
+            // Проверка на наличие свободного места в файловой системе.
+            std::error_code ec;
+            if ( const auto AVAILABLE_SPACE = std::filesystem::space(
+                params_mem->get_directory(), ec ).available,
+                SPACE_LIMIT = static_cast<uintmax_t>(
+                    CONSTANTS::C_TOTAL_PARAMS_SIZE );
+                AVAILABLE_SPACE < SPACE_LIMIT )
+                {
+                G_LOG->error( "params_manager::evaluate() - not enough free "
+                    "space in the file system (%ju < %ju)!",
+                    AVAILABLE_SPACE, SPACE_LIMIT );
+                return 1;
+                }
+
+            return save_params();
+            }
+        }
+
+    return 1;
     }
 //-----------------------------------------------------------------------------
 int params_manager::save_params_as_Lua_str( char* str )

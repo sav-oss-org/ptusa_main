@@ -35,16 +35,6 @@ class i_cmd_device
         /// @return 0 - ок.
         /// @return 1 - ошибка.
         virtual int set_cmd( const char* prop, u_int idx, double val ) = 0;
-
-        /// @brief Выполнение строковой команды.
-        ///
-        /// @param prop [ in ] - имя свойства.
-        /// @param idx [ in ]  - индекс для свойства.
-        /// @param val [ in ]  - значение.
-        ///
-        /// @return 0 - ок.
-        /// @return 1 - Ошибка.
-        virtual int set_cmd( const char* prop, u_int idx, const char* val ) = 0;
     };
 //-----------------------------------------------------------------------------
 /// @brief Интерфейс счетчика.

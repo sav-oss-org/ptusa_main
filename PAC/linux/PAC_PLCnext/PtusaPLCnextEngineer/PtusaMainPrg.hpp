@@ -39,7 +39,6 @@ namespace PtusaPLCnextEngineer
 
         //#port
         //#attributes(Output|Retain)
-        uint8 NVRAM[ 49000 ] = {0};
 
     private:
         // fields

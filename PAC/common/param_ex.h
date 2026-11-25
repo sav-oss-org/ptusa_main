@@ -23,6 +23,8 @@
 #include <locale.h>
 #endif //WIN_OS
 
+#include <array>
+#include <cstddef>
 #include <math.h>
 #include <string.h>
 
@@ -56,19 +58,16 @@ class params_manager
     friend class test_params_manager;
 #endif
     public:
-        enum CONSTANTS
+        enum class CONSTANTS
             {
             C_TOTAL_PARAMS_SIZE =
 #ifdef PTUSA_TEST
-                1024 * 100,  ///< Общий размер памяти параметров для тестов.
+                1024 * 100,     ///< Общий размер памяти параметров для тестов.
 #else
-                1024 * 30,   ///< Общий размер памяти параметров.
+                1024 * 30,      ///< Общий размер памяти параметров.
 #endif
 
-            C_SYS_MEM_SIZE    = 10,          ///< Память для хранения CRC и т.д.
-
-            C_CRC_OFFSET      = 0,
-            C_LAST_IDX_OFFSET = 4
+            C_SYS_MEM_SIZE = 10 ///< Память для хранения CRC и т.д.
             };
 
         /// @brief Возвращает единственный экземпляр класса для работы с
@@ -109,24 +108,26 @@ class params_manager
 
         /// @brief Запись параметров в EEPROM.
         ///
-        /// Запись параметров из массива параметров в EEPROM.
+        /// Устанавливается флаг изменения параметров и обновляется время
+        /// последней записи.
         ///
-        /// @param start_pos - номер индекса, с которого начать запись
-        /// параметров (для записи только одного параметра).
-        /// @param count - количество записываемых байт.
-        void save( int start_pos = 0, int count = 0 );
+        void save();
 
         /// @brief Получение указателя на блок данных параметров.
         ///
-        /// @param size      - размер блока данных в байтах.
+        /// @param size - размер блока данных в байтах.
         /// @param [out] start_pos - стартовый индекс в глобальном массиве
         /// параметров. Необходим для дальнейшей записи параметров в память.
         ///
         /// @return 0 - ОК.
         /// @return 1 - Ошибка контрольной суммы.
-        virtual char* get_params_data( int size, int &start_pos );
+        virtual std::byte* reserve_params_region( int size, int &start_pos );
 
         virtual ~params_manager();
+
+        int save_params();
+
+        int evaluate();
 
         enum PARAMS
             {
@@ -144,9 +145,30 @@ class params_manager
         // Высчитывание контрольной суммы.
         u_int_2 solve_CRC();
 
-        void reset_params_size();
+        void reset_CRC_mem();
 
-	protected:
+        int get_params_change_counter() const;
+
+        int get_params_save_counter() const;
+
+#ifdef PTUSA_TEST
+        void reset_params_counters()
+            {
+            params_change_counter = 0;
+            params_save_counter = 0;
+            }
+#endif
+
+        /// @brief Результат инициализации параметров.
+        ///
+        /// @return true - инициализация прошла успешно.
+        /// @return false - инициализация завершилась с ошибкой.
+        bool was_successful_init() const;
+
+#ifndef PTUSA_TEST
+    protected:
+#endif // !PTUSA_TEST
+
         static char is_init;
 
         /// @brief Закрытый конструктор.
@@ -161,17 +183,27 @@ class params_manager
         /// Статический экземпляр класса для вызова методов.
         static auto_smart_ptr< params_manager > instance;
 
-        /// Рабочий массив параметров.
-        char params[ C_TOTAL_PARAMS_SIZE ];
-
         /// Номер последнего выделенного параметра. Используется при создании
         /// экземпляра класса @ref parameters.
         u_int last_idx;
 
         u_int project_id;   ///< Номер проекта (для уникальности параметров).
 
-        memory_range *params_mem; ///< Память параметров.
-        memory_range *CRC_mem;    ///< Память контрольной суммы.
+        i_memory* params_mem; ///< Память параметров.
+        i_memory* CRC_mem;    ///< Память контрольной суммы.
+
+        /// Инициализируем начальное время - запись параметров произойдет
+        /// через заданное время после запуска программы (при наличии
+        /// изменений).
+        uint32_t last_change_ms{ get_millisec() };
+        uint32_t last_save_ms{ get_millisec() };
+        bool is_changed{ false };
+
+        int params_change_counter{ 0 };
+        int params_save_counter{ 0 };
+
+        ///< Флаг успешной инициализации параметров.
+        bool successful_init{ false };
     };
 //-----------------------------------------------------------------------------
 /// @brief Работа с массивом параметров.
@@ -452,9 +484,7 @@ class run_time_params_u_int_4: public parameters < u_int_4, false >
             {
             }
 
-        virtual ~run_time_params_u_int_4()
-            {
-            }
+        virtual ~run_time_params_u_int_4() = default;
 
     protected:
         u_int_4 get_val( int idx ) const
@@ -477,14 +507,12 @@ public parameters < type, is_float >
         /// @param name  - имя объекта.
         saved_params( int count, const char *name, i_params_owner* owner = 0 ) : parameters < type, is_float >(
             count, name,
-            ( type* ) params_manager::get_instance()->get_params_data(
+            ( type* ) params_manager::get_instance()->reserve_params_region(
             count * sizeof( type ), start_pos ), owner )
             {
             }
 
-        virtual ~saved_params()
-            {
-            }
+        virtual ~saved_params() = default;
 
         /// @brief Сохранение значения параметра в энергонезависимой памяти.
         ///
@@ -498,8 +526,7 @@ public parameters < type, is_float >
                 idx--;
                 parameters< type, is_float >::get_values()[ idx ] = value;
 
-                params_manager::get_instance()->save(
-                    start_pos + idx * sizeof( type ), sizeof( type ) );
+                params_manager::get_instance()->save();
                 }
             else
                 {
@@ -516,8 +543,7 @@ public parameters < type, is_float >
         /// использовать данный метод.
         int save_all()
             {
-            params_manager::get_instance()->save( start_pos,
-                parameters< type, is_float >::get_count() * sizeof( type ) );
+            params_manager::get_instance()->save();
 
             return 0;
             }
@@ -532,8 +558,7 @@ public parameters < type, is_float >
                 parameters< type, is_float >::get_values()[ i ] = 0;
                 }
 
-            params_manager::get_instance()->save(
-                start_pos, sizeof( type ) * parameters< type, is_float >::get_count() );
+            params_manager::get_instance()->save();
             }
 
     private:
@@ -554,9 +579,7 @@ class saved_params_u_int_4: public saved_params < u_int_4, false >
               {
               }
 
-          virtual ~saved_params_u_int_4()
-              {
-              }
+        virtual ~saved_params_u_int_4() = default;
 
     protected:
         u_int_4 get_val( int idx ) const
@@ -577,9 +600,7 @@ class saved_params_float: public saved_params < float, true >
               {
               }
 
-          virtual ~saved_params_float()
-              {
-              }
+        virtual ~saved_params_float() = default;
 
     protected:
         float get_val( int idx ) const

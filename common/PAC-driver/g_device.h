@@ -77,7 +77,7 @@ class device_communicator
         static auto_smart_ptr < device_communicator > instance;
         static char buff[ tcp_communicator::BUFSIZE ];
 
-        static bool use_compression;
+        inline static bool use_compression{ true };
 
     public:
         static void switch_on_compression()
@@ -111,14 +111,6 @@ class device_communicator
         static std::vector< i_Lua_save_device* > dev;
 
     public:
-        device_communicator()
-            {
-            }
-
-        ~device_communicator()
-            {
-            }
-
         /// @brief Вывод на консоль устройств группы.
         void print() const;
 
@@ -131,6 +123,17 @@ class device_communicator
 
         /// @brief Удаление устройств.
         void clear_devices();
+
+        /// @brief Идентификатор ошибок.
+        inline static u_int_2 errors_id{};
+
+#ifdef PTUSA_TEST
+        static void clear_errors_id()
+            {
+            errors_id = 0;
+            }
+#endif // PTUSA_TEST
+
 #endif // !DRIVER
     };
 //-----------------------------------------------------------------------------

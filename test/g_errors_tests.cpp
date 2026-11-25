@@ -38,6 +38,11 @@ TEST( errors_manager, evaluate )
     G_ERRORS_MANAGER->evaluate();
     EXPECT_EQ( 1, G_ERRORS_MANAGER->get_errors_id() );
 
+    // Should not get new error id (incorrect command parameters).
+    G_ERRORS_MANAGER->set_cmd( base_error::C_CMD_ACCEPT, 1, 0, 1 );
+    EXPECT_EQ( 1, G_ERRORS_MANAGER->get_errors_id() );
+
+
     //Should get a new error id due to set_cmd() with C_CMD_ACCEPT.
     G_ERRORS_MANAGER->set_cmd( base_error::C_CMD_ACCEPT, 7, 0, 1 );
     EXPECT_EQ( 2, G_ERRORS_MANAGER->get_errors_id() );
@@ -88,9 +93,6 @@ TEST( siren_lights_manager, set_cmd )
     char buff[ BUFF_SIZE ] = { 0 };
 
     G_SIREN_LIGHTS_MANAGER()->save_device( buff );
-    // Do nothing.
-    G_SIREN_LIGHTS_MANAGER()->set_cmd( "MANUAL_MODE", 0, "1" );
-    EXPECT_STREQ( buff, "t.G_SIREN_MNGR = \n\t{\n\tMANUAL_MODE=0,\n\t}\n" );
 
     // Switch on manual mode.
     G_SIREN_LIGHTS_MANAGER()->set_cmd( "MANUAL_MODE", 0, 1 );

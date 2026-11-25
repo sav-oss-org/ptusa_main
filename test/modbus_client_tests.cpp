@@ -1,9 +1,13 @@
 #include "modbus_client_tests.h"
 #include <array>
 #include <cstring>
+#include <memory>
 
 #include "tolua++.h"
 #include "PAC_dev_lua_tests.h" // содержит TOLUA_API int tolua_PAC_dev_open(lua_State*);
+#include "PAC_info.h"
+#include "lua_manager.h"
+
 
 using namespace ::testing;
 
@@ -47,12 +51,20 @@ static void preset_read_area( modbus_client& cli, unsigned int address,
 class test_modbus_client : public modbus_client
     {
     public:
-        test_modbus_client( unsigned int id, const char* ip ) : modbus_client( id, ip )
-            {}
+        test_modbus_client( unsigned int id, const char* ip,
+            const char* const name = nullptr ) :
+            modbus_client( id, ip, 502, 50, name )
+            {
+            }
 
         auto get_tcp_client()
             {
             return tcpclient;
+            }
+
+        saved_params_u_int_4* get_error_params() const
+            {
+            return error_params;
             }
 
         void test_init_frame( unsigned int address, unsigned int value,
@@ -360,4 +372,69 @@ TEST_F( ModbusClientLuaTest, get_int4_dc_ba )
 
     const int_4 expected = from_bytes( kD, kC, kB, kA );
     test_bytes( expected, "res = cli:get_int4_dc_ba(ADDR)\n" );
+    }
+
+
+TEST( i_simple_error, modbus_client )
+    {
+    G_ERRORS_MANAGER->clear();
+    modbus_client::clear_ids();
+
+    test_modbus_client client_1{ 1u, "127.0.0.1", "M1" };
+    test_modbus_client client_2{ 1u, "127.0.0.1", "M2" };
+
+    // Проверка, что второй клиент получил уникальный идентификатор.
+    EXPECT_EQ( client_1.get_serial_n(), 1u );
+    EXPECT_EQ( client_2.get_serial_n(), 2u );
+
+    i_simple_error& error = client_1;
+
+    // В режиме эмулятора нет ошибки.
+    EXPECT_EQ( 1, error.get_state() );
+
+    G_PAC_INFO()->emulation_off();
+
+    EXPECT_NE( nullptr, client_1.get_error_params() );
+    EXPECT_STREQ( "M1", error.get_name() );
+    EXPECT_STREQ( "нет связи (Modbus)", error.get_error_description() );
+    EXPECT_EQ( -1, error.get_error_id() );
+    EXPECT_EQ( -1, error.get_state() );
+    EXPECT_EQ( 1U, error.get_serial_n() );
+    EXPECT_EQ( 200, error.get_error_type() );
+
+    client_1.get_tcp_client()->set_connected_state( tcp_client::ACS_CONNECTED );
+    EXPECT_EQ( 0, error.get_state() );
+    G_ERRORS_MANAGER->clear();
+
+    G_PAC_INFO()->emulation_on();
+    }
+
+TEST( errors_manager, saves_modbus_simple_error )
+    {
+    std::array<char, 300> buffer{};
+    u_int_2 error_id = 0;
+
+    G_PAC_INFO()->emulation_off();
+    G_ERRORS_MANAGER->clear();
+    test_modbus_client client{ 1, "127.0.0.1", "M1" };
+    G_ERRORS_MANAGER->evaluate();
+    G_ERRORS_MANAGER->save_as_Lua_str( buffer.data(), error_id );
+
+    const auto expected = R"s({
+description="M1 - нет связи (Modbus)",
+priority=250,
+state=1,
+type=4,
+group="тревога",
+id_n=1,
+id_object_alarm_number=1,
+id_type=200,
+suppress=false
+},
+)s";
+    EXPECT_STREQ( expected, buffer.data() );
+    EXPECT_EQ( 1, error_id );
+    G_ERRORS_MANAGER->clear();
+
+    G_PAC_INFO()->emulation_on();
     }

@@ -432,7 +432,7 @@ class circuit_breaker : public analog_io_device
 
         int save_device_ex(char* buff) const override;
 
-        int set_cmd(const char* prop, u_int idx, double val) override;
+        int set_cmd( const char* prop, u_int idx, double val ) override;
 
         void direct_set_value(float v) override;
 
@@ -605,7 +605,9 @@ class concentration_e_iolink : public analog_io_device
 
         const char* get_error_description() override;
 
+#ifndef PTUSA_TEST
     private:
+#endif
 
 #pragma pack(push,1)
         struct QT_data
@@ -622,11 +624,12 @@ class concentration_e_iolink : public analog_io_device
 
         QT_data* info = new QT_data();
 
-        enum CONSTANTS
+        enum class CONSTANTS
             {
             C_AI_INDEX = 0,     ///< Индекс канала аналогового входа.
 
             P_ERR,              ///< Аварийное значение.
+            P_MAX_V,            ///< Максимальное значение.
 
             LAST_PARAM_IDX,
             };
@@ -1007,23 +1010,23 @@ class motor : public i_motor, public io_device
             C_MIN_VALUE = 0,
             C_MAX_VALUE = 100,
 
-            P_ON_TIME = 1,    ///< Индекс параметра времени включения (мсек).
+            P_ON_TIME = 1,       ///< Индекс параметра времени включения (мс).
 
-            DO_INDEX = 0,         ///< Индекс канала дискретного выхода.
-            DO_INDEX_REVERSE = 1, ///< Индекс канала дискретного выхода реверса.
+            DO_INDEX = 0,        ///< Индекс канала дискретного выхода.
+            DO_INDEX_REVERSE = 1,///< Индекс канала дискретного выхода реверса.
 
-            DI_INDEX       = 0,   ///< Индекс канала дискретного входа.
-                                  //   Или
-            DI_INDEX_ERROR = 0,   ///< Индекс канала дискретного входа ошибки.
+            DI_INDEX       = 0,  ///< Индекс канала дискретного входа.
+                                 //   Или
+            DI_INDEX_ERROR = 0,  ///< Индекс канала дискретного входа ошибки.
 
-            AO_INDEX = 0,     ///< Индекс канала аналогового выхода.
+            AO_INDEX = 0,        ///< Индекс канала аналогового выхода.
             };
 
         mutable uint32_t start_switch_time = get_millisec();
     };
 //-----------------------------------------------------------------------------
 //-----------------------------------------------------------------------------
-/// @brief Электродвигатель, управляемый частотным преобразователем altivar с
+/// @brief Электродвигатель, управляемый частотным преобразователем Altivar с
 /// интерфейсной платой Ethernet.
 class motor_altivar : public i_motor, public io_device
 {
@@ -1057,7 +1060,7 @@ public:
 
     float get_rpm() const
         {
-        return (float)rpm;
+        return static_cast<float>( rpm );
         }
 
     altivar_node* get_atv() const
@@ -1065,36 +1068,27 @@ public:
         return atv;
         }
 
+#ifndef  PTUSA_TEST
 private:
-    altivar_node* atv = nullptr;
+#endif // ! PTUSA_TEST
 
-    float freq = .0f;
-    int reverse = 0;
-    int rpm = 0;
-    int est = 0;
-    float amperage = .0f;
+    altivar_node* atv{ nullptr };
 
-    enum CONSTANTS
-    {
-        ADDITIONAL_PARAM_COUNT = 1,
+    float freq{ .0f };
+    int reverse{ 0 };
+    int rpm{ 0 };
+    int est{ 0 };
+    float amperage{ .0f };
 
-        C_MIN_VALUE = 0,
-        C_MAX_VALUE = 100,
-
+    enum class CONSTANTS
+        {
         P_ON_TIME = 1,          ///< Индекс параметра времени включения (мсек).
 
-        DO_INDEX = 0,           ///< Индекс канала дискретного выхода.
-        DO_INDEX_REVERSE = 1,   ///< Индекс канала дискретного выхода реверса.
+        ADDITIONAL_PARAM_COUNT,
+        };
 
-        DI_INDEX = 0,           ///< Индекс канала дискретного входа.
-        //   Или
-        DI_INDEX_ERROR = 0,     ///< Индекс канала дискретного входа ошибки.
-
-        AO_INDEX = 0,           ///< Индекс канала аналогового выхода.
+    uint32_t start_switch_time{ get_millisec() };
     };
-
-    uint32_t start_switch_time = get_millisec();
-};
 //-----------------------------------------------------------------------------
 /// @brief Электродвигатель, управляемый частотным преобразователем altivar с
 /// интерфейсной платой Ethernet c расчетом линейной скорости.
@@ -1109,12 +1103,12 @@ class motor_altivar_linear : public motor_altivar
     private:
         int start_param_idx;
 
-        enum CONSTANTS
+        enum class CONSTANTS
             {
-            ADDITIONAL_PARAM_COUNT = 2,
-
             P_SHAFT_DIAMETER = 1,   ///< Диаметр вала (м).
             P_TRANSFER_RATIO,       ///< Передаточный коэффициент.
+
+            ADDITIONAL_PARAM_COUNT,
             };
     };
 //-----------------------------------------------------------------------------
@@ -1468,6 +1462,8 @@ class counter_iolink : public base_counter
 
         float get_temperature() const;
 
+        float get_conductivity() const;
+
         int save_device_ex( char* buff ) const override;
 
         int get_state() const override;
@@ -1500,12 +1496,14 @@ class counter_iolink : public base_counter
             DEFAULT,
             IFM_SM6100,
             IFM_SM4000,
+            IFM_SMFx20,
             };
 
     private:
         ARTICLE n_article = ARTICLE::DEFAULT;
 
         inline static const float TE_GRADIENT{ 0.1f };
+        inline static const float CONDUCTIVITY_GRADIENT{ 1.0f };
 
         float get_flow_gradient() const;
         enum class CONSTANTS
@@ -1532,7 +1530,18 @@ class counter_iolink : public base_counter
             int16_t temperature : 14;   //Current temperature.
             };
 
+        /// @brief Process data for IFM.SMFx20 devices (SMF420, SMF320, ...).
+        struct in_data_smfx20
+            {
+            float totalizer;        ///< Totalizer value (volumetric flow).
+            int16_t flow;           ///< Current flow.
+            int16_t temperature;    ///< Current temperature.
+            uint16_t conductivity;  ///< Current conductivity (µS/cm).
+            uint16_t status;        ///< Device status.
+            };
+
         in_data in_info{ 0, 0, 0, 0, 0 };
+        in_data_smfx20 smfx20_in_info{ 0, 0, 0, 0, 0 };
 
         io_link_device iol_dev;
     };

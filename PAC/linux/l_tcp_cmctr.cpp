@@ -1,4 +1,3 @@
-#include <netdb.h>
 #include <time.h>
 #include <sys/ioctl.h>
 #include <string.h>
@@ -50,10 +49,23 @@ void tcp_communicator_linux::killsockets()
             }
         }
     sst.clear();
+    master_socket = -1;
+    modbus_socket = -1;
     }
 //------------------------------------------------------------------------------
 int tcp_communicator_linux::net_init()
     {
+    net_terminate();
+    const auto fail_init = [this]( int result )
+        {
+        if ( modbus_socket >= 0 ) close( modbus_socket );
+        if ( master_socket >= 0 ) close( master_socket );
+        modbus_socket = -1;
+        master_socket = -1;
+        sst.clear();
+        return result;
+        };
+
     errno = 0;
 
     int type = SOCK_STREAM;
@@ -123,8 +135,7 @@ int tcp_communicator_linux::net_init()
             PAC_critical_errors_manager::AS_BIND_F,
             0 );                                        //Мастер сокет.
 
-        close( master_socket );
-        return -5;
+        return fail_init( -5 );
         }
     else
         {
@@ -176,7 +187,7 @@ int tcp_communicator_linux::net_init()
             PAC_critical_errors_manager::AS_SOCKET_F,
             1 );                                        //Modbus сокет.
 
-        return -4;
+        return fail_init( -4 );
         }
     else
         {
@@ -195,6 +206,25 @@ int tcp_communicator_linux::net_init()
     modbus_socket_state.sin.sin_port 		  = htons ( port_modbus ); // Порт.
     modbus_socket_state.ismodbus = 1;
 
+    // Разрешаем быстрый перезапуск после закрытия Modbus-соединений.
+    if ( const int on = 1; setsockopt( modbus_socket, SOL_SOCKET,
+        SO_REUSEADDR, &on, sizeof( on ) ) )
+        {
+        PAC_critical_errors_manager::get_instance()->set_global_error(
+            PAC_critical_errors_manager::AC_NET,
+            PAC_critical_errors_manager::AS_SETSOCKOPT_F,
+            1 );
+
+        return fail_init( -5 );
+        }
+    else
+        {
+        PAC_critical_errors_manager::get_instance()->reset_global_error(
+            PAC_critical_errors_manager::AC_NET,
+            PAC_critical_errors_manager::AS_SETSOCKOPT_F,
+            1 );
+        }
+
     err = bind( modbus_socket, ( struct sockaddr * ) & modbus_socket_state.sin,
         sizeof ( modbus_socket_state.sin ) );	   // Привязка сокета.
     if ( err < 0 )
@@ -204,8 +234,7 @@ int tcp_communicator_linux::net_init()
             PAC_critical_errors_manager::AS_BIND_F,
             1 );
 
-        close( master_socket );
-        return -5;
+        return fail_init( -5 );
         }
     else
         {
@@ -223,8 +252,7 @@ int tcp_communicator_linux::net_init()
             PAC_critical_errors_manager::AS_LISTEN_F,
             1 );
 
-        close( master_socket );
-        return -6;
+        return fail_init( -6 );
         }
     else
         {
@@ -390,23 +418,11 @@ int tcp_communicator_linux::evaluate()
                         DESCR = "server";
                         }
 
-                    // Определение имени клиента.
-                    if (hostent* client = gethostbyaddr(&ssin.sin_addr, 4, AF_INET); client)
-                        {
-                        sprintf( G_LOG->msg,
-                           "Network communication : accepted %s connection : s%d->\"%s\":\"%s\".",
-                           DESCR, slave_socket, client->h_name, inet_ntoa(ssin.sin_addr) );
-                        G_LOG->write_log( i_log::P_INFO );
-                        }
-                    else
-                        {
-                        const char* err_str = hstrerror( h_errno );
-                        sprintf( G_LOG->msg,
-                           "Network communication : accepted %s connection : s%d->\"%s\":\"%s\".",
-                           DESCR, slave_socket, err_str, inet_ntoa(ssin.sin_addr));
-                        G_LOG->write_log( i_log::P_INFO );
-                        }
-
+                    // Числовой IP не требует блокирующего DNS-запроса.
+                    G_LOG->info(
+                        "Network communication : accepted %s connection : "
+                        "s%d->\"%s\".",
+                        DESCR, slave_socket, inet_ntoa( ssin.sin_addr ) );
 
                     FD_SET( slave_socket, &rfds );
                     socket_state slave_socket_state;

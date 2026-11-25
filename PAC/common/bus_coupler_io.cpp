@@ -46,7 +46,10 @@ int io_device::get_DO( u_int index ) const
         printf( "io_device->get_DO(...) - error! " );
         printf( "index = %d, count = %u, char_write_values = %p",
             index, DO_channels.count, DO_channels.char_write_values );
-        if ( DO_channels.char_write_values )
+
+        // Print the element pointer only when the index is valid,
+        // otherwise reading it would be an out-of-bounds access.
+        if ( index < DO_channels.count && DO_channels.char_write_values )
             {
             printf( ", char_write_values[ index ]=%p",
                 DO_channels.char_write_values[ index ] );
@@ -742,10 +745,9 @@ void io_device::init( int DO_count, int DI_count, int AO_count,
     }
 //-----------------------------------------------------------------------------
 #ifdef PTUSA_TEST
-void io_device::init_and_alloc( int DO_count, int DI_count, int AO_count,
-    int AI_count )
+void io_device::init_and_alloc_DO_DI( int DO_count, int DI_count )
     {
-    init( DO_count, DI_count, AO_count, AI_count );
+    init( DO_count, DI_count, 0, 0 );
 
     for ( auto i = 0; i < DO_count; i++ )
         {
@@ -756,6 +758,12 @@ void io_device::init_and_alloc( int DO_count, int DI_count, int AO_count,
         {
         DI_channels.char_read_values[ i ] = new u_char{ 0 };
         }
+    }
+//-----------------------------------------------------------------------------
+void io_device::init_and_alloc_AO_AI( int AO_count, int AI_count )
+    {
+    init( 0, 0, AO_count, AI_count );
+
     for ( auto i = 0; i < AO_count; i++ )
         {
         AO_channels.int_read_values[ i ] = new int_2 { 0 };
@@ -1412,8 +1420,11 @@ io_manager::io_node::DISPLAY_STATES io_manager::io_node::get_display_state() con
         return io_node::DISPLAY_STATES::DST_ERROR;
         }
 
-    // Check error/PP mode bits (0-5) in status register for Phoenix BK ETH nodes.
-    if ( type == PHOENIX_BK_ETH && ( status_register & STATUS_REG_ERROR_MASK ) )
+    // Check error/warning bits in Phoenix status registers.
+    if ( type == PHOENIX_BK_ETH &&
+        ( ( status_register & STATUS_REG_ERROR_MASK ) ||
+        ( diagnostic_status_register &
+            DIAG_STATUS_REG_CFG_BUS_ERROR_MASK ) ) )
         {
         return io_node::DISPLAY_STATES::DST_WARNING;
         }

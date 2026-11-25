@@ -83,8 +83,6 @@ int main( int argc, const char *argv[] )
     signal(SIGILL, stopHandler);
     signal(SIGSEGV, stopHandler);
 
-    G_LOG->info( "Program started (version %s).", PRODUCT_VERSION_FULL_STR );
-
     //-Работа с параметрами командной строки.
     int res = G_PROJECT_MANAGER->proc_main_params( argc, argv_utf8 );
     if ( res )
@@ -133,6 +131,11 @@ int main( int argc, const char *argv[] )
 
     G_LOG->info( "Starting main loop! Sleep time is %u ms.",
         G_PROJECT_MANAGER->sleep_time_ms );
+
+    if ( !params_manager::get_instance()->was_successful_init() )
+        {
+        params_manager::get_instance()->save_params();
+        }
 
     while ( running )
         {

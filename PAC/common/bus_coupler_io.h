@@ -255,8 +255,8 @@ class io_device
         static int last_err;
 
 #ifdef PTUSA_TEST
-        void init_and_alloc( int DO_count = 1, int DI_count = 0,
-            int AO_count = 0, int AI_count = 0 );
+        void init_and_alloc_DO_DI( int DO_count, int DI_count = 0 );
+        void init_and_alloc_AO_AI( int AO_count, int AI_count = 0 );
 #endif
     };
 //-----------------------------------------------------------------------------
@@ -405,7 +405,12 @@ class io_manager
             /// Bit 4 of Status Register (7996) indicates PP mode.
             static constexpr u_int_2 STATUS_REG_PP_MODE_MASK = 0x0010;
 
-            ///< Cостояние работы с узлом.
+            /// Bits 2 and 8 of Diagnostic Status Register (7997)
+            /// indicate configuration/bus error conditions.
+            static constexpr u_int_2 DIAG_STATUS_REG_CFG_BUS_ERROR_MASK =
+                0x0104;
+
+            ///< Состояние работы с узлом.
             io_node::STATES state{ io_node::STATES::ST_NO_CONNECT };
 
 			TYPES   type;               ///< Тип.
@@ -465,8 +470,20 @@ class io_manager
             /// Previous status register value for detecting changes.
             u_int_2 prev_status_register{};
 
+            /// Diagnostic status register (7997) for Phoenix BK ETH nodes.
+            /// Bits 2 and 8 indicate configuration/bus errors.
+            u_int_2 diagnostic_status_register{};
+
+            /// Previous diagnostic register value for detecting changes.
+            u_int_2 prev_diagnostic_status_register{};
+
             /// Flag indicating PP mode alarm is currently active.
             bool is_err_mode_alarm_set = false;
+
+            /// Flag indicating configuration/bus error alarm is currently
+            /// active for diagnostic status register errors (bits 2 and 8
+            /// of register 7997).
+            bool is_cfg_bus_error_alarm_set = false;
 
             /// @brief Checks PP mode state of the node.
             /// @return true if PP mode is active (bit 4 set), else false.
@@ -478,7 +495,7 @@ class io_manager
             ///         or node without connection.
             ///         `DST_ERROR` when `state != ST_OK`.
             ///         `DST_WARNING` when warning/error conditions are
-            ///         present in the Phoenix status register (bits 0-5).
+            ///         present in Phoenix status/diagnostic registers.
             io_node::DISPLAY_STATES get_display_state() const;
 
             private:
@@ -529,16 +546,21 @@ class io_manager
 		/// @brief Завершает соединение с узлом
 		virtual void disconnect(io_node *node) = 0;
 
-        io_node io_node_stub{ io_manager::io_node::PHOENIX_BK_ETH,
+        inline static io_node io_node_stub{ io_manager::io_node::PHOENIX_BK_ETH,
             1, "127.0.0.1", "Axxx", 0, 0, 0, 0, 0, 0 };
-        const io_node IO_NODE_STUB{ io_manager::io_node::PHOENIX_BK_ETH,
+        inline static const io_node IO_NODE_STUB{ io_manager::io_node::PHOENIX_BK_ETH,
             1, "127.0.0.1", "Axxx", 0, 0, 0, 0, 0, 0 };
 #ifdef PTUSA_TEST
         void clear_nodes();
 #endif
+
+        // Explicitly delete the copy constructors.
+        io_manager( io_manager const& ) = delete;
+        io_manager( io_manager&& ) = delete;
+        io_manager& operator=( io_manager const& ) = delete;
+        io_manager& operator=( io_manager&& ) = delete;
     };
 //-----------------------------------------------------------------------------
 io_manager* G_IO_MANAGER();
 //-----------------------------------------------------------------------------
 #endif // IO_H
-

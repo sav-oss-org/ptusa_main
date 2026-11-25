@@ -51,7 +51,7 @@ class project_manager
         /// @brief Получение единственного экземпляра класса.
         static project_manager* get_instance();
 
-        virtual ~project_manager();
+        virtual ~project_manager() = default;
 
         /// @brief Установка путей к файлам Lua.
         int init_path( const char* path );
@@ -68,9 +68,8 @@ class project_manager
         std::string extra_paths = "";//Дополнительный путь к user-скриптам Lua.
 
         unsigned int sleep_time_ms = 0;
-    protected:
-        file *cfg_file;     ///< Конфигурационный файл.
 
+    protected:
         void log_opc_mode() const;
 
         enum class OPC_MODE

@@ -14,7 +14,6 @@ class test_project_manager
 	static void replaceEntity(mock_project_manager* p)
 	{
 		project_manager::instance = p;
-		project_manager::instance->cfg_file = NULL;
 	}
 
 	static void removeObject()

@@ -1,5 +1,6 @@
 #include "operation_mngr_tests.h"
 #include "PID.h"
+#include "scoped_fake_clock.h"
 
 using namespace ::testing;
 
@@ -56,13 +57,13 @@ TEST( action, check_devices )
 	{
 	action a1( "test_action", 0 );
 	virtual_valve v1( "TEST1_V1" );
-	tech_dev_error err_v1( &v1 );
+	simple_error err_v1( &v1 );
 	v1.direct_set_state( valve::VALVE_STATE_EX::VX_ON_FB_ERR );
 	virtual_valve v2( "TEST1_V2" );
-	tech_dev_error err_v2( &v2 );
+	simple_error err_v2( &v2 );
 	v2.direct_set_state( valve::VALVE_STATE_EX::VX_ON_FB_ERR );
 	virtual_valve v3( "TEST1_V3" );
-	tech_dev_error err_v3( &v3 );
+	simple_error err_v3( &v3 );
 	v3.direct_set_state( valve::VALVE_STATE_EX::VX_ON_FB_ERR );
 
 	a1.add_dev( &v1 );
@@ -172,6 +173,7 @@ TEST( open_seat_action, evaluate )
 
 TEST( off_action, evaluate )
 	{
+	scoped_fake_clock vclock;
 	saved_params_u_int_4& par = PAC_info::get_instance()->par;
 	par[ PAC_info::P_V_OFF_DELAY_TIME ] = 0;
 
@@ -198,7 +200,7 @@ TEST( off_action, evaluate )
 	EXPECT_TRUE( V3.is_active() );
 	EXPECT_TRUE( DO1.is_active() );
 	action.init();
-	sleep_ms( 1 );
+	vclock.advance( 1 );
 	valve::evaluate();
 	EXPECT_TRUE( V1.is_active() );
 	EXPECT_TRUE( V2.is_active() );
@@ -210,7 +212,7 @@ TEST( off_action, evaluate )
 	V3.on();
 	DO1.on();
 	action.evaluate();
-	sleep_ms( 1 );
+	vclock.advance( 1 );
 	valve::evaluate();
 	EXPECT_FALSE( V1.is_active() );
 	EXPECT_FALSE( V2.is_active() );
@@ -357,7 +359,7 @@ TEST( operation_state, check_devices )
 		( *additional_step_in_run )[ step::ACTIONS::A_ON ] );
 
 	virtual_valve v1( "TEST1_V1" );
-	tech_dev_error err_v1( &v1 );
+	simple_error err_v1( &v1 );
 	a1->add_dev( &v1 );
 	const auto MAX_SIZE = 20;
 	std::string buff( MAX_SIZE, '\0' );
@@ -385,7 +387,7 @@ TEST( operation_state, check_devices_extra_step )
     ASSERT_NE( a1, nullptr );
 
 	virtual_valve v1( "TEST1_V1" );
-	tech_dev_error err_v1( &v1 );
+	simple_error err_v1( &v1 );
 	a1->add_dev( &v1 );
 	const auto MAX_SIZE = 20;
 	std::string buff( MAX_SIZE, '\0' );
@@ -425,9 +427,9 @@ TEST( operation_state, check_devices_multiple_extra_steps )
     ASSERT_NE( a2, nullptr );
 
 	virtual_valve v1( "TEST1_V1" );
-	tech_dev_error err_v1( &v1 );
+	simple_error err_v1( &v1 );
 	virtual_valve v2( "TEST1_V2" );
-	tech_dev_error err_v2( &v2 );
+	simple_error err_v2( &v2 );
 	a1->add_dev( &v1 );
 	a2->add_dev( &v2 );
 	const auto MAX_SIZE = 50;
@@ -697,13 +699,13 @@ TEST( operation, check_max_step_time_utf8_truncation )
 
 TEST( operation, operator_at )
 	{
-	char* res = 0;
+    std::byte* res = nullptr;
 	mock_params_manager* par_mock = new mock_params_manager();
 	test_params_manager::replaceEntity( par_mock );
 
 	EXPECT_CALL( *par_mock, init( _ ) );
 	EXPECT_CALL( *par_mock, final_init( _, _, _ ) );
-	EXPECT_CALL( *par_mock, get_params_data( _, _ ) )
+	EXPECT_CALL( *par_mock, reserve_params_region( _, _ ) )
 		.Times( AtLeast( 2 ) )
 		.WillRepeatedly( Return( res ) );
 
@@ -784,6 +786,7 @@ TEST( operation, turn_off_active_step )
 
 TEST( operation, on_extra_step )
 	{
+	scoped_fake_clock vclock;
 	lua_State* L = lua_open();
 	ASSERT_EQ( 1, tolua_PAC_dev_open( L ) );
 	G_LUA_MANAGER->set_Lua( L );
@@ -812,7 +815,7 @@ TEST( operation, on_extra_step )
 	EXPECT_FALSE( test_op->is_active_run_extra_step( ANOTHER_EXTRA_STEP ) );
 
 	//Время выполнения активного шага должно быть большее нуля.
-	sleep_ms( 1 );
+	vclock.advance( 1 );
 	EXPECT_GT( test_op->active_step_evaluation_time(), 0 );
 	//Задание времени выполнения активного шага должно быть равно нулю.
 	EXPECT_EQ( 0, test_op->get_active_step_set_time() );
@@ -906,6 +909,7 @@ TEST( operation, get_name )
 
 TEST( operation, evaluate )
 	{
+	scoped_fake_clock vclock;
 	lua_State* L = lua_open();
 	ASSERT_EQ( 1, tolua_PAC_dev_open( L ) );
 	G_LUA_MANAGER->set_Lua( L );
@@ -1057,10 +1061,13 @@ TEST( operation, evaluate )
 	test_DI_two.off();
 	test_op->evaluate();
 	EXPECT_EQ( operation::IDLE, test_op->get_state() );
-	sleep_ms( WARN_TIME );
+	// Virtual clock: warn and wait errors fire
+	// only when the delta strictly exceeds the
+	// limit, so advance() keeps checks exact.
+	vclock.advance( WARN_TIME );
 	test_op->evaluate();
 	EXPECT_EQ( operation::IDLE, test_op->get_state() );
-	sleep_ms( WAIT_TIME );
+	vclock.advance( WAIT_TIME );
 	test_op->evaluate();
 	EXPECT_EQ( operation::IDLE, test_op->get_state() );
 	test_op->evaluate();
@@ -1099,7 +1106,7 @@ TEST( operation, evaluate )
 
 	//Сигнал активен, а операция должна включиться, так как появился требуемый
 	//сигнал.
-	sleep_ms( WAIT_TIME );
+	vclock.advance( WAIT_TIME );
 	test_DI_one.on();
 	test_DI_two.on();
 	test_op->evaluate();
@@ -1522,6 +1529,7 @@ TEST( checked_devices_action, finalize )
 
 TEST( checked_devices_action, init )
     {
+    scoped_fake_clock vclock;
     counter_f FQT1( "FQT1" );
     DO1 test_DO( "DO1", device::DEVICE_TYPE::DT_DO,
         device::DEVICE_SUB_TYPE::DST_DO_VIRT );
@@ -1543,7 +1551,7 @@ TEST( checked_devices_action, init )
     FQT1.set_cmd( "F", 0, 1 );
     FQT1.set_cmd( "P_ERR_MIN_FLOW", 0, .1 );
     FQT1.set_cmd( "P_DT", 0, 1 );
-    sleep_ms( 2 );
+    vclock.advance( 2 );
     //Прошло заданное время, задан минимальный расход, счетчик не считает -
     //есть ошибка.
     FQT1.evaluate_io();
@@ -1558,7 +1566,7 @@ TEST( checked_devices_action, init )
         FQT1.get_state() );
 
     //Прошло время ожидания (>1ms), счетчик не считает - есть ошибка.
-    sleep_ms( 2 );
+    vclock.advance( 2 );
     action.evaluate();
     FQT1.evaluate_io();
     EXPECT_EQ( (int)i_counter::STATES::S_FLOW_ERROR, FQT1.get_state() );
@@ -1572,6 +1580,7 @@ TEST( checked_devices_action, init )
 
 TEST( delay_on_action, evaluate )
 	{
+	scoped_fake_clock vclock;
 	tech_object test_tank( "Танк1", 1, 1, "T", 10, 10, 10, 10, 10, 10 );
 	DO1 test_DO( "test_DO1", device::DEVICE_TYPE::DT_DO, device::DEVICE_SUB_TYPE::DST_DO_VIRT );
 
@@ -1593,7 +1602,7 @@ TEST( delay_on_action, evaluate )
 	action->evaluate();
 	EXPECT_EQ( 0, test_DO.get_state() );
 
-	sleep_ms( DELAY_TIME_MS + 1 );
+	vclock.advance( DELAY_TIME_MS + 1 );
 	action->evaluate();
 	EXPECT_EQ( 1, test_DO.get_state() );
 
@@ -1603,6 +1612,7 @@ TEST( delay_on_action, evaluate )
 
 TEST( delay_off_action, evaluate )
 	{
+	scoped_fake_clock vclock;
 	tech_object test_tank( "Танк1", 1, 1, "T", 10, 10, 10, 10, 10, 10 );
 	DO1 test_DO( "test_DO1", device::DEVICE_TYPE::DT_DO, device::DEVICE_SUB_TYPE::DST_DO_VIRT );
 
@@ -1624,7 +1634,7 @@ TEST( delay_off_action, evaluate )
 	action->evaluate();
 	EXPECT_EQ( 1, test_DO.get_state() );
 
-	sleep_ms( DELAY_TIME_MS + 1 );
+	vclock.advance( DELAY_TIME_MS + 1 );
 	action->evaluate();
 	EXPECT_EQ( 0, test_DO.get_state() );
 

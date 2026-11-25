@@ -188,6 +188,35 @@ TEST( io_node, get_display_state_pp_mode_with_other_bits )
     G_PAC_INFO()->emulation_on();
 	}
 
+TEST( io_node, get_display_state_cfg_bus_error_from_diagnostic_register )
+    {
+    G_PAC_INFO()->emulation_off();
+
+    io_manager::get_instance()->init( 1 );
+    io_manager::get_instance()->add_node( 0,
+        io_manager::io_node::PHOENIX_BK_ETH, 1, "127.0.0.1",
+        "Axxx", 0, 0, 0, 0, 0, 0 );
+
+    auto node = io_manager::get_instance()->get_node( 0 );
+    node->is_active = true;
+    node->state = io_manager::io_node::ST_OK;
+    node->status_register = 0;
+
+    node->diagnostic_status_register = 0x0004;  // Bit 2.
+    EXPECT_EQ( io_manager::io_node::DISPLAY_STATES::DST_WARNING,
+        node->get_display_state() );
+
+    node->diagnostic_status_register = 0x0100;  // Bit 8.
+    EXPECT_EQ( io_manager::io_node::DISPLAY_STATES::DST_WARNING,
+        node->get_display_state() );
+
+    node->diagnostic_status_register = 0x0002;  // Non-target bit.
+    EXPECT_EQ( io_manager::io_node::DISPLAY_STATES::DST_OK,
+        node->get_display_state() );
+
+    G_PAC_INFO()->emulation_on();
+    }
+
 TEST( io_node, get_display_state_phoenix_not_active )
 	{
     G_PAC_INFO()->emulation_off();
@@ -251,7 +280,7 @@ TEST( io_device, check_output_DO_node_PP_state )
 	io_device dev( "TEST_DO" );
     EXPECT_EQ( 0, dev.check_output_DO_node_PP_state() );
 
-	dev.init_and_alloc( 1, 0, 0, 0 );
+	dev.init_and_alloc_DO_DI( 1, 0 );
 
 	io_manager::get_instance()->init( 0 );
 	EXPECT_EQ( 1, dev.check_output_DO_node_PP_state() );
@@ -293,7 +322,7 @@ TEST( io_device, check_output_AO_node_PP_state )
     io_device dev( "TEST_AO" );
     EXPECT_EQ( 0, dev.check_output_AO_node_PP_state() );
 
-    dev.init_and_alloc( 0, 0, 1, 0 );
+    dev.init_and_alloc_AO_AI( 1, 0 );
 
     io_manager::get_instance()->init( 0 );
     EXPECT_EQ( 1, dev.check_output_AO_node_PP_state() );
@@ -367,7 +396,7 @@ TEST( io_device, get_AO_IOLINK_state )
 
     io_device dev1( "D1" );
     dev1.set_io_vendor( io_device::VENDOR::PHOENIX );
-    dev1.init_and_alloc( 0, 0, 2, 0 );
+    dev1.init_and_alloc_AO_AI( 2, 0 );
     dev1.init_channel( io_device::IO_channels::CT_AO, 0, 0, 0, 1, 1 );
     const io_device& DEV1 = dev1;
     EXPECT_EQ( DEV1.get_AO_IOLINK_state( 0 ),

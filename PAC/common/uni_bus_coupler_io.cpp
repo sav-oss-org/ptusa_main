@@ -571,6 +571,19 @@ int uni_io_manager::e_communicate( io_node* node, int bytes_to_send,
             node->prev_status_register = 0;
             node->is_err_mode_alarm_set = false;
             }
+
+        // Reset CFG-bus error alarm on communication loss.
+        if ( node->is_cfg_bus_error_alarm_set )
+            {
+            PAC_critical_errors_manager::get_instance()->reset_global_error(
+                PAC_critical_errors_manager::AC_CFG_BUS_ERROR,
+                PAC_critical_errors_manager::AS_IO_COUPLER, node->number,
+                false );
+            // Reset CFG-bus error tracking state so a new transition is detected
+            // after reconnect.
+            node->prev_diagnostic_status_register = 0;
+            node->is_cfg_bus_error_alarm_set = false;
+            }
         }
     else
         {
@@ -984,20 +997,26 @@ int uni_io_manager::read_inputs()
 //-----------------------------------------------------------------------------
 void uni_io_manager::read_phoenix_status_register( io_node* nd )
     {
-    if ( auto result = read_input_registers( nd,
-        PHOENIX_STATUS_REGISTER_ADDRESS, 1 ); result > 0 )
+    if ( auto result = read_input_registers( nd, PHOENIX_STATUS_REGISTER_ADDRESS,
+        2 ); result <= 0 )
         {
-        nd->status_register = static_cast<u_int_2>(
-            BYTE_SHIFT_MULTIPLIER * resultbuff[ 0 ] + resultbuff[ 1 ] );
-        }
-    else
-        {
+#ifdef DEBUG_BK
+        G_LOG->debug( "Failed to read status registers (%d, %d) "
+            "for node \"%s\".",
+            PHOENIX_STATUS_REGISTER_ADDRESS,
+            PHOENIX_DIAGNOSTIC_STATUS_REGISTER_ADDRESS, nd->name );
+#endif // DEBUG_BK
         return;
         }
 
+    nd->status_register = static_cast<u_int_2>(
+        BYTE_SHIFT_MULTIPLIER * resultbuff[ 0 ] + resultbuff[ 1 ] );
+    nd->diagnostic_status_register = static_cast<u_int_2>(
+        BYTE_SHIFT_MULTIPLIER * resultbuff[ 2 ] + resultbuff[ 3 ] );
+
     // Check for PP mode state changes.
     // PP mode has become active.
-    if ( auto is_err_mode_active =
+    if ( const auto is_err_mode_active =
         ( nd->status_register & io_node::STATUS_REG_PP_MODE_MASK ) != 0,
         was_err_mode_active =
         ( nd->prev_status_register & io_node::STATUS_REG_PP_MODE_MASK ) != 0;
@@ -1021,7 +1040,32 @@ void uni_io_manager::read_phoenix_status_register( io_node* nd )
             PAC_critical_errors_manager::AS_IO_COUPLER, nd->number );
         }
 
+
+    if ( const auto is_cfg_bus_error_active =
+        ( nd->diagnostic_status_register &
+            io_node::DIAG_STATUS_REG_CFG_BUS_ERROR_MASK ) != 0,
+        was_cfg_bus_error_active =
+        ( nd->prev_diagnostic_status_register &
+            io_node::DIAG_STATUS_REG_CFG_BUS_ERROR_MASK ) != 0;
+            is_cfg_bus_error_active && !was_cfg_bus_error_active &&
+        !nd->is_cfg_bus_error_alarm_set )
+        {
+        nd->is_cfg_bus_error_alarm_set = true;
+        PAC_critical_errors_manager::get_instance()->set_global_error(
+            PAC_critical_errors_manager::AC_CFG_BUS_ERROR,
+            PAC_critical_errors_manager::AS_IO_COUPLER, nd->number );
+        }
+    else if ( !is_cfg_bus_error_active && was_cfg_bus_error_active &&
+        nd->is_cfg_bus_error_alarm_set )
+        {
+        nd->is_cfg_bus_error_alarm_set = false;
+        PAC_critical_errors_manager::get_instance()->reset_global_error(
+            PAC_critical_errors_manager::AC_CFG_BUS_ERROR,
+            PAC_critical_errors_manager::AS_IO_COUPLER, nd->number );
+        }
+
     nd->prev_status_register = nd->status_register;
+    nd->prev_diagnostic_status_register = nd->diagnostic_status_register;
     }
 //-----------------------------------------------------------------------------
 void uni_io_manager::disconnect( io_node* node )
@@ -1045,6 +1089,24 @@ void uni_io_manager::disconnect( io_node* node )
         node->sock = 0;
         }
     node->state = io_node::ST_NO_CONNECT;
+
+    // Reset PP mode alarm on disconnect.
+    if ( node->is_err_mode_alarm_set )
+        {
+        node->is_err_mode_alarm_set = false;
+        node->prev_status_register = 0;
+        PAC_critical_errors_manager::get_instance()->reset_global_error(
+            PAC_critical_errors_manager::AC_PP_MODE,
+            PAC_critical_errors_manager::AS_IO_COUPLER, node->number );
+        }
+
+    if ( node->is_cfg_bus_error_alarm_set )
+        {
+        node->is_cfg_bus_error_alarm_set = false;
+        PAC_critical_errors_manager::get_instance()->reset_global_error(
+            PAC_critical_errors_manager::AC_CFG_BUS_ERROR,
+            PAC_critical_errors_manager::AS_IO_COUPLER, node->number );
+        }
     }
 //-----------------------------------------------------------------------------
 uni_io_manager::uni_io_manager()

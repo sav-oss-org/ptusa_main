@@ -45,11 +45,6 @@
 class PAC_critical_errors_manager
     {
     public:
-        enum CONSTANTS
-            {
-            ALARM_CLASS_PRIORITY = 100,
-            };
-
         enum ALARM_CLASS          ///< Класс тревоги.
             {
             AC_NO_CONNECTION = 1, ///< Ошибка связи.
@@ -59,12 +54,14 @@ class PAC_critical_errors_manager
 
             /// Режим конфигурирования устройства (PP mode).
             AC_PP_MODE = 6,
+
+            /// Ошибка конфигурации или локальной шины.
+            AC_CFG_BUS_ERROR = 7,
             };
 
         enum ALARM_SUBCLASS         ///< Подкласс тревоги.
             {
             AS_IO_COUPLER = 1,      ///< Ошибки модулей I/O.
-            AS_MODBUS_DEVICE = 2,   ///< Ошибки Modbus-устройства.
             AS_EASYSERVER = 5,      ///< Ошибки EasyServer.
 
             //AC_NET,               ///< Ошибки сетевой работы.
@@ -92,6 +89,8 @@ class PAC_critical_errors_manager
 
         int save_as_Lua_str( char* str, u_int_2& id );
 
+        bool is_any_critical_error() const;
+
         static PAC_critical_errors_manager* get_instance();
 
         u_int get_id() const
@@ -118,12 +117,14 @@ class PAC_critical_errors_manager
 
         struct critical_error
             {
-            int             err_class;     ///< Класс ошибки.
-            unsigned int    err_sub_class; ///< Подкласс ошибки.
-            unsigned int    param;         ///< Параметр ошибки.
+            int             err_class;           ///< Класс ошибки.
+            unsigned int    err_sub_class;       ///< Подкласс ошибки.
+            unsigned int    param;               ///< Параметр ошибки.
+            int             priority;            ///< Приоритет ошибки.
 
             critical_error( int err_class = 0, u_int err_sub_class = 0,
-                u_int param = 0 );
+                u_int param = 0,
+                int priority = ALARM_CLASS_PRIORITY::P_ERR_CONNECTION );
             };
 
         PAC_critical_errors_manager&

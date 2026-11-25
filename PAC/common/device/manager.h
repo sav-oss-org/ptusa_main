@@ -71,6 +71,8 @@ i_counter* FQT( u_int dev_n );
 i_counter* FQT( const char* dev_name );
 
 virtual_counter* virtual_FQT( const char* dev_name );
+
+counter_iolink* FQT_IOLINK( const char* dev_name );
 //-----------------------------------------------------------------------------
 /// @brief Получение температуры по номеру.
 ///
@@ -281,6 +283,7 @@ class device_manager : public i_Lua_save_device
         /// @brief Получение счетчика по номеру.
         i_counter* get_FQT( const char* dev_name );
         virtual_counter* get_virtual_FQT( const char* dev_name );
+        counter_iolink* get_FQT_IOLINK( const char* dev_name );
 
         /// @brief Получение температуры по номеру.
         i_AI_device* get_TE( const char* dev_name );

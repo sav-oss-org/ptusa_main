@@ -29,11 +29,3 @@ int i_iot_node::get_counter(int index)
 	{
 	return 0;
 	}
-
-i_iot_node::i_iot_node()
-	{
-	}
-
-i_iot_node::~i_iot_node()
-	{
-	}

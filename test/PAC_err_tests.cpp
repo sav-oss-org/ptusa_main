@@ -3,26 +3,46 @@
 
 using namespace ::testing;
 
+TEST( PAC_critical_errors_manager, network_alarm_identifies_listener )
+    {
+    auto manager = PAC_critical_errors_manager::get_instance();
+    manager->reset_all_error();
+    manager->set_global_error( PAC_critical_errors_manager::AC_NET,
+        PAC_critical_errors_manager::AS_BIND_F, 0 );
+    manager->set_global_error( PAC_critical_errors_manager::AC_NET,
+        PAC_critical_errors_manager::AS_BIND_F, 1 );
+    std::array<char, 4096> buffer{};
+    u_int_2 id = 0;
+    manager->save_as_Lua_str( buffer.data(), id );
+    EXPECT_THAT( buffer.data(), HasSubstr( "Мастер : вызов функции bind(...)" ) );
+    EXPECT_THAT( buffer.data(), HasSubstr( "Modbus : вызов функции bind(...)" ) );
+    EXPECT_THAT( buffer.data(), Not( HasSubstr( "{}" ) ) );
+    manager->reset_all_error();
+    }
+
 TEST( PAC_critical_errors_manager, set_global_error )
     {
     auto mngr = PAC_critical_errors_manager::get_instance();
     EXPECT_FALSE( mngr->is_any_error() );
+    EXPECT_FALSE( mngr->is_any_critical_error() );
 
     // Ошибки неизвестного класса.
     mngr->set_global_error( PAC_critical_errors_manager::ALARM_CLASS( 0 ),
         PAC_critical_errors_manager::ALARM_SUBCLASS( 0 ), 1 );
     EXPECT_TRUE( mngr->is_any_error() );
+    EXPECT_TRUE( mngr->is_any_critical_error() );
 
     // Пробуем повторно установить ошибку.
     mngr->set_global_error( PAC_critical_errors_manager::ALARM_CLASS( 0 ),
         PAC_critical_errors_manager::ALARM_SUBCLASS( 0 ), 1 );
     EXPECT_TRUE( mngr->is_any_error() );
+    EXPECT_TRUE( mngr->is_any_critical_error() );
 
     std::array<char, 256> buff{};
     u_int_2 id{};
     const auto REF_STR = R"(
 	{
-	description = "0-0-1",
+	description = "0-0-1 : ?",
 	type = AT_SPECIAL,
 	group = 'Авария',
 	priority = 100,
@@ -55,14 +75,6 @@ TEST( PAC_critical_errors_manager, set_global_error )
     mngr->save_as_Lua_str( buff.data(), id );
     EXPECT_STREQ( "", buff.data() );
 
-
-    // Ошибки класса `AC_NO_CONNECTION`.
-    mngr->set_global_error( PAC_critical_errors_manager::AC_NO_CONNECTION,
-        PAC_critical_errors_manager::AS_MODBUS_DEVICE, 1 );
-    EXPECT_TRUE( mngr->is_any_error() );
-    mngr->reset_global_error( PAC_critical_errors_manager::AC_NO_CONNECTION,
-        PAC_critical_errors_manager::AS_MODBUS_DEVICE, 1 );
-    EXPECT_FALSE( mngr->is_any_error() );
 
     mngr->set_global_error( PAC_critical_errors_manager::AC_NO_CONNECTION,
         PAC_critical_errors_manager::AS_EASYSERVER, 1 );

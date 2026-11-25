@@ -45,6 +45,7 @@ class uni_io_manager : public io_manager
             PHOENIX_INPUTREGISTERS_STARTADDRESS = 8000,
             PHOENIX_HOLDINGREGISTERS_STARTADDRESS = 9000,
             PHOENIX_STATUS_REGISTER_ADDRESS = 7996,
+            PHOENIX_DIAGNOSTIC_STATUS_REGISTER_ADDRESS = 7997,
             BYTE_SHIFT_MULTIPLIER = 256,
             };
 
@@ -93,6 +94,11 @@ class uni_io_manager : public io_manager
         uni_io_manager();
 
         ~uni_io_manager() override = default;
+
+        /// @brief Данный класс является некопируемым и неперемещаемым.
+        uni_io_manager( const uni_io_manager& ) = delete;
+        uni_io_manager& operator=( const uni_io_manager& ) = delete;
+        uni_io_manager( uni_io_manager&& ) = delete;
 
         /// @brief Инициализация соединения с узлом I/O.
         ///
