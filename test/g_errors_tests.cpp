@@ -7,12 +7,13 @@ TEST( errors_manager, evaluate )
     {
     G_ERRORS_MANAGER->clear();
     G_ERRORS_MANAGER->evaluate();
-    EXPECT_EQ( 0, G_ERRORS_MANAGER->get_errors_id() ); //No devices - no errors.
+    EXPECT_EQ(
+        0, G_ERRORS_MANAGER->get_errors_id() ); //No devices - no errors.
 
     //Add counter to produce and check errors.
     auto name = std::string( "FQT3" );
-    auto res = G_DEVICE_MANAGER()->add_io_device(
-        device::DT_FQT, device::DST_FQT_F, name.c_str(), "Test counter", "IFM" );
+    auto res = G_DEVICE_MANAGER()->add_io_device( device::DT_FQT,
+        device::DST_FQT_F, name.c_str(), "Test counter", "IFM" );
     EXPECT_NE( nullptr, res );
     auto dev = G_DEVICE_MANAGER()->get_device( name.c_str() );
     EXPECT_NE( G_DEVICE_MANAGER()->get_stub_device(), dev );
@@ -63,7 +64,8 @@ TEST( errors_manager, evaluate )
     dev->set_cmd( "ABS_V", 0, 100 );
     dev->set_cmd( "P_DT", 0, 1000 );
     dev->set_cmd( "ST", 0, 1 );   //Сбрасываем ошибку счетчика.
-    G_ERRORS_MANAGER->evaluate(); //Process  ALARM_STATE::AS_ALARM -> AS_RETURN.
+    G_ERRORS_MANAGER
+        ->evaluate(); //Process  ALARM_STATE::AS_ALARM -> AS_RETURN.
     EXPECT_EQ( 4, G_ERRORS_MANAGER->get_errors_id() );
     G_ERRORS_MANAGER->evaluate(); //Process  ALARM_STATE::AS_RETURN.
     EXPECT_EQ( 4, G_ERRORS_MANAGER->get_errors_id() );
@@ -83,8 +85,7 @@ TEST( siren_lights_manager, siren_lights_manager )
 
 TEST( siren_lights_manager, get_name_in_Lua )
     {
-    EXPECT_STREQ( "G_SIREN_MNGR",
-        G_SIREN_LIGHTS_MANAGER()->get_name_in_Lua() );
+    EXPECT_STREQ( "G_SIREN_MNGR", G_SIREN_LIGHTS_MANAGER()->get_name_in_Lua() );
     }
 
 TEST( siren_lights_manager, set_cmd )

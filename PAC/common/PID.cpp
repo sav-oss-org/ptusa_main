@@ -1,14 +1,15 @@
 #include "PID.h"
 #include "string.h"
 //-----------------------------------------------------------------------------
-PID::PID( int n ): PID( ( "PID" + std::to_string( n ) ).c_str() )
+PID::PID( int n ) : PID( ( "PID" + std::to_string( n ) ).c_str() )
     {
     is_old_style = true;
     G_DEVICE_CMMCTR->add_device( this );
     }
 //-----------------------------------------------------------------------------
-PID::PID( const char* name ) :device( name, device::DEVICE_TYPE::DT_REGULATOR,
-    device::DEVICE_SUB_TYPE::DST_REGULATOR_PID, PARAMS_COUNT - 1 ),
+PID::PID( const char* name ) :
+    device( name, device::DEVICE_TYPE::DT_REGULATOR,
+        device::DEVICE_SUB_TYPE::DST_REGULATOR_PID, PARAMS_COUNT - 1 ),
     uk_1( 0 ),
     ek_1( 0 ),
     ek_2( 0 ),
@@ -66,8 +67,10 @@ float PID::eval( float currentValue, int deltaSign )
     {
     if ( STATE::OFF == state )
         {
-        if ( ( *par )[ P_is_zero_start ] ) return MIN_OUT_VALUE;
-        else return MAX_OUT_VALUE;
+        if ( ( *par )[ P_is_zero_start ] )
+            return MIN_OUT_VALUE;
+        else
+            return MAX_OUT_VALUE;
         }
 
     float K = ( *par )[ P_k ];
@@ -86,8 +89,8 @@ float PID::eval( float currentValue, int deltaSign )
             {
             if ( used_par_n != 1 )
                 {
-                printf( "Error: void PID::eval() - used_par_n = %d\n",
-                    used_par_n );
+                printf(
+                    "Error: void PID::eval() - used_par_n = %d\n", used_par_n );
                 }
             }
         }
@@ -105,8 +108,8 @@ float PID::eval( float currentValue, int deltaSign )
             }
         }
 
-    float ek = deltaSign * MAX_OUT_VALUE *
-        ( set_value - currentValue ) / ( dmax - dmin );
+    float ek = deltaSign * MAX_OUT_VALUE * ( set_value - currentValue ) /
+               ( dmax - dmin );
 
     if ( G_DEBUG )
         {
@@ -120,11 +123,12 @@ float PID::eval( float currentValue, int deltaSign )
             }
         }
 
-    if ( set_delta_ms == 0 ) set_delta_ms =
-        static_cast<float>( CONSTANTS::DEFAULT_DELTA_MS );
+    if ( set_delta_ms == 0 )
+        set_delta_ms = static_cast<float>( CONSTANTS::DEFAULT_DELTA_MS );
     if ( TI == 0 ) TI = 0.0001f;
 
-    if ( auto actual_delta_ms = get_delta_millisec( last_time ); actual_delta_ms > set_delta_ms )
+    if ( auto actual_delta_ms = get_delta_millisec( last_time );
+        actual_delta_ms > set_delta_ms )
         {
         auto dt = static_cast<float>( actual_delta_ms ) / MSEC_IN_SEC;
         q0 = K * ( 1 + TD / dt );
@@ -140,7 +144,8 @@ float PID::eval( float currentValue, int deltaSign )
         ek_1 = ek;
 
         //-Зона разгона.
-        unsigned long acceleration_time = MSEC_IN_SEC *
+        unsigned long acceleration_time =
+            MSEC_IN_SEC *
             static_cast<unsigned int>( ( *par )[ P_acceleration_time ] );
         if ( unsigned long delta_time = get_delta_millisec( start_time );
             delta_time < acceleration_time )
@@ -200,15 +205,15 @@ float PID::eval( float currentValue, int deltaSign )
 
     if ( out_min >= out_max )
         {
-        G_LOG->warning( "PID::eval() : out_min >= out_max (%f >= %f).",
-            out_min, out_max );
+        G_LOG->warning(
+            "PID::eval() : out_min >= out_max (%f >= %f).", out_min, out_max );
         out_min = MIN_OUT_VALUE;
         ( *par )[ P_out_min ] = MIN_OUT_VALUE;
         }
     if ( out_max <= MIN_OUT_VALUE )
         {
-        G_LOG->warning( "PID::eval() : out_max <= MIN_OUT_VALUE (%f).",
-            MIN_OUT_VALUE );
+        G_LOG->warning(
+            "PID::eval() : out_max <= MIN_OUT_VALUE (%f).", MIN_OUT_VALUE );
         out_max = MAX_OUT_VALUE;
         ( *par )[ P_out_max ] = MAX_OUT_VALUE;
         }
@@ -234,7 +239,7 @@ float PID::eval( float currentValue, int deltaSign )
     return out_value;
     }
 //-----------------------------------------------------------------------------
-void  PID::direct_on()
+void PID::direct_on()
     {
     if ( state != STATE::ON )
         {
@@ -292,7 +297,7 @@ void PID::direct_set_value( float val )
         float in_value = sensor->get_value();
         if ( sensor->get_type() == DT_FQT )
             {
-            in_value = dynamic_cast <i_counter*> ( sensor )->get_flow();
+            in_value = dynamic_cast<i_counter*>( sensor )->get_flow();
             }
 
         int sign = ( *par )[ P_is_reverse ] > 0 ? -1 : 1;
@@ -312,27 +317,29 @@ void PID::direct_set_value( float val )
         }
     }
 //-----------------------------------------------------------------------------
-void  PID::set( float new_out )
+void PID::set( float new_out )
     {
     set_value = new_out;
     }
 //-----------------------------------------------------------------------------
-void  PID::set_used_par( int parN )
+void PID::set_used_par( int parN )
     {
     if ( parN < 1 || parN > 2 )
         {
         if ( G_DEBUG )
             {
-            printf( "Error: void  PID::set_used_par ( int parN ), parN = %d\n", parN );
+            printf( "Error: void  PID::set_used_par ( int parN ), parN = %d\n",
+                parN );
             }
         used_par_n = 1;
         }
-    else used_par_n = parN;
+    else
+        used_par_n = parN;
     }
 //-----------------------------------------------------------------------------
 void PID::init_param( PARAM par_n, float val )
     {
-    if ( par_n > 0 && ( u_int ) par_n <= par->get_count() )
+    if ( par_n > 0 && (u_int)par_n <= par->get_count() )
         {
         //Проверка выхода за диапазон допустимых значений.
         if ( par_n == P_out_min && val < MIN_OUT_VALUE )
@@ -387,7 +394,6 @@ int PID::set_cmd( const char* prop, u_int idx, double val )
     {
     if ( is_old_style )
         {
-
         if ( 0 == strcmp( prop, WORK_PARAMS_NAME ) )
             {
             if ( idx == WP_Z )
@@ -416,7 +422,7 @@ int PID::set_cmd( const char* prop, u_int idx, double val )
                     val = MAX_OUT_VALUE;
                     }
                 if ( ( idx == P_out_min && val > ( *par )[ P_out_max ] ) ||
-                    ( idx == P_out_max && val < ( *par )[ P_out_min ] ) )
+                     ( idx == P_out_max && val < ( *par )[ P_out_min ] ) )
                     {
                     return 0;
                     }
@@ -450,7 +456,8 @@ void PID::set_string_property( const char* field, const char* value )
             actuator = G_DEVICE_MANAGER()->get_device( value );
             if ( this == actuator )
                 {
-                G_LOG->error( "\'%s\' - self asigment (out set to self).", get_name() );
+                G_LOG->error(
+                    "\'%s\' - self asigment (out set to self).", get_name() );
                 actuator = nullptr;
                 }
             break;
@@ -477,7 +484,7 @@ int PID::save_device_ex( char* buff ) const
     return answer_size;
     }
 //-----------------------------------------------------------------------------
-int PID::save_device( char *buff ) const
+int PID::save_device( char* buff ) const
     {
     int answer_size = 0;
     if ( is_old_style )
@@ -485,12 +492,12 @@ int PID::save_device( char *buff ) const
         answer_size = sprintf( buff, "t.%s=\n\t{\n", get_name() );
 
         answer_size += sprintf( buff + answer_size, "\tST=%u,\n",
-            static_cast<unsigned int>(state) );
+            static_cast<unsigned int>( state ) );
 
         //Параметры.
         answer_size += par->save_device( buff + answer_size, "\t" );
-        answer_size += sprintf( buff + answer_size,
-            "\t%s={ %.2f, %.2f }\n", WORK_PARAMS_NAME, set_value, out_value );
+        answer_size += sprintf( buff + answer_size, "\t%s={ %.2f, %.2f }\n",
+            WORK_PARAMS_NAME, set_value, out_value );
 
         answer_size += sprintf( buff + answer_size, "\t}\n" );
         }

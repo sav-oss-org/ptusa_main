@@ -7,22 +7,22 @@ using namespace ::testing;
 	void no_print_stack_traceback()
 */
 
-TEST(lua_manager_test, no_print_stack_traceback)
-{
+TEST( lua_manager_test, no_print_stack_traceback )
+    {
     lua_manager::no_print_stack_traceback();
-}
+    }
 
 /*
     TEST METHOD DEFENITION:
 	static lua_manager* get_instance();
 */
 
-TEST(lua_manager_test, get_instance)
-{
-	lua_manager* p = 0;
+TEST( lua_manager_test, get_instance )
+    {
+    lua_manager* p = 0;
 
-	EXPECT_NE(p, lua_manager::get_instance());
-}
+    EXPECT_NE( p, lua_manager::get_instance() );
+    }
 
 /*
 	TEST METHOD DEFENITION:
@@ -41,52 +41,51 @@ TEST(lua_manager_test, get_instance)
     LUA_API void lua_settop (lua_State *L, int idx)
 */
 
-TEST_F(LuaManagerTest, init_success)
-{
+TEST_F( LuaManagerTest, init_success )
+    {
     std::byte* res = nullptr;
-	mock_project_manager* prj_mock = new mock_project_manager();
-	mock_params_manager* par_mock = new mock_params_manager();
-    test_params_manager::replaceEntity(par_mock);
+    mock_project_manager* prj_mock = new mock_project_manager();
+    mock_params_manager* par_mock = new mock_params_manager();
+    test_params_manager::replaceEntity( par_mock );
 
-    EXPECT_CALL(*par_mock, reserve_params_region(_, _))
-        .Times(AtLeast(2))
-        .WillRepeatedly(Return(res));
+    EXPECT_CALL( *par_mock, reserve_params_region( _, _ ) )
+        .Times( AtLeast( 2 ) )
+        .WillRepeatedly( Return( res ) );
 
-    mock_tech_object_manager* tech_mock = new mock_tech_object_manager(); //require par_mock
+    mock_tech_object_manager* tech_mock =
+        new mock_tech_object_manager(); //require par_mock
     mock_tcp_communicator* tcp_mock = new mock_tcp_communicator();
-	test_project_manager::replaceEntity(prj_mock);
-	mock_tech_object_manager::set_instance(tech_mock);
-    test_tcp_communicator::replaceEntity(tcp_mock);
+    test_project_manager::replaceEntity( prj_mock );
+    mock_tech_object_manager::set_instance( tech_mock );
+    test_tcp_communicator::replaceEntity( tcp_mock );
 
-	EXPECT_CALL(*par_mock, init(_));
+    EXPECT_CALL( *par_mock, init( _ ) );
 
-	EXPECT_CALL(*prj_mock, lua_load_configuration())
-		.WillOnce(Return(0));
+    EXPECT_CALL( *prj_mock, lua_load_configuration() ).WillOnce( Return( 0 ) );
 
-	EXPECT_CALL(*tech_mock, init_objects())
-		.WillOnce(Return(0));
+    EXPECT_CALL( *tech_mock, init_objects() ).WillOnce( Return( 0 ) );
 
-    EXPECT_CALL(*tcp_mock, reg_service(_, _))
-        .Times(AtLeast(2))
-        .WillRepeatedly(Return(nullptr));
+    EXPECT_CALL( *tcp_mock, reg_service( _, _ ) )
+        .Times( AtLeast( 2 ) )
+        .WillRepeatedly( Return( nullptr ) );
 
-    EXPECT_CALL(*par_mock, final_init(_, _, _));
+    EXPECT_CALL( *par_mock, final_init( _, _, _ ) );
 
-	EXPECT_EQ(0, G_LUA_MANAGER->init(0, "", "", ""));
+    EXPECT_EQ( 0, G_LUA_MANAGER->init( 0, "", "", "" ) );
 
-    set_file_counter(0);
-	test_project_manager::removeObject();
-	test_params_manager::removeObject();
-	delete tech_mock;
+    set_file_counter( 0 );
+    test_project_manager::removeObject();
+    test_params_manager::removeObject();
+    delete tech_mock;
     test_tcp_communicator::removeObject();
 
     need_free_Lua_state = true;
-}
+    }
 
 TEST_F( LuaManagerTest, init_creating_lua_context_failure )
     {
-    subhook_t hook_lua_create_context =
-        subhook_new( (void*)luaL_newstate, (void*)mock_luaL_newstate_failure, SUBHOOK_64BIT_OFFSET );
+    subhook_t hook_lua_create_context = subhook_new( (void*)luaL_newstate,
+        (void*)mock_luaL_newstate_failure, SUBHOOK_64BIT_OFFSET );
     ASSERT_TRUE( hook_lua_create_context );
     auto res = subhook_install( hook_lua_create_context );
     ASSERT_EQ( res, 0 );
@@ -105,40 +104,39 @@ TEST_F( LuaManagerTest, init_creating_lua_context_failure )
     need_free_Lua_state = true;
     }
 
-TEST_F(LuaManagerTest, init_check_file_failure)
-{
-    subhook_t hook_check_file =
-        subhook_new((void *) check_file, (void *) mock_check_file_failure, SUBHOOK_64BIT_OFFSET);
-    subhook_install(hook_check_file);
+TEST_F( LuaManagerTest, init_check_file_failure )
+    {
+    subhook_t hook_check_file = subhook_new( (void*)check_file,
+        (void*)mock_check_file_failure, SUBHOOK_64BIT_OFFSET );
+    subhook_install( hook_check_file );
 
     EXPECT_EQ( 1, G_LUA_MANAGER->init( nullptr, "", "", "" ) );
 
-    subhook_remove(hook_check_file);
-    subhook_free(hook_check_file);
+    subhook_remove( hook_check_file );
+    subhook_free( hook_check_file );
 
     need_free_Lua_state = true;
-}
+    }
 
-TEST_F(LuaManagerTest, init_check_file_version_failure)
-{
+TEST_F( LuaManagerTest, init_check_file_version_failure )
+    {
     auto state = new lua_State{};
-    set_file_counter(1);
+    set_file_counter( 1 );
 
     // also checking of set lua_state
-    EXPECT_EQ(1, G_LUA_MANAGER->init(state, "", "", ""));
+    EXPECT_EQ( 1, G_LUA_MANAGER->init( state, "", "", "" ) );
 
-    set_file_counter(0);
+    set_file_counter( 0 );
 
     need_free_Lua_state = true;
-}
+    }
 
 TEST_F( LuaManagerTest, init_system_scripts_execution_failure )
-{
+    {
     lua_manager::reset_lua_error_count();
 
-    subhook_t hook_luaL_loadfile =
-        subhook_new( (void*)&luaL_loadfile, (void*)&mock_luaL_loadfile_failure,
-        SUBHOOK_64BIT_OFFSET );
+    subhook_t hook_luaL_loadfile = subhook_new( (void*)&luaL_loadfile,
+        (void*)&mock_luaL_loadfile_failure, SUBHOOK_64BIT_OFFSET );
     subhook_install( hook_luaL_loadfile );
 
     EXPECT_EQ( 1, G_LUA_MANAGER->init( nullptr, "", "", "" ) );
@@ -148,94 +146,91 @@ TEST_F( LuaManagerTest, init_system_scripts_execution_failure )
     subhook_free( hook_luaL_loadfile );
 
     need_free_Lua_state = true;
-}
+    }
 
-TEST_F(LuaManagerTest, init_lua_load_configuration_failure)
-{
+TEST_F( LuaManagerTest, init_lua_load_configuration_failure )
+    {
     mock_project_manager* prj_mock = new mock_project_manager();
     mock_params_manager* par_mock = new mock_params_manager();
-    test_project_manager::replaceEntity(prj_mock);
-    test_params_manager::replaceEntity(par_mock);
+    test_project_manager::replaceEntity( prj_mock );
+    test_params_manager::replaceEntity( par_mock );
 
-    EXPECT_CALL(*par_mock, init(_));
+    EXPECT_CALL( *par_mock, init( _ ) );
 
-    EXPECT_CALL(*prj_mock, lua_load_configuration())
-        .WillOnce(Return(42));
+    EXPECT_CALL( *prj_mock, lua_load_configuration() ).WillOnce( Return( 42 ) );
 
     EXPECT_EQ( 42, G_LUA_MANAGER->init( nullptr, "no_such_script", "", "" ) );
 
     EXPECT_NE( nullptr, G_LUA_MANAGER->get_Lua() );
 
-    set_file_counter(0);
+    set_file_counter( 0 );
     test_project_manager::removeObject();
     test_params_manager::removeObject();
 
     need_free_Lua_state = true;
-}
+    }
 
-TEST_F(LuaManagerTest, init_luaL_loadfile_failure)
-{
+TEST_F( LuaManagerTest, init_luaL_loadfile_failure )
+    {
     lua_manager::reset_lua_error_count();
 
-    subhook_t hook_luaL_loadfile =
-        subhook_new((void *)luaL_loadfile, (void *)mock_luaL_loadfile_failure_2, SUBHOOK_64BIT_OFFSET);
-    subhook_install(hook_luaL_loadfile);
+    subhook_t hook_luaL_loadfile = subhook_new( (void*)luaL_loadfile,
+        (void*)mock_luaL_loadfile_failure_2, SUBHOOK_64BIT_OFFSET );
+    subhook_install( hook_luaL_loadfile );
     mock_project_manager* prj_mock = new mock_project_manager();
     mock_params_manager* par_mock = new mock_params_manager();
-    test_project_manager::replaceEntity(prj_mock);
-    test_params_manager::replaceEntity(par_mock);
+    test_project_manager::replaceEntity( prj_mock );
+    test_params_manager::replaceEntity( par_mock );
 
-    EXPECT_CALL(*par_mock, init(_));
+    EXPECT_CALL( *par_mock, init( _ ) );
 
-    EXPECT_CALL(*prj_mock, lua_load_configuration())
-        .WillOnce(Return(0));
+    EXPECT_CALL( *prj_mock, lua_load_configuration() ).WillOnce( Return( 0 ) );
 
     EXPECT_EQ( 1, G_LUA_MANAGER->init( nullptr, "", "", "" ) );
 
     EXPECT_EQ( 1, lua_manager::get_lua_error_count() );
 
-    subhook_remove(hook_luaL_loadfile);
-    subhook_free(hook_luaL_loadfile);
-    set_file_counter(0);
+    subhook_remove( hook_luaL_loadfile );
+    subhook_free( hook_luaL_loadfile );
+    set_file_counter( 0 );
     test_project_manager::removeObject();
     test_params_manager::removeObject();
 
     need_free_Lua_state = true;
-}
+    }
 
-TEST_F(LuaManagerTest, init_lua_pcall_failure)
-{
+TEST_F( LuaManagerTest, init_lua_pcall_failure )
+    {
     lua_manager::reset_lua_error_count();
 
-    subhook_t hook_lua_pcall =
-        subhook_new((void *)lua_pcall, (void *)mock_lua_pcall_failure, SUBHOOK_64BIT_OFFSET);
-    subhook_install(hook_lua_pcall);
+    subhook_t hook_lua_pcall = subhook_new(
+        (void*)lua_pcall, (void*)mock_lua_pcall_failure, SUBHOOK_64BIT_OFFSET );
+    subhook_install( hook_lua_pcall );
     // FILE_CNT скриптов, get_PAC_id и init_devices_rt_params должны пройти,
     // чтобы ошибкой завершился только pcall основного скрипта.
     const int EXTRA_CALLS_COUNT = 2;
-    set_lua_pcall_success_calls_before_failure(FILE_CNT + EXTRA_CALLS_COUNT);
+    set_lua_pcall_success_calls_before_failure( FILE_CNT + EXTRA_CALLS_COUNT );
 
     mock_project_manager* prj_mock = new mock_project_manager();
     mock_params_manager* par_mock = new mock_params_manager();
-    test_project_manager::replaceEntity(prj_mock);
-    test_params_manager::replaceEntity(par_mock);
+    test_project_manager::replaceEntity( prj_mock );
+    test_params_manager::replaceEntity( par_mock );
 
-    EXPECT_CALL(*par_mock, init(_));
+    EXPECT_CALL( *par_mock, init( _ ) );
 
-    EXPECT_CALL(*prj_mock, lua_load_configuration())
-        .WillOnce(Return(0));
+    EXPECT_CALL( *prj_mock, lua_load_configuration() ).WillOnce( Return( 0 ) );
 
     EXPECT_EQ( 1, G_LUA_MANAGER->init( nullptr, "", "", "" ) );
     EXPECT_EQ( 1, lua_manager::get_lua_error_count() );
 
-    set_file_counter(0);
+    set_file_counter( 0 );
     test_project_manager::removeObject();
     test_params_manager::removeObject();
-    subhook_remove(hook_lua_pcall);
-    subhook_free(hook_lua_pcall);
+    subhook_remove( hook_lua_pcall );
+    subhook_free( hook_lua_pcall );
 
     need_free_Lua_state = true;
-}
+    }
 
 mock_tech_object_manager* init_mocks( int cnt )
     {
@@ -249,39 +244,38 @@ mock_tech_object_manager* init_mocks( int cnt )
         .Times( AtLeast( 2 ) )
         .WillRepeatedly( Return( res ) );
 
-    mock_tech_object_manager* tech_mock = new mock_tech_object_manager(); //require par_mock
+    mock_tech_object_manager* tech_mock =
+        new mock_tech_object_manager(); //require par_mock
     test_project_manager::replaceEntity( prj_mock );
     mock_tech_object_manager::set_instance( tech_mock );
 
     EXPECT_CALL( *par_mock, init( _ ) );
 
-    EXPECT_CALL( *prj_mock, lua_load_configuration() )
-        .WillOnce( Return( 0 ) );
+    EXPECT_CALL( *prj_mock, lua_load_configuration() ).WillOnce( Return( 0 ) );
 
-    EXPECT_CALL( *tech_mock, init_objects() )
-        .WillOnce( Return( cnt ) );
+    EXPECT_CALL( *tech_mock, init_objects() ).WillOnce( Return( cnt ) );
 
     return tech_mock;
     }
 
-TEST_F(LuaManagerTest, init_init_objects_failure)
-{
+TEST_F( LuaManagerTest, init_init_objects_failure )
+    {
     auto tech_mock = init_mocks( 42 );
 
-    EXPECT_EQ(42, G_LUA_MANAGER->init( nullptr, "", "", ""));
+    EXPECT_EQ( 42, G_LUA_MANAGER->init( nullptr, "", "", "" ) );
 
-    set_file_counter(0);
+    set_file_counter( 0 );
     test_project_manager::removeObject();
     test_params_manager::removeObject();
     delete tech_mock;
 
     need_free_Lua_state = true;
-}
+    }
 
 void test_PAC_name( int extra_calls_count )
     {
-    subhook_t hook_lua_pcall =
-        subhook_new( (void*)lua_pcall, (void*)mock_lua_pcall_failure, SUBHOOK_64BIT_OFFSET );
+    subhook_t hook_lua_pcall = subhook_new(
+        (void*)lua_pcall, (void*)mock_lua_pcall_failure, SUBHOOK_64BIT_OFFSET );
     subhook_install( hook_lua_pcall );
 
     set_lua_pcall_success_calls_before_failure( FILE_CNT + extra_calls_count );
@@ -326,28 +320,25 @@ TEST_F( LuaManagerTest, init_PAC_name_eng_failure )
 	LUA_API int lua_pcall (lua_State *L, int nargs, int nresults, int errfunc)
 */
 
-TEST_F(LuaManagerTest, void_exec_lua_method_success)
-{
-    EXPECT_EQ(0, G_LUA_MANAGER->void_exec_lua_method(
-                 "test_lua_object_str",
-                 "test_lua_func_str",
-                 "test_lua_c_func_str"));
-}
+TEST_F( LuaManagerTest, void_exec_lua_method_success )
+    {
+    EXPECT_EQ( 0, G_LUA_MANAGER->void_exec_lua_method( "test_lua_object_str",
+                      "test_lua_func_str", "test_lua_c_func_str" ) );
+    }
 
-TEST_F(LuaManagerTest, void_exec_lua_method_failure)
-{
-    subhook_t hook_lua_pcall = subhook_new((void *)lua_pcall, (void *)mock_lua_pcall_failure, SUBHOOK_64BIT_OFFSET);
-    subhook_install(hook_lua_pcall);
-    set_lua_pcall_success_calls_before_failure(0);
+TEST_F( LuaManagerTest, void_exec_lua_method_failure )
+    {
+    subhook_t hook_lua_pcall = subhook_new(
+        (void*)lua_pcall, (void*)mock_lua_pcall_failure, SUBHOOK_64BIT_OFFSET );
+    subhook_install( hook_lua_pcall );
+    set_lua_pcall_success_calls_before_failure( 0 );
 
-    EXPECT_EQ(1, G_LUA_MANAGER->void_exec_lua_method(
-                 "test_lua_object_str",
-                 "test_lua_func_str",
-                 "test_lua_c_func_str"));
+    EXPECT_EQ( 1, G_LUA_MANAGER->void_exec_lua_method( "test_lua_object_str",
+                      "test_lua_func_str", "test_lua_c_func_str" ) );
 
-    subhook_remove(hook_lua_pcall);
-    subhook_free(hook_lua_pcall);
-}
+    subhook_remove( hook_lua_pcall );
+    subhook_free( hook_lua_pcall );
+    }
 
 /*
     TEST METHOD DEFENITION:
@@ -363,29 +354,27 @@ TEST_F(LuaManagerTest, void_exec_lua_method_failure)
 	TOLUA_API const char* tolua_tostring (lua_State* L, int narg, const char* def)
 */
 
-TEST_F(LuaManagerTest, char_no_param_exec_lua_method_success)
-{
-	EXPECT_STREQ("Test passed", G_LUA_MANAGER->char_no_param_exec_lua_method(
-                                "test_lua_object_str",
-                                "test_lua_func_str",
-                                "test_lua_c_func_str"));
-}
+TEST_F( LuaManagerTest, char_no_param_exec_lua_method_success )
+    {
+    EXPECT_STREQ( "Test passed",
+        G_LUA_MANAGER->char_no_param_exec_lua_method( "test_lua_object_str",
+            "test_lua_func_str", "test_lua_c_func_str" ) );
+    }
 
-TEST_F(LuaManagerTest, char_no_param_exec_lua_method_failure)
-{
-    subhook_t hook_lua_pcall =
-        subhook_new((void *)lua_pcall, (void *)mock_lua_pcall_failure, SUBHOOK_64BIT_OFFSET);
-    subhook_install(hook_lua_pcall);
-    set_lua_pcall_success_calls_before_failure(0);
+TEST_F( LuaManagerTest, char_no_param_exec_lua_method_failure )
+    {
+    subhook_t hook_lua_pcall = subhook_new(
+        (void*)lua_pcall, (void*)mock_lua_pcall_failure, SUBHOOK_64BIT_OFFSET );
+    subhook_install( hook_lua_pcall );
+    set_lua_pcall_success_calls_before_failure( 0 );
 
-    EXPECT_STREQ((char*) 0, G_LUA_MANAGER->char_no_param_exec_lua_method(
-                            "test_lua_object_str",
-                            "test_lua_func_str",
-                            "test_lua_c_func_str"));
+    EXPECT_STREQ( (char*)0,
+        G_LUA_MANAGER->char_no_param_exec_lua_method( "test_lua_object_str",
+            "test_lua_func_str", "test_lua_c_func_str" ) );
 
-    subhook_remove(hook_lua_pcall);
-    subhook_free(hook_lua_pcall);
-}
+    subhook_remove( hook_lua_pcall );
+    subhook_free( hook_lua_pcall );
+    }
 
 /*
     TEST METHOD DEFENITION:
@@ -402,31 +391,27 @@ TEST_F(LuaManagerTest, char_no_param_exec_lua_method_failure)
 	TOLUA_API const char* tolua_tostring (lua_State* L, int narg, const char* def)
 */
 
-TEST_F(LuaManagerTest, char_exec_lua_method_success)
-{
-	EXPECT_STREQ("Test passed", G_LUA_MANAGER->char_exec_lua_method(
-                                "test_lua_object_str",
-                                "test_lua_func_str",
-                                42,
-                                "test_lua_c_func_str"));
-}
+TEST_F( LuaManagerTest, char_exec_lua_method_success )
+    {
+    EXPECT_STREQ( "Test passed",
+        G_LUA_MANAGER->char_exec_lua_method( "test_lua_object_str",
+            "test_lua_func_str", 42, "test_lua_c_func_str" ) );
+    }
 
-TEST_F(LuaManagerTest, char_exec_lua_method_failure)
-{
-    subhook_t hook_lua_pcall =
-        subhook_new((void *)lua_pcall, (void *)mock_lua_pcall_failure, SUBHOOK_64BIT_OFFSET);
-    subhook_install(hook_lua_pcall);
-    set_lua_pcall_success_calls_before_failure(0);
+TEST_F( LuaManagerTest, char_exec_lua_method_failure )
+    {
+    subhook_t hook_lua_pcall = subhook_new(
+        (void*)lua_pcall, (void*)mock_lua_pcall_failure, SUBHOOK_64BIT_OFFSET );
+    subhook_install( hook_lua_pcall );
+    set_lua_pcall_success_calls_before_failure( 0 );
 
-    EXPECT_STREQ((char*)0, G_LUA_MANAGER->char_exec_lua_method(
-                           "test_lua_object_str",
-                           "test_lua_func_str",
-                           42,
-                           "test_lua_c_func_str"));
+    EXPECT_STREQ(
+        (char*)0, G_LUA_MANAGER->char_exec_lua_method( "test_lua_object_str",
+                      "test_lua_func_str", 42, "test_lua_c_func_str" ) );
 
-    subhook_remove(hook_lua_pcall);
-    subhook_free(hook_lua_pcall);
-}
+    subhook_remove( hook_lua_pcall );
+    subhook_free( hook_lua_pcall );
+    }
 
 /*
     TEST METHOD DEFENITION:
@@ -444,31 +429,25 @@ TEST_F(LuaManagerTest, char_exec_lua_method_failure)
 	TOLUA_API lua_Number tolua_tonumber (lua_State* L, int narg, lua_Number def)
 */
 
-TEST_F(LuaManagerTest, int_exec_lua_method_success)
-{
-	EXPECT_EQ(0, G_LUA_MANAGER->int_exec_lua_method(
-                 "test_lua_object_str",
-                 "test_lua_func_str",
-                 42,
-                 "test_lua_c_func_str"));
-}
+TEST_F( LuaManagerTest, int_exec_lua_method_success )
+    {
+    EXPECT_EQ( 0, G_LUA_MANAGER->int_exec_lua_method( "test_lua_object_str",
+                      "test_lua_func_str", 42, "test_lua_c_func_str" ) );
+    }
 
-TEST_F(LuaManagerTest, int_exec_lua_method_failure)
-{
-    subhook_t hook_lua_pcall =
-        subhook_new((void *)lua_pcall, (void *)mock_lua_pcall_failure, SUBHOOK_64BIT_OFFSET);
-    subhook_install(hook_lua_pcall);
-    set_lua_pcall_success_calls_before_failure(0);
+TEST_F( LuaManagerTest, int_exec_lua_method_failure )
+    {
+    subhook_t hook_lua_pcall = subhook_new(
+        (void*)lua_pcall, (void*)mock_lua_pcall_failure, SUBHOOK_64BIT_OFFSET );
+    subhook_install( hook_lua_pcall );
+    set_lua_pcall_success_calls_before_failure( 0 );
 
-    EXPECT_EQ(-1, G_LUA_MANAGER->int_exec_lua_method(
-                  "test_lua_object_str",
-                  "test_lua_func_str",
-                  42,
-                  "test_lua_c_func_str"));
+    EXPECT_EQ( -1, G_LUA_MANAGER->int_exec_lua_method( "test_lua_object_str",
+                       "test_lua_func_str", 42, "test_lua_c_func_str" ) );
 
-    subhook_remove(hook_lua_pcall);
-    subhook_free(hook_lua_pcall);
-}
+    subhook_remove( hook_lua_pcall );
+    subhook_free( hook_lua_pcall );
+    }
 
 /*
     TEST METHOD DEFENITION:
@@ -486,33 +465,25 @@ TEST_F(LuaManagerTest, int_exec_lua_method_failure)
 	TOLUA_API lua_Number tolua_tonumber (lua_State* L, int narg, lua_Number def)
 */
 
-TEST_F(LuaManagerTest, int_2_exec_lua_method_success)
-{
-	EXPECT_EQ(0, G_LUA_MANAGER->int_2_exec_lua_method(
-                 "test_lua_object_str",
-                 "test_lua_func_str",
-                 0,
-                 42,
-                 "test_lua_c_func_str"));
-}
+TEST_F( LuaManagerTest, int_2_exec_lua_method_success )
+    {
+    EXPECT_EQ( 0, G_LUA_MANAGER->int_2_exec_lua_method( "test_lua_object_str",
+                      "test_lua_func_str", 0, 42, "test_lua_c_func_str" ) );
+    }
 
-TEST_F(LuaManagerTest, int_2_exec_lua_method_failure)
-{
-    subhook_t hook_lua_pcall =
-        subhook_new((void *)lua_pcall, (void *)mock_lua_pcall_failure, SUBHOOK_64BIT_OFFSET);
-    subhook_install(hook_lua_pcall);
-    set_lua_pcall_success_calls_before_failure(0);
+TEST_F( LuaManagerTest, int_2_exec_lua_method_failure )
+    {
+    subhook_t hook_lua_pcall = subhook_new(
+        (void*)lua_pcall, (void*)mock_lua_pcall_failure, SUBHOOK_64BIT_OFFSET );
+    subhook_install( hook_lua_pcall );
+    set_lua_pcall_success_calls_before_failure( 0 );
 
-    EXPECT_EQ(-1, G_LUA_MANAGER->int_2_exec_lua_method(
-                  "test_lua_object_str",
-                  "test_lua_func_str",
-                  0,
-                  42,
-                  "test_lua_c_func_str"));
+    EXPECT_EQ( -1, G_LUA_MANAGER->int_2_exec_lua_method( "test_lua_object_str",
+                       "test_lua_func_str", 0, 42, "test_lua_c_func_str" ) );
 
-    subhook_remove(hook_lua_pcall);
-    subhook_free(hook_lua_pcall);
-}
+    subhook_remove( hook_lua_pcall );
+    subhook_free( hook_lua_pcall );
+    }
 
 /*
     TEST METHOD DEFENITION:
@@ -529,29 +500,27 @@ TEST_F(LuaManagerTest, int_2_exec_lua_method_failure)
 	TOLUA_API lua_Number tolua_tonumber (lua_State* L, int narg, lua_Number def)
 */
 
-TEST_F(LuaManagerTest, int_no_param_exec_lua_method_success)
-{
-	EXPECT_EQ(0, G_LUA_MANAGER->int_no_param_exec_lua_method(
-                 "test_lua_object_str",
-                 "test_lua_func_str",
-                 "test_lua_c_func_str"));
-}
+TEST_F( LuaManagerTest, int_no_param_exec_lua_method_success )
+    {
+    EXPECT_EQ(
+        0, G_LUA_MANAGER->int_no_param_exec_lua_method( "test_lua_object_str",
+               "test_lua_func_str", "test_lua_c_func_str" ) );
+    }
 
-TEST_F(LuaManagerTest, int_no_param_exec_lua_method_failure)
-{
-    subhook_t hook_lua_pcall =
-        subhook_new((void *)lua_pcall, (void *)mock_lua_pcall_failure, SUBHOOK_64BIT_OFFSET);
-    subhook_install(hook_lua_pcall);
-    set_lua_pcall_success_calls_before_failure(0);
+TEST_F( LuaManagerTest, int_no_param_exec_lua_method_failure )
+    {
+    subhook_t hook_lua_pcall = subhook_new(
+        (void*)lua_pcall, (void*)mock_lua_pcall_failure, SUBHOOK_64BIT_OFFSET );
+    subhook_install( hook_lua_pcall );
+    set_lua_pcall_success_calls_before_failure( 0 );
 
-    EXPECT_EQ(1, G_LUA_MANAGER->int_no_param_exec_lua_method(
-                 "test_lua_object_str",
-                 "test_lua_func_str",
-                 "test_lua_c_func_str"));
+    EXPECT_EQ(
+        1, G_LUA_MANAGER->int_no_param_exec_lua_method( "test_lua_object_str",
+               "test_lua_func_str", "test_lua_c_func_str" ) );
 
-    subhook_remove(hook_lua_pcall);
-    subhook_free(hook_lua_pcall);
-}
+    subhook_remove( hook_lua_pcall );
+    subhook_free( hook_lua_pcall );
+    }
 
 /*
     TEST METHOD DEFENITION:
@@ -569,30 +538,28 @@ TEST_F(LuaManagerTest, int_no_param_exec_lua_method_failure)
 	TOLUA_API void* tolua_tousertype (lua_State* L, int narg, void* def)
 */
 
-TEST_F(LuaManagerTest, user_object_exec_lua_method_success)
-{
-	EXPECT_STREQ("Test passed", (char*) (G_LUA_MANAGER->user_object_exec_lua_method(
-                                "test_lua_object_str",
-                                "test_lua_func_str",
-                                42,
-                                "test_lua_c_func_str")));
-}
+TEST_F( LuaManagerTest, user_object_exec_lua_method_success )
+    {
+    EXPECT_STREQ(
+        "Test passed", (char*)( G_LUA_MANAGER->user_object_exec_lua_method(
+                           "test_lua_object_str", "test_lua_func_str", 42,
+                           "test_lua_c_func_str" ) ) );
+    }
 
-TEST_F(LuaManagerTest, user_object_exec_lua_method_failure)
-{
-    subhook_t hook_lua_pcall = subhook_new((void *)lua_pcall, (void *)mock_lua_pcall_failure, SUBHOOK_64BIT_OFFSET);
-    subhook_install(hook_lua_pcall);
-    set_lua_pcall_success_calls_before_failure(0);
+TEST_F( LuaManagerTest, user_object_exec_lua_method_failure )
+    {
+    subhook_t hook_lua_pcall = subhook_new(
+        (void*)lua_pcall, (void*)mock_lua_pcall_failure, SUBHOOK_64BIT_OFFSET );
+    subhook_install( hook_lua_pcall );
+    set_lua_pcall_success_calls_before_failure( 0 );
 
-    EXPECT_EQ( nullptr, G_LUA_MANAGER->user_object_exec_lua_method(
-                    "test_lua_object_str",
-                    "test_lua_func_str",
-                    42,
-                    "test_lua_c_func_str"));
+    EXPECT_EQ( nullptr,
+        G_LUA_MANAGER->user_object_exec_lua_method( "test_lua_object_str",
+            "test_lua_func_str", 42, "test_lua_c_func_str" ) );
 
-    subhook_remove(hook_lua_pcall);
-    subhook_free(hook_lua_pcall);
-}
+    subhook_remove( hook_lua_pcall );
+    subhook_free( hook_lua_pcall );
+    }
 
 /*
     TEST METHOD DEFENITION:
@@ -604,26 +571,28 @@ TEST_F(LuaManagerTest, user_object_exec_lua_method_failure)
 	LUA_API int lua_pcall (lua_State *L, int nargs, int nresults, int errfunc)
 */
 
-TEST_F(LuaManagerTest, exec_Lua_str_success)
-{
-	EXPECT_EQ(0, G_LUA_MANAGER->exec_Lua_str("test_lua_str", "error_test_str"));
-}
+TEST_F( LuaManagerTest, exec_Lua_str_success )
+    {
+    EXPECT_EQ(
+        0, G_LUA_MANAGER->exec_Lua_str( "test_lua_str", "error_test_str" ) );
+    }
 
-TEST_F(LuaManagerTest, exec_Lua_str_failure)
-{
+TEST_F( LuaManagerTest, exec_Lua_str_failure )
+    {
     lua_manager::reset_lua_error_count();
 
-    subhook_t hook_lua_pcall =
-        subhook_new((void *)lua_pcall, (void *)mock_lua_pcall_failure, SUBHOOK_64BIT_OFFSET);
-    subhook_install(hook_lua_pcall);
-    set_lua_pcall_success_calls_before_failure(0);
+    subhook_t hook_lua_pcall = subhook_new(
+        (void*)lua_pcall, (void*)mock_lua_pcall_failure, SUBHOOK_64BIT_OFFSET );
+    subhook_install( hook_lua_pcall );
+    set_lua_pcall_success_calls_before_failure( 0 );
 
-    EXPECT_EQ(1, G_LUA_MANAGER->exec_Lua_str("test_lua_str", "error_test_str"));
-    EXPECT_EQ(1, lua_manager::get_lua_error_count());
+    EXPECT_EQ(
+        1, G_LUA_MANAGER->exec_Lua_str( "test_lua_str", "error_test_str" ) );
+    EXPECT_EQ( 1, lua_manager::get_lua_error_count() );
 
-    subhook_remove(hook_lua_pcall);
-    subhook_free(hook_lua_pcall);
-}
+    subhook_remove( hook_lua_pcall );
+    subhook_free( hook_lua_pcall );
+    }
 
 /*
     TEST METHOD DEFENITION:
@@ -640,58 +609,60 @@ TEST_F(LuaManagerTest, exec_Lua_str_failure)
 	TOLUA_API void* tolua_tousertype (lua_State* L, int narg, void* def)
 */
 
-TEST_F(LuaManagerTest, reload_script_lua_state_null_failure)
-{
-    lua_State *s = nullptr;
-    subhook_t hook_lua_create_context =
-        subhook_new((void *)luaL_newstate, (void *)mock_luaL_newstate_failure, SUBHOOK_64BIT_OFFSET);
-    subhook_install(hook_lua_create_context);
+TEST_F( LuaManagerTest, reload_script_lua_state_null_failure )
+    {
+    lua_State* s = nullptr;
+    subhook_t hook_lua_create_context = subhook_new( (void*)luaL_newstate,
+        (void*)mock_luaL_newstate_failure, SUBHOOK_64BIT_OFFSET );
+    subhook_install( hook_lua_create_context );
 
     EXPECT_EQ( 1, G_LUA_MANAGER->init( nullptr, "", "", "" ) );
-    EXPECT_EQ(s, G_LUA_MANAGER->get_Lua());
+    EXPECT_EQ( s, G_LUA_MANAGER->get_Lua() );
 
     // test_reload_script
-    char ans[100];
-    EXPECT_EQ(1, G_LUA_MANAGER->reload_script(INT_MAX, "test_lua_func_str", ans, sizeof(ans)));
+    char ans[ 100 ];
+    EXPECT_EQ( 1, G_LUA_MANAGER->reload_script(
+                      INT_MAX, "test_lua_func_str", ans, sizeof( ans ) ) );
 
-    subhook_remove(hook_lua_create_context);
-    subhook_free(hook_lua_create_context);
+    subhook_remove( hook_lua_create_context );
+    subhook_free( hook_lua_create_context );
 
     need_free_Lua_state = true;
-}
+    }
 
-TEST_F(LuaManagerTest, reload_script_success)
-{
+TEST_F( LuaManagerTest, reload_script_success )
+    {
     auto state = new lua_State{};
-    set_file_counter(1);
+    set_file_counter( 1 );
     // easiest way to set lua_state is
     // to shutdown with wrong script version (G->LOG CRITIC message here)
-    EXPECT_EQ(1, G_LUA_MANAGER->init(state, "", "", ""));
+    EXPECT_EQ( 1, G_LUA_MANAGER->init( state, "", "", "" ) );
 
     // file_serial_number = any from 0 to lua_manager::FILE_CNT
     const int file_serial_number = 0;
-    set_file_counter(file_serial_number);
-    char ans[100];
+    set_file_counter( file_serial_number );
+    char ans[ 100 ];
 
-	EXPECT_EQ(0, G_LUA_MANAGER->reload_script(
-                 file_serial_number, "test_lua_func_str", ans, sizeof(ans)));
+    EXPECT_EQ( 0, G_LUA_MANAGER->reload_script( file_serial_number,
+                      "test_lua_func_str", ans, sizeof( ans ) ) );
 
     need_free_Lua_state = true;
-}
+    }
 
-TEST_F(LuaManagerTest, reload_script_exceeded_script_number_failure)
-{
-    char ans[100];
-    EXPECT_EQ(1, G_LUA_MANAGER->reload_script(INT_MAX, "test_lua_func_str", ans, sizeof(ans)));
-}
+TEST_F( LuaManagerTest, reload_script_exceeded_script_number_failure )
+    {
+    char ans[ 100 ];
+    EXPECT_EQ( 1, G_LUA_MANAGER->reload_script(
+                      INT_MAX, "test_lua_func_str", ans, sizeof( ans ) ) );
+    }
 
 TEST( lua_manager, reload_script_negative_script_number_failure )
     {
     auto L = lua_open();
     G_LUA_MANAGER->set_Lua( L );
     char ans[ 100 ] = {};
-    EXPECT_EQ( 1, G_LUA_MANAGER->reload_script( -1, "test_lua_func_str",
-        ans, sizeof( ans ) ) );
+    EXPECT_EQ( 1, G_LUA_MANAGER->reload_script(
+                      -1, "test_lua_func_str", ans, sizeof( ans ) ) );
     G_LUA_MANAGER->free_Lua();
     }
 
@@ -701,69 +672,69 @@ TEST( lua_manager, restrictions_script_is_last_file )
     EXPECT_STREQ( FILES[ RESTRICTIONS_SCRIPT_N ], "main.restrictions.lua" );
     }
 
-TEST_F(LuaManagerTest, reload_script_check_file_failure)
-{
-    subhook_t hook_check_file =
-        subhook_new((void *)check_file, (void *)mock_check_file_failure, SUBHOOK_64BIT_OFFSET);
-    subhook_install(hook_check_file);
+TEST_F( LuaManagerTest, reload_script_check_file_failure )
+    {
+    subhook_t hook_check_file = subhook_new( (void*)check_file,
+        (void*)mock_check_file_failure, SUBHOOK_64BIT_OFFSET );
+    subhook_install( hook_check_file );
 
     // file_serial_number = any from 0 to lua_manager::FILE_CNT
     const int file_serial_number = FILE_CNT - 1;
-    set_file_counter(file_serial_number);
-    char ans[100];
+    set_file_counter( file_serial_number );
+    char ans[ 100 ];
 
-    EXPECT_EQ(1, G_LUA_MANAGER->reload_script(
-                 file_serial_number, "test_lua_func_str", ans, sizeof(ans)));
+    EXPECT_EQ( 1, G_LUA_MANAGER->reload_script( file_serial_number,
+                      "test_lua_func_str", ans, sizeof( ans ) ) );
 
-    subhook_remove(hook_check_file);
-    subhook_free(hook_check_file);
-}
+    subhook_remove( hook_check_file );
+    subhook_free( hook_check_file );
+    }
 
-TEST_F(LuaManagerTest, reload_script_check_file_version_failure)
-{
-    subhook_t hook_check_file =
-        subhook_new((void *)check_file, (void *)mock_check_file_failure_2, SUBHOOK_64BIT_OFFSET);
-    subhook_install(hook_check_file);
+TEST_F( LuaManagerTest, reload_script_check_file_version_failure )
+    {
+    subhook_t hook_check_file = subhook_new( (void*)check_file,
+        (void*)mock_check_file_failure_2, SUBHOOK_64BIT_OFFSET );
+    subhook_install( hook_check_file );
 
     // file_serial_number = any from 0 to lua_manager::FILE_CNT
     const int file_serial_number = 0;
-    set_file_counter(file_serial_number);
-    char ans[100];
+    set_file_counter( file_serial_number );
+    char ans[ 100 ];
 
-    EXPECT_EQ(1, G_LUA_MANAGER->reload_script(
-                 file_serial_number, "test_lua_func_str", ans, sizeof(ans)));
+    EXPECT_EQ( 1, G_LUA_MANAGER->reload_script( file_serial_number,
+                      "test_lua_func_str", ans, sizeof( ans ) ) );
 
-    subhook_remove(hook_check_file);
-    subhook_free(hook_check_file);
-}
+    subhook_remove( hook_check_file );
+    subhook_free( hook_check_file );
+    }
 
-TEST_F(LuaManagerTest, reload_script_luaL_dofile_failure)
-{
+TEST_F( LuaManagerTest, reload_script_luaL_dofile_failure )
+    {
     lua_manager::reset_lua_error_count();
 
     // Состояние нужно, чтобы reload_script не вышел на проверке L.
     G_LUA_MANAGER->set_Lua( new lua_State{} );
     need_free_Lua_state = true;
 
-    subhook_t hook_lua_pcall =
-        subhook_new((void *)lua_pcall, (void *)mock_lua_pcall_failure, SUBHOOK_64BIT_OFFSET);
-    subhook_install(hook_lua_pcall);
-    set_lua_pcall_success_calls_before_failure(0);
+    subhook_t hook_lua_pcall = subhook_new(
+        (void*)lua_pcall, (void*)mock_lua_pcall_failure, SUBHOOK_64BIT_OFFSET );
+    subhook_install( hook_lua_pcall );
+    set_lua_pcall_success_calls_before_failure( 0 );
 
     // file_serial_number = any from 0 to lua_manager::FILE_CNT
     const int file_serial_number = 0;
-    set_file_counter(file_serial_number);
-    char ans[100];
+    set_file_counter( file_serial_number );
+    char ans[ 100 ];
 
-    EXPECT_EQ(1, G_LUA_MANAGER->reload_script(
-                 file_serial_number, "test_lua_func_str", ans, sizeof(ans)));
+    EXPECT_EQ( 1, G_LUA_MANAGER->reload_script( file_serial_number,
+                      "test_lua_func_str", ans, sizeof( ans ) ) );
     // Оба вызова luaL_dofile завершились ошибкой, но неудача учитывается
     // один раз — по итоговой ошибке перезагрузки.
-    EXPECT_EQ(1, lua_manager::get_lua_error_count());
+    EXPECT_EQ( 1, lua_manager::get_lua_error_count() );
 
-    subhook_remove(hook_lua_pcall);
-    subhook_free(hook_lua_pcall);
-}
+    subhook_remove( hook_lua_pcall );
+    subhook_free( hook_lua_pcall );
+    }
 
 TEST( lua_manager, error_trace )
     {
@@ -774,11 +745,15 @@ TEST( lua_manager, error_trace )
     EXPECT_EQ( 0, luaL_dostring( L, "t = {}" ) );
     EXPECT_EQ( 0, luaL_dostring( L, "t.no_exist1 = 1" ) );
     EXPECT_EQ( 0, luaL_dostring( L, "t.no_exist2 = {}" ) );
-    EXPECT_EQ( 0, luaL_dostring( L, "t.no_exist3 = function(a, b) return a + b end" ) );
+    EXPECT_EQ( 0,
+        luaL_dostring( L, "t.no_exist3 = function(a, b) return a + b end" ) );
 
-    EXPECT_NE( 0, G_LUA_MANAGER->void_exec_lua_method( "t", "no_exist1", "error_trace") );
-    EXPECT_NE( 0, G_LUA_MANAGER->void_exec_lua_method( "t", "no_exist2", "error_trace" ) );
-    EXPECT_NE( 0, G_LUA_MANAGER->void_exec_lua_method( "t", "no_exist3", "error_trace" ) );
+    EXPECT_NE( 0, G_LUA_MANAGER->void_exec_lua_method(
+                      "t", "no_exist1", "error_trace" ) );
+    EXPECT_NE( 0, G_LUA_MANAGER->void_exec_lua_method(
+                      "t", "no_exist2", "error_trace" ) );
+    EXPECT_NE( 0, G_LUA_MANAGER->void_exec_lua_method(
+                      "t", "no_exist3", "error_trace" ) );
     G_LUA_MANAGER->free_Lua();
     lua_manager::reset_lua_error_count();
     }
@@ -790,38 +765,38 @@ TEST( lua_manager, get_lua_error_count )
     G_LUA_MANAGER->set_Lua( L );
 
     EXPECT_EQ( 0, luaL_dostring( L,
-        "t = {}"
-        " function t.ok() end"
-        " function t.ok_num() return 42 end"
-        " function t.fail() error( 'same' ) end"
-        " function t.fail_nil() error( nil ) end" ) );
+                      "t = {}"
+                      " function t.ok() end"
+                      " function t.ok_num() return 42 end"
+                      " function t.fail() error( 'same' ) end"
+                      " function t.fail_nil() error( nil ) end" ) );
     EXPECT_EQ( 0, lua_gettop( L ) );
 
     lua_manager::reset_lua_error_count();
     EXPECT_EQ( 0, lua_manager::get_lua_error_count() );
 
     EXPECT_NE( 0, G_LUA_MANAGER->void_exec_lua_method(
-        "missing", "ok", "get_lua_error_count" ) );
+                      "missing", "ok", "get_lua_error_count" ) );
     EXPECT_EQ( 0, lua_manager::get_lua_error_count() );
     EXPECT_EQ( 0, lua_gettop( L ) );
 
     EXPECT_NE( 0, G_LUA_MANAGER->void_exec_lua_method(
-        "t", "missing", "get_lua_error_count" ) );
+                      "t", "missing", "get_lua_error_count" ) );
     EXPECT_EQ( 0, lua_manager::get_lua_error_count() );
     EXPECT_EQ( 0, lua_gettop( L ) );
 
     EXPECT_EQ( 0, G_LUA_MANAGER->void_exec_lua_method(
-        "t", "ok", "get_lua_error_count" ) );
+                      "t", "ok", "get_lua_error_count" ) );
     EXPECT_EQ( 0, lua_manager::get_lua_error_count() );
     EXPECT_EQ( 0, lua_gettop( L ) );
 
     EXPECT_NE( 0, G_LUA_MANAGER->void_exec_lua_method(
-        "t", "fail", "get_lua_error_count" ) );
+                      "t", "fail", "get_lua_error_count" ) );
     EXPECT_EQ( 1, lua_manager::get_lua_error_count() );
     EXPECT_EQ( 0, lua_gettop( L ) );
 
     EXPECT_NE( 0, G_LUA_MANAGER->void_exec_lua_method(
-        "t", "fail", "get_lua_error_count" ) );
+                      "t", "fail", "get_lua_error_count" ) );
     EXPECT_EQ( 2, lua_manager::get_lua_error_count() );
     EXPECT_EQ( 0, lua_gettop( L ) );
 
@@ -832,24 +807,24 @@ TEST( lua_manager, get_lua_error_count )
     const int stack_top = lua_gettop( L );
 
     EXPECT_EQ( 42, G_LUA_MANAGER->int_exec_lua_method(
-        "t", "ok_num", 0, "get_lua_error_count" ) );
+                       "t", "ok_num", 0, "get_lua_error_count" ) );
     EXPECT_EQ( 0, lua_manager::get_lua_error_count() );
     EXPECT_EQ( stack_top, lua_gettop( L ) );
 
     EXPECT_EQ( -1, G_LUA_MANAGER->int_exec_lua_method(
-        "t", "fail", 0, "get_lua_error_count" ) );
+                       "t", "fail", 0, "get_lua_error_count" ) );
     EXPECT_EQ( 1, lua_manager::get_lua_error_count() );
     EXPECT_EQ( stack_top, lua_gettop( L ) );
 
     // Нестроковая ошибка не должна ронять процесс.
     EXPECT_NE( 0, G_LUA_MANAGER->void_exec_lua_method(
-        "t", "fail_nil", "get_lua_error_count" ) );
+                      "t", "fail_nil", "get_lua_error_count" ) );
     EXPECT_EQ( 2, lua_manager::get_lua_error_count() );
     EXPECT_EQ( stack_top, lua_gettop( L ) );
 
     // Повтор той же нестроковой ошибки снова увеличивает счетчик.
     EXPECT_NE( 0, G_LUA_MANAGER->void_exec_lua_method(
-        "t", "fail_nil", "get_lua_error_count" ) );
+                      "t", "fail_nil", "get_lua_error_count" ) );
     EXPECT_EQ( 3, lua_manager::get_lua_error_count() );
     EXPECT_EQ( stack_top, lua_gettop( L ) );
 
@@ -858,7 +833,7 @@ TEST( lua_manager, get_lua_error_count )
     EXPECT_EQ( 0, lua_manager::get_lua_error_count() );
 
     EXPECT_NE( 0, G_LUA_MANAGER->void_exec_lua_method(
-        "t", "fail", "get_lua_error_count" ) );
+                      "t", "fail", "get_lua_error_count" ) );
     EXPECT_EQ( 1, lua_manager::get_lua_error_count() );
     EXPECT_EQ( stack_top, lua_gettop( L ) );
 
@@ -872,8 +847,8 @@ TEST( lua_manager, exec_lua_method_preserves_caller_stack )
     G_LUA_MANAGER->set_Lua( L );
 
     EXPECT_EQ( 0, luaL_dostring( L,
-        "t = {} function t.ret7() return 7 end"
-        " function t.fail( s ) return s.absent.deep end" ) );
+                      "t = {} function t.ret7() return 7 end"
+                      " function t.fail( s ) return s.absent.deep end" ) );
     EXPECT_EQ( 0, lua_gettop( L ) );
 
     // Сентинел принадлежит вызывающему коду и должен пережить
@@ -887,7 +862,7 @@ TEST( lua_manager, exec_lua_method_preserves_caller_stack )
     // Вызов с возвращаемым значением забирает результат со стека,
     // но не затрагивает значение вызывающего кода.
     EXPECT_EQ( 7, G_LUA_MANAGER->int_no_param_exec_lua_method(
-        "t", "ret7", "exec_lua_method_preserves_caller_stack" ) );
+                      "t", "ret7", "exec_lua_method_preserves_caller_stack" ) );
     EXPECT_EQ( sentinel_index, lua_gettop( L ) );
     EXPECT_EQ( LUA_TSTRING, lua_type( L, sentinel_index ) );
     EXPECT_STREQ( sentinel, lua_tostring( L, sentinel_index ) );
@@ -896,15 +871,15 @@ TEST( lua_manager, exec_lua_method_preserves_caller_stack )
     // Ошибка выполнения не должна оставлять на стеке обработчик,
     // функцию, объект и сообщение об ошибке.
     EXPECT_EQ( 1, G_LUA_MANAGER->int_no_param_exec_lua_method(
-        "t", "fail", "exec_lua_method_preserves_caller_stack" ) );
+                      "t", "fail", "exec_lua_method_preserves_caller_stack" ) );
     EXPECT_EQ( sentinel_index, lua_gettop( L ) );
     EXPECT_EQ( LUA_TSTRING, lua_type( L, sentinel_index ) );
     EXPECT_STREQ( sentinel, lua_tostring( L, sentinel_index ) );
     EXPECT_EQ( 1, lua_manager::get_lua_error_count() );
 
     // Отсутствие функции тоже восстанавливает стек вызывающего кода.
-    EXPECT_EQ( 1, G_LUA_MANAGER->int_no_param_exec_lua_method(
-        "t", "missing", "exec_lua_method_preserves_caller_stack" ) );
+    EXPECT_EQ( 1, G_LUA_MANAGER->int_no_param_exec_lua_method( "t", "missing",
+                      "exec_lua_method_preserves_caller_stack" ) );
     EXPECT_EQ( sentinel_index, lua_gettop( L ) );
     EXPECT_STREQ( sentinel, lua_tostring( L, sentinel_index ) );
     EXPECT_EQ( 1, lua_manager::get_lua_error_count() );
@@ -922,20 +897,20 @@ TEST( lua_manager, last_lua_error )
     lua_manager::reset_lua_error_count();
     EXPECT_STREQ( "", lua_manager::get_last_lua_error() );
 
-    EXPECT_EQ( 0, luaL_dostring( L,
-        "t = {} function t.fail() error( 'boom' ) end" ) );
+    EXPECT_EQ(
+        0, luaL_dostring( L, "t = {} function t.fail() error( 'boom' ) end" ) );
     EXPECT_EQ( 0, lua_gettop( L ) );
 
-    EXPECT_NE( 0, G_LUA_MANAGER->void_exec_lua_method(
-        "t", "fail", "last_lua_error" ) );
+    EXPECT_NE( 0,
+        G_LUA_MANAGER->void_exec_lua_method( "t", "fail", "last_lua_error" ) );
     EXPECT_THAT( lua_manager::get_last_lua_error(), HasSubstr( "boom" ) );
     EXPECT_EQ( 0, lua_gettop( L ) );
 
     //Нестроковый объект ошибки не должен ронять программу.
-    EXPECT_EQ( 0, luaL_dostring( L,
-        "function t.fail_table() error( {} ) end" ) );
+    EXPECT_EQ(
+        0, luaL_dostring( L, "function t.fail_table() error( {} ) end" ) );
     EXPECT_NE( 0, G_LUA_MANAGER->void_exec_lua_method(
-        "t", "fail_table", "last_lua_error" ) );
+                      "t", "fail_table", "last_lua_error" ) );
     EXPECT_THAT( lua_manager::get_last_lua_error(),
         HasSubstr( "non-string Lua error" ) );
     EXPECT_EQ( 0, lua_gettop( L ) );
@@ -971,8 +946,8 @@ TEST( lua_manager, init )
     // в консоль выводится информация о переданных параметрах.
     lua_manager::reset_lua_error_count();
 
-    auto res = G_LUA_MANAGER->init( L,
-        "test.lua", "dir", "sys_dir", "extra_dir" );
+    auto res =
+        G_LUA_MANAGER->init( L, "test.lua", "dir", "sys_dir", "extra_dir" );
     EXPECT_EQ( res, 1 );
     EXPECT_EQ( 1, lua_manager::get_lua_error_count() );
 

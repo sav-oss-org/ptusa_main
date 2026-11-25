@@ -24,8 +24,8 @@ class iot_wages_eth : public i_iot_node
 
         void convert_value();
 
-        void direct_set_tcp_buff( const char* new_value, size_t size,
-            int new_status );
+        void direct_set_tcp_buff(
+            const char* new_value, size_t size, int new_status );
 
     private:
         enum class CONSTANTS
@@ -37,7 +37,7 @@ class iot_wages_eth : public i_iot_node
         int status = 0;
         int state = 0;
         float value = .0f;
-        std::unique_ptr < tcp_client > tc;
+        std::unique_ptr< tcp_client > tc;
 
         std::array<char, 50 > name{};
     };

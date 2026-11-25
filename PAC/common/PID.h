@@ -32,17 +32,17 @@ class PID : public device
             P_min,                 ///< Мin значение входной величины.
             P_acceleration_time,   ///< Время выхода на режим регулирования.
             P_is_manual_mode,      ///< Ручной режим.
-            P_U_manual,            ///< Заданное ручное значение выходного сигнала.
+            P_U_manual,  ///< Заданное ручное значение выходного сигнала.
 
-            P_k2,                  ///< Параметр k2.
-            P_Ti2,                 ///< Параметр Ti2.
-            P_Td2,                 ///< Параметр Td2.
+            P_k2,  ///< Параметр k2.
+            P_Ti2,  ///< Параметр Ti2.
+            P_Td2,  ///< Параметр Td2.
 
-            P_out_max,             ///< Мax значение выходной величины.
-            P_out_min,             ///< Мin значение выходной величины.
+            P_out_max,  ///< Мax значение выходной величины.
+            P_out_min,  ///< Мin значение выходной величины.
 
-            P_is_reverse,	       ///Обратного (реверсивного) действия.
-            P_is_zero_start,	   ///Нулевое стартовое значение.
+            P_is_reverse,  ///Обратного (реверсивного) действия.
+            P_is_zero_start,  ///Нулевое стартовое значение.
 
             PARAMS_COUNT
             };
@@ -52,7 +52,7 @@ class PID : public device
         enum WORK_PARAM
             {
             WP_Z = 1,  ///< Требуемое значение.
-            WP_U,      ///< Выход ПИД.
+            WP_U,  ///< Выход ПИД.
             };
 
         /// @param n - номер.
@@ -80,7 +80,8 @@ class PID : public device
 
         int set_cmd( const char* prop, u_int idx, double val ) override;
 
-        void set_string_property( const char* field, const char* value ) override;
+        void set_string_property(
+            const char* field, const char* value ) override;
 #ifndef __GNUC__
 #pragma endregion
 #endif
@@ -88,7 +89,7 @@ class PID : public device
         /// @brief Сброс ПИД.
         ///
         /// Сбрасываем все переменные.
-		void reset();
+        void reset();
 
         /// @brief Работа ПИД.
         float eval( float current_value, int delta_sign = 1 );
@@ -109,10 +110,10 @@ class PID : public device
         void save_param();
 
         /// @brief Использование kN, TiN, TdN.
-        void set_used_par ( int par_n );
+        void set_used_par( int par_n );
 
         int save_device_ex( char* buff ) const override;
-        int save_device( char *buff ) const override;
+        int save_device( char* buff ) const override;
 
         const char* get_name_in_Lua() const override;
 
@@ -162,5 +163,5 @@ class PID : public device
 
         const float MIN_OUT_VALUE = .0f;
         const float MAX_OUT_VALUE = 100.f;
-	};
+    };
 #endif

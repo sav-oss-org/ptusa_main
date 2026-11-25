@@ -47,16 +47,24 @@ namespace
 
         switch ( lua_type( L, index ) )
             {
-            case LUA_TNIL: return "non-string Lua error (nil)";
-            case LUA_TBOOLEAN: return "non-string Lua error (boolean)";
-            case LUA_TNUMBER: return "non-string Lua error (number)";
-            case LUA_TTABLE: return "non-string Lua error (table)";
-            case LUA_TFUNCTION: return "non-string Lua error (function)";
+            case LUA_TNIL:
+                return "non-string Lua error (nil)";
+            case LUA_TBOOLEAN:
+                return "non-string Lua error (boolean)";
+            case LUA_TNUMBER:
+                return "non-string Lua error (number)";
+            case LUA_TTABLE:
+                return "non-string Lua error (table)";
+            case LUA_TFUNCTION:
+                return "non-string Lua error (function)";
             case LUA_TLIGHTUSERDATA:
-            case LUA_TUSERDATA: return "non-string Lua error (userdata)";
-            case LUA_TTHREAD: return "non-string Lua error (thread)";
+            case LUA_TUSERDATA:
+                return "non-string Lua error (userdata)";
+            case LUA_TTHREAD:
+                return "non-string Lua error (thread)";
 
-            default: return "non-string Lua error";
+            default:
+                return "non-string Lua error";
             }
         }
     }
@@ -92,7 +100,7 @@ int check_file( const char* file_name, char* err_str )
     {
     strcpy( err_str, "" );
 
-    FILE *f = fopen( file_name, "r");
+    FILE* f = fopen( file_name, "r" );
     if ( !f )
         {
         G_LOG->error( err_str, "File \"%s\" not found!", file_name );
@@ -116,8 +124,7 @@ int check_file( const char* file_name, char* err_str )
     return version;
     }
 //-----------------------------------------------------------------------------
-const char *FILES[ FILE_CNT ] =
-    {
+const char* FILES[ FILE_CNT ] = {
     "sys.io.lua",
     "sys.devices.lua",
     "sys.objects.lua",
@@ -126,7 +133,7 @@ const char *FILES[ FILE_CNT ] =
     "main.objects.lua",
     "main.modbus_srv.lua",
     "main.restrictions.lua", // Keep last for RESTRICTIONS_SCRIPT_N.
-    };
+};
 //-----------------------------------------------------------------------------
 //I
 //Загружаем последовательно Lua-скрипты. Их структура такова, что все необходимые
@@ -266,7 +273,8 @@ int lua_manager::init( lua_State* lua_state, const char* script_name,
         {
         char path[ 100 ];
         std::string& path_str = i < SYS_FILE_CNT ? sys_dir_str : dir_str;
-        auto r = fmt::format_to_n( path, sizeof( path ), "{}{}", path_str, FILES[ i ] );
+        auto r = fmt::format_to_n(
+            path, sizeof( path ), "{}{}", path_str, FILES[ i ] );
         *r.out = 0;
         res = check_file( path, err_str );
 
@@ -281,13 +289,15 @@ int lua_manager::init( lua_State* lua_state, const char* script_name,
             {
             if ( FILES_VERSION[ i ] < res )
                 {
-                G_LOG->critical( "File \"%s\" has version %d, must be %d "
+                G_LOG->critical(
+                    "File \"%s\" has version %d, must be %d "
                     "(consider updating \"ptusa_main\").",
                     FILES[ i ], res, FILES_VERSION[ i ] );
                 }
             else
                 {
-                G_LOG->critical( "File \"%s\" has version %d, must be %d "
+                G_LOG->critical(
+                    "File \"%s\" has version %d, must be %d "
                     "(use previous version \"ptusa_main\").",
                     FILES[ i ], res, FILES_VERSION[ i ] );
                 }
@@ -335,8 +345,8 @@ int lua_manager::init( lua_State* lua_state, const char* script_name,
         printf( "Загрузка параметров.\n" );
         }
     const int PAC_ID =
-        lua_manager::get_instance()->int_no_param_exec_lua_method( "system",
-        "get_PAC_id", "main" );
+        lua_manager::get_instance()->int_no_param_exec_lua_method(
+            "system", "get_PAC_id", "main" );
     params_manager::get_instance()->init( PAC_ID );
 
     //III
@@ -360,7 +370,7 @@ int lua_manager::init( lua_State* lua_state, const char* script_name,
         printf( "Выполнение основного скрипта (\"%s\").\n", script_name );
         }
 
-    if( luaL_loadfile( L, script_name ) != 0 )
+    if ( luaL_loadfile( L, script_name ) != 0 )
         {
         const char* error_message{ lua_error_text( L, -1 ) };
 
@@ -370,7 +380,7 @@ int lua_manager::init( lua_State* lua_state, const char* script_name,
         return 1;
         }
 
-    if ( int i_line = lua_pcall(L, 0, LUA_MULTRET, 0); i_line != 0 )
+    if ( int i_line = lua_pcall( L, 0, LUA_MULTRET, 0 ); i_line != 0 )
         {
         const char* error_message{ lua_error_text( L, -1 ) };
 
@@ -392,17 +402,15 @@ int lua_manager::init( lua_State* lua_state, const char* script_name,
         return res;
         }
 
-    const char *PAC_name_rus =
-        G_LUA_MANAGER->char_no_param_exec_lua_method( "system",
-        "get_PAC_name_rus", "lua_manager::init" );
+    const char* PAC_name_rus = G_LUA_MANAGER->char_no_param_exec_lua_method(
+        "system", "get_PAC_name_rus", "lua_manager::init" );
     if ( 0 == PAC_name_rus )
         {
         G_LOG->critical( "Lua init error - error reading PAC name (rus)." );
         return 1;
         }
-    const char *PAC_name_eng =
-        G_LUA_MANAGER->char_no_param_exec_lua_method( "system",
-        "get_PAC_name_eng", "lua_manager::init" );
+    const char* PAC_name_eng = G_LUA_MANAGER->char_no_param_exec_lua_method(
+        "system", "get_PAC_name_eng", "lua_manager::init" );
     if ( 0 == PAC_name_eng )
         {
         G_LOG->critical( "Lua init error - error reading PAC name (eng)." );
@@ -446,8 +454,8 @@ lua_manager::~lua_manager()
         }
     }
 //-----------------------------------------------------------------------------
-bool lua_manager::is_exist_lua_function( const char* object_name,
-    const char* function_name ) const
+bool lua_manager::is_exist_lua_function(
+    const char* object_name, const char* function_name ) const
     {
     auto res = false;
     lua_getfield( L, LUA_GLOBALSINDEX, object_name );
@@ -461,19 +469,19 @@ bool lua_manager::is_exist_lua_function( const char* object_name,
     return res;
     }
 //-----------------------------------------------------------------------------
-int lua_manager::void_exec_lua_method( const char *object_name,
-                                      const char *function_name, const char *c_function_name ) const
+int lua_manager::void_exec_lua_method( const char* object_name,
+    const char* function_name, const char* c_function_name ) const
     {
     return exec_lua_method( object_name, function_name, 0, 0, 0 );
     }
 //-----------------------------------------------------------------------------
-int lua_manager::int_exec_lua_method( const char *object_name,
-                                     const char *function_name, int param, const char *c_function_name ) const
+int lua_manager::int_exec_lua_method( const char* object_name,
+    const char* function_name, int param, const char* c_function_name ) const
     {
     int res = 0;
     if ( 0 == exec_lua_method( object_name, function_name, param ) )
         {
-        res = ( int ) tolua_tonumber( L, -1, 0 );
+        res = (int)tolua_tonumber( L, -1, 0 );
         lua_remove( L, -1 );
         }
     else
@@ -489,7 +497,8 @@ int lua_manager::int_2_exec_lua_method( const char* object_name,
     const char* c_function_name ) const
     {
     int res = 0;
-    if ( 0 == exec_lua_method_var( object_name, function_name, 1, 2, param1, param2 ) )
+    if ( 0 == exec_lua_method_var(
+                  object_name, function_name, 1, 2, param1, param2 ) )
         {
         res = (int)tolua_tonumber( L, -1, 0 );
         lua_remove( L, -1 );
@@ -502,8 +511,8 @@ int lua_manager::int_2_exec_lua_method( const char* object_name,
     return res;
     }
 //-----------------------------------------------------------------------------
-void* lua_manager::user_object_exec_lua_method( const char *object_name,
-    const char *function_name, int param, const char *c_function_name ) const
+void* lua_manager::user_object_exec_lua_method( const char* object_name,
+    const char* function_name, int param, const char* c_function_name ) const
     {
     void* res = NULL;
     if ( 0 == exec_lua_method( object_name, function_name, param ) )
@@ -515,12 +524,12 @@ void* lua_manager::user_object_exec_lua_method( const char *object_name,
     return res;
     }
 //-----------------------------------------------------------------------------
-int lua_manager::exec_lua_method( const char *object_name,
-                                 const char *function_name, int param, int is_use_param,
-                                 int is_use_lua_return_value ) const
+int lua_manager::exec_lua_method( const char* object_name,
+    const char* function_name, int param, int is_use_param,
+    int is_use_lua_return_value ) const
     {
-    return exec_lua_method_var( object_name,
-        function_name, is_use_lua_return_value, is_use_param ? 1 : 0, param );
+    return exec_lua_method_var( object_name, function_name,
+        is_use_lua_return_value, is_use_param ? 1 : 0, param );
     }
 //-----------------------------------------------------------------------------
 int lua_manager::exec_lua_method_var( const char* object_name,
@@ -582,8 +591,7 @@ int lua_manager::exec_lua_method_var( const char* object_name,
     va_end( param );
 
     int results_count = is_use_lua_return_value == 1 ? 1 : 0;
-    int res{ lua_pcall(
-        L, param_count, results_count, error_function_index ) };
+    int res{ lua_pcall( L, param_count, results_count, error_function_index ) };
 
     if ( res )
         {
@@ -642,8 +650,8 @@ void lua_manager::count_lua_error( const char* message )
 //-----------------------------------------------------------------------------
 void lua_manager::note_lua_error( lua_State* L, const char* message )
     {
-    const char* error_message{ message != nullptr ? message :
-        non_string_lua_error };
+    const char* error_message{ message != nullptr ? message
+                                                  : non_string_lua_error };
 
     const std::string error_str{ error_message };
 
@@ -656,8 +664,8 @@ void lua_manager::note_lua_error( lua_State* L, const char* message )
         return;
         }
 
-    auto res = snprintf( G_LOG->msg, i_log::C_BUFF_SIZE, "Lua error: %s",
-        error_str.c_str() );
+    auto res = snprintf(
+        G_LOG->msg, i_log::C_BUFF_SIZE, "Lua error: %s", error_str.c_str() );
     if ( res < 0 )
         {
         res = 0;
@@ -668,8 +676,8 @@ void lua_manager::note_lua_error( lua_State* L, const char* message )
         // указывает за конец буфера.
         res = static_cast< int >( strlen( G_LOG->msg ) );
         }
-    if ( res > 0 && G_LOG->msg[ res - 1 ] != '\n'
-        && res + 1 < i_log::C_BUFF_SIZE )
+    if ( res > 0 && G_LOG->msg[ res - 1 ] != '\n' &&
+         res + 1 < i_log::C_BUFF_SIZE )
         {
         // Добавляем последний CR.
         G_LOG->msg[ res++ ] = '\n';
@@ -678,14 +686,13 @@ void lua_manager::note_lua_error( lua_State* L, const char* message )
 
     if ( is_print_stack_traceback )
         {
-        res += snprintf( G_LOG->msg + res,
-            i_log::C_BUFF_SIZE - res, "Lua stack traceback:" );
+        res += snprintf( G_LOG->msg + res, i_log::C_BUFF_SIZE - res,
+            "Lua stack traceback:" );
 
         lua_Debug ar{};
         int level{ 1 };
 
-        while ( lua_getstack( L, level, &ar ) &&
-            i_log::C_BUFF_SIZE - res > 0 )
+        while ( lua_getstack( L, level, &ar ) && i_log::C_BUFF_SIZE - res > 0 )
             {
             lua_getinfo( L, "Sln", &ar );
 
@@ -697,44 +704,37 @@ void lua_manager::note_lua_error( lua_State* L, const char* message )
             // собственный debug.traceback из Lua его не печатает.
             if ( ar.currentline > 0 )
                 {
-                res += snprintf( G_LOG->msg + res,
-                    i_log::C_BUFF_SIZE - res, "\n\t%s:%d:",
-                    ar.short_src, ar.currentline );
+                res += snprintf( G_LOG->msg + res, i_log::C_BUFF_SIZE - res,
+                    "\n\t%s:%d:", ar.short_src, ar.currentline );
                 }
             else
                 {
-                res += snprintf( G_LOG->msg + res,
-                    i_log::C_BUFF_SIZE - res, "\n\t%s:",
-                    ar.short_src );
+                res += snprintf( G_LOG->msg + res, i_log::C_BUFF_SIZE - res,
+                    "\n\t%s:", ar.short_src );
                 }
 
             if ( ar.name != nullptr )
                 {
-                res += snprintf( G_LOG->msg + res,
-                    i_log::C_BUFF_SIZE - res,
-                    " in function '%s' ('%s')", ar.name,
-                    ar.namewhat );
+                res += snprintf( G_LOG->msg + res, i_log::C_BUFF_SIZE - res,
+                    " in function '%s' ('%s')", ar.name, ar.namewhat );
                 }
             else if ( strcmp( ar.what, "main" ) == 0 )
                 {
-                res += snprintf( G_LOG->msg + res,
-                    i_log::C_BUFF_SIZE - res, " in main chunk" );
+                res += snprintf( G_LOG->msg + res, i_log::C_BUFF_SIZE - res,
+                    " in main chunk" );
                 }
             else if ( strcmp( ar.what, "C" ) == 0 )
                 {
-                res += snprintf( G_LOG->msg + res,
-                    i_log::C_BUFF_SIZE - res, " in ?" );
+                res += snprintf(
+                    G_LOG->msg + res, i_log::C_BUFF_SIZE - res, " in ?" );
                 }
             else
                 {
-                res += snprintf( G_LOG->msg + res,
-                    i_log::C_BUFF_SIZE - res,
-                    " in function <%s:%d>", ar.short_src,
-                    ar.linedefined );
+                res += snprintf( G_LOG->msg + res, i_log::C_BUFF_SIZE - res,
+                    " in function <%s:%d>", ar.short_src, ar.linedefined );
                 }
             level++;
             }
-
         }
 
     G_LOG->write_log( i_log::P_ERR );
@@ -756,7 +756,7 @@ void lua_manager::reset_lua_error_count()
     }
 #endif
 //-----------------------------------------------------------------------------
-int lua_manager::error_trace( lua_State * L )
+int lua_manager::error_trace( lua_State* L )
     {
     //Тип нужно определить до lua_pop: после него объект ошибки недоступен.
     const char* error_message{ lua_error_text( L, -1 ) };
@@ -767,13 +767,13 @@ int lua_manager::error_trace( lua_State * L )
     return 0;
     }
 //-----------------------------------------------------------------------------
-int lua_manager::int_no_param_exec_lua_method( const char *object_name,
-                                              const char *function_name, const char *c_function_name ) const
+int lua_manager::int_no_param_exec_lua_method( const char* object_name,
+    const char* function_name, const char* c_function_name ) const
     {
     int res = 0;
     if ( 0 == exec_lua_method( object_name, function_name, 0, 0, 1 ) )
         {
-        res = ( int ) tolua_tonumber( L, -1, 0 );
+        res = (int)tolua_tonumber( L, -1, 0 );
         lua_remove( L, -1 );
         }
     else
@@ -784,8 +784,8 @@ int lua_manager::int_no_param_exec_lua_method( const char *object_name,
     return res;
     }
 //-----------------------------------------------------------------------------
-const char* lua_manager::char_exec_lua_method( const char *object_name,
-                                              const char *function_name, int param, const char *c_function_name ) const
+const char* lua_manager::char_exec_lua_method( const char* object_name,
+    const char* function_name, int param, const char* c_function_name ) const
     {
     const char* res = 0;
     if ( 0 == exec_lua_method( object_name, function_name, param, 1, 1 ) )
@@ -797,8 +797,8 @@ const char* lua_manager::char_exec_lua_method( const char *object_name,
     return res;
     }
 //-----------------------------------------------------------------------------
-const char* lua_manager::char_no_param_exec_lua_method( const char *object_name,
-                                                       const char *function_name, const char *c_function_name ) const
+const char* lua_manager::char_no_param_exec_lua_method( const char* object_name,
+    const char* function_name, const char* c_function_name ) const
     {
     const char* res = 0;
     if ( 0 == exec_lua_method( object_name, function_name, 0, 0, 1 ) )
@@ -810,10 +810,10 @@ const char* lua_manager::char_no_param_exec_lua_method( const char *object_name,
     return res;
     }
 //-----------------------------------------------------------------------------
-int lua_manager::exec_Lua_str( const char *Lua_str, const char *error_str,
-                              bool is_print_error_msg /*= true */ ) const
+int lua_manager::exec_Lua_str( const char* Lua_str, const char* error_str,
+    bool is_print_error_msg /*= true */ ) const
     {
-    if( int res = luaL_dostring(L, Lua_str); res != 0  )
+    if ( int res = luaL_dostring( L, Lua_str ); res != 0 )
         {
         const char* error_message{ lua_error_text( L, -1 ) };
 
@@ -833,13 +833,13 @@ int lua_manager::exec_Lua_str( const char *Lua_str, const char *error_str,
     return 0;
     }
 //-----------------------------------------------------------------------------
-lua_State * lua_manager::get_Lua() const
+lua_State* lua_manager::get_Lua() const
     {
     return L;
     }
 //-----------------------------------------------------------------------------
 int lua_manager::reload_script( int script_n, const char* script_function_name,
-    char *res_str, int max_res_str_length )
+    char* res_str, int max_res_str_length )
     {
     res_str[ 0 ] = 0;
 
@@ -852,8 +852,10 @@ int lua_manager::reload_script( int script_n, const char* script_function_name,
 
     if ( script_n < 0 || script_n >= FILE_CNT )
         {
-        G_LOG->error( "Reload Lua script error - script_n out of range "
-            "(%d, FILE_CNT=%d).", script_n, FILE_CNT );
+        G_LOG->error(
+            "Reload Lua script error - script_n out of range "
+            "(%d, FILE_CNT=%d).",
+            script_n, FILE_CNT );
         return 1;
         }
 
@@ -865,13 +867,13 @@ int lua_manager::reload_script( int script_n, const char* script_function_name,
     char path[ 100 ];
     if ( script_n < SYS_FILE_CNT )
         {
-        sprintf( path, "%s%s",
-            G_PROJECT_MANAGER->sys_path.c_str(), FILES[ script_n ] );
+        sprintf( path, "%s%s", G_PROJECT_MANAGER->sys_path.c_str(),
+            FILES[ script_n ] );
         }
     else
         {
-        sprintf( path, "%s%s",
-            G_PROJECT_MANAGER->path.c_str(), FILES[ script_n ] );
+        sprintf(
+            path, "%s%s", G_PROJECT_MANAGER->path.c_str(), FILES[ script_n ] );
         }
 
     res = check_file( path, err_str );
@@ -889,7 +891,8 @@ int lua_manager::reload_script( int script_n, const char* script_function_name,
 
     if ( FILES_VERSION[ script_n ] != res )
         {
-        sprintf( err_str, "File \"%s\" has version %d, must be %d "
+        sprintf( err_str,
+            "File \"%s\" has version %d, must be %d "
             "(consider updating program \"ptusa_main\").",
             FILES[ script_n ], res, FILES_VERSION[ script_n ] );
         G_LOG->error( "%s", err_str );
@@ -921,8 +924,8 @@ int lua_manager::reload_script( int script_n, const char* script_function_name,
             const char* error_message{ lua_error_text( L, -1 ) };
 
             count_lua_error( error_message );
-            snprintf( G_LOG->msg, i_log::C_BUFF_SIZE,
-                "Reload Lua script - %s", error_message );
+            snprintf( G_LOG->msg, i_log::C_BUFF_SIZE, "Reload Lua script - %s",
+                error_message );
             G_LOG->write_log( i_log::P_ERR );
 
             strncpy( res_str, G_LOG->msg + 1 /*не копируем первый \n*/,

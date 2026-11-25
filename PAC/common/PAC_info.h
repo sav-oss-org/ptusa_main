@@ -7,7 +7,7 @@
 #include "param_ex.h"
 #include "version_info.h"
 
-class PAC_info: public i_Lua_save_device
+class PAC_info : public i_Lua_save_device
     {
     public:
         ~PAC_info() override = default;
@@ -16,11 +16,11 @@ class PAC_info: public i_Lua_save_device
 
         enum PARAMETERS
             {
-            P_MIX_FLIP_PERIOD = 1, ///< Интервал промывки седел клапанов, сек.
-            P_MIX_FLIP_UPPER_TIME, ///< Время промывки верхних седел клапанов, мсек.
-            P_MIX_FLIP_LOWER_TIME, ///< Время промывки нижних седел клапанов, мсек
+            P_MIX_FLIP_PERIOD = 1,  ///< Интервал промывки седел клапанов, сек.
+            P_MIX_FLIP_UPPER_TIME,  ///< Время промывки верхних седел клапанов, мсек.
+            P_MIX_FLIP_LOWER_TIME,  ///< Время промывки нижних седел клапанов, мсек
 
-            P_V_OFF_DELAY_TIME,    ///< Время задержки закрытия клапанов, мсек.
+            P_V_OFF_DELAY_TIME,  ///< Время задержки закрытия клапанов, мсек.
 
             ///< Время задержки закрытия для донных клапанов, мсек.
             P_V_BOTTOM_OFF_DELAY_TIME,
@@ -85,7 +85,7 @@ class PAC_info: public i_Lua_save_device
 
         void reset_params();
 
-        int save_device( char *buff ) const override;
+        int save_device( char* buff ) const override;
 
         bool is_emulator() const;
 
@@ -96,7 +96,7 @@ class PAC_info: public i_Lua_save_device
         /// @return - указатель на единственный объект класса @ref PAC_info.
         static PAC_info* get_instance();
 
-        int set_cmd( const char *prop, u_int idx, double val );
+        int set_cmd( const char* prop, u_int idx, double val );
 
         int proc_OPC( int prev_val, int val, bool is_save );
 
@@ -166,7 +166,7 @@ class PAC_info: public i_Lua_save_device
     private:
         PAC_info() = default;
 
-        static auto_smart_ptr < PAC_info > instance;///< Экземпляр класса.
+        static auto_smart_ptr< PAC_info > instance;  ///< Экземпляр класса.
 
         inline static const uint32_t MSEC_IN_DAY = 24U * 60U * 60U * 1000U;
         enum CONSTANTS
@@ -186,7 +186,7 @@ class PAC_info: public i_Lua_save_device
 
         char up_time_str[ C_MAX_STR_LENGTH ]{ "0 дн. 0:0:0" };
 
-        int  cmd{};
+        int cmd{};
         char cmd_answer[ 200 ]{};
 
         uint32_t restrictions_set_to_off_time{};
@@ -210,4 +210,4 @@ class PAC_info: public i_Lua_save_device
 //-----------------------------------------------------------------------------
 PAC_info* G_PAC_INFO();
 //-----------------------------------------------------------------------------
-#endif // PAC_INFO_H
+#endif  // PAC_INFO_H

@@ -40,12 +40,12 @@ TEST( sys, get_sec )
 TEST( sys, get_delta_millisec )
     {
     auto get_delta_millisec_test = []( uint32_t time1 )
-        {
+    {
         uint32_t now = 0;
         // Unsigned integer subtraction in C++ handles wraparound correctly via
         // modular arithmetic.
         return now - time1;
-        };
+    };
 
     auto dt = get_delta_millisec( 0 );
     EXPECT_GE( dt, 0 );
@@ -160,7 +160,7 @@ TEST( sys, get_time_next_hour_at_23_rolls_to_next_day )
     // implementation returned tm_hour == 24 and left the date fields
     // of the current day.  Pin the 23:30 boundary explicitly instead
     // of relying on the wall clock time of the test run.
-    struct tm in_ {};
+    struct tm in_{};
     in_.tm_year = 126;    // 2026.
     in_.tm_mon = 10;      // November.
     in_.tm_mday = 23;
@@ -196,7 +196,7 @@ TEST( sys, get_time_next_hour_rolls_to_new_year )
     {
     // Midnight rollover across the year boundary: 23:59:30 on
     // Dec 31 2025 must normalize to 00:59:30 on Jan 1 2026.
-    struct tm in_ {};
+    struct tm in_{};
     in_.tm_year = 125;    // 2025.
     in_.tm_mon = 11;      // December.
     in_.tm_mday = 31;

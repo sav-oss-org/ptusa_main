@@ -1,8 +1,8 @@
 #include "w_console.h"
 
-HANDLE                      _hStdOut;
-WORD                        wOldColorAttr;
-CONSOLE_SCREEN_BUFFER_INFO  csbiScreen;
+HANDLE _hStdOut;
+WORD wOldColorAttr;
+CONSOLE_SCREEN_BUFFER_INFO csbiScreen;
 
 void SetColor( WORD color )
     {

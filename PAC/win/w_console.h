@@ -22,9 +22,9 @@
 #define YELLOW ( FOREGROUND_RED | FOREGROUND_GREEN )
 #define GRAY   ( FOREGROUND_INTENSITY )
 #define WHITE  ( FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE )
-#define RESET 0
+#define RESET  0
 
-#define CLEARSCREEN  system( "cls" )
+#define CLEARSCREEN system( "cls" )
 
 #include <time.h>
 #include <conio.h>
@@ -44,8 +44,9 @@ void SetColor( WORD color );
 //#define printf(...)    __asm nop
 //#endif // DEBUG
 //-----------------------------------------------------------------------------
-#define print_time(...) printf( "--%02lu:%02lu:%02lu ", ( ( u_long ) time( 0 ) / 3600 ) \
-    % 24, ( ( u_long ) time( 0 ) / 60 ) % 60, ( u_long ) time( 0 ) % 60 ); \
+#define print_time( ... )                                              \
+    printf( "--%02lu:%02lu:%02lu ", ( (u_long)time( 0 ) / 3600 ) % 24, \
+        ( (u_long)time( 0 ) / 60 ) % 60, (u_long)time( 0 ) % 60 );     \
     printf( __VA_ARGS__ )
 //-----------------------------------------------------------------------------
 //-----------------------------------------------------------------------------

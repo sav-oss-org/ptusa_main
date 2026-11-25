@@ -31,19 +31,19 @@ class io_device
 
         virtual ~io_device();
 
-		enum VENDOR
-			{
-			WAGO,
-			PHOENIX,
-			};
+        enum VENDOR
+            {
+            WAGO,
+            PHOENIX,
+            };
 
-		enum IOLINKSTATE
-			{
-			OK,
+        enum IOLINKSTATE
+            {
+            OK,
 
-			NOTCONNECTED = 100,
-			DEVICEERROR,
-			};
+            NOTCONNECTED = 100,
+            DEVICEERROR,
+            };
 
         enum class ERRORS
             {
@@ -133,21 +133,21 @@ class io_device
         int_2* get_AI_data( u_int index ) const;
 
 
-		/// @brief Получение состояния IO-Link устройства типа AI.
+        /// @brief Получение состояния IO-Link устройства типа AI.
         ///
-		/// @param index - индекс канала в таблице аналоговых входных каналов
-		/// устройства.
-		///
-		/// @return -  состояние устройства.
-		IOLINKSTATE get_AI_IOLINK_state(u_int index) const;
+        /// @param index - индекс канала в таблице аналоговых входных каналов
+        /// устройства.
+        ///
+        /// @return -  состояние устройства.
+        IOLINKSTATE get_AI_IOLINK_state( u_int index ) const;
 
-		/// @brief Получение состояния IO-Link устройства типа AI.
-		///
-		/// @param index - индекс канала в таблице аналоговых входных каналов
-		/// устройства.
-		///
-		/// @return -  состояние устройства.
-		IOLINKSTATE get_AO_IOLINK_state(u_int index) const;
+        /// @brief Получение состояния IO-Link устройства типа AI.
+        ///
+        /// @param index - индекс канала в таблице аналоговых входных каналов
+        /// устройства.
+        ///
+        /// @return -  состояние устройства.
+        IOLINKSTATE get_AO_IOLINK_state( u_int index ) const;
 
         /// @brief Получение установленных данных канала аналогового выхода.
         ///
@@ -192,56 +192,59 @@ class io_device
         int check_output_AO_node_PP_state( u_int index = 0 ) const;
 
 #ifdef PTUSA_TEST
-        public:
+    public:
 #else
-        private:
+    private:
 #endif
 
         /// @brief Группа каналов ввода/вывода устройства.
         struct IO_channels
             {
-            enum CHANNEL_TYPE
-                {
-                CT_DI = 1,
-                CT_DO,
-                CT_AI,
-                CT_AO,
-                };
+                enum CHANNEL_TYPE
+                    {
+                    CT_DI = 1,
+                    CT_DO,
+                    CT_AI,
+                    CT_AO,
+                    };
 
-            u_int  count;   ///< Количество каналов.
-            u_int* tables;  ///< Массив таблиц.
-            u_int* offsets; ///< Массив смещений в пределах таблиц.
-			int* module_offsets; ///< Массив смещений начала адресного пространства модуля IO для канала
-			int* logical_ports; ///< Массив логических номеров канала в пределах модуля IO
+                u_int count;   ///< Количество каналов.
+                u_int* tables;  ///< Массив таблиц.
+                u_int* offsets; ///< Массив смещений в пределах таблиц.
+                int*
+                    module_offsets;  ///< Массив смещений начала адресного пространства модуля IO для канала
+                int*
+                    logical_ports;  ///< Массив логических номеров канала в пределах модуля IO
 
-            int_2  **int_read_values;           ///< Массив значений для чтения.
-			int_2  **int_module_read_values;    ///< Массив значений для чтения адресного пространства модуля.
-            int_2  **int_write_values;          ///< Массив значений для записи.
-            u_char **char_read_values;          ///< Массив значений для чтения.
-            u_char **char_write_values;         ///< Массив значений для записи.
+                int_2** int_read_values;  ///< Массив значений для чтения.
+                int_2**
+                    int_module_read_values;  ///< Массив значений для чтения адресного пространства модуля.
+                int_2** int_write_values;  ///< Массив значений для записи.
+                u_char** char_read_values;  ///< Массив значений для чтения.
+                u_char** char_write_values;  ///< Массив значений для записи.
 
-            CHANNEL_TYPE type;           ///< Тип канала.
+                CHANNEL_TYPE type;  ///< Тип канала.
 
-            IO_channels( CHANNEL_TYPE type );
+                IO_channels( CHANNEL_TYPE type );
 
-            ~IO_channels();
+                ~IO_channels();
 
-            void init( int ch_count );
+                void init( int ch_count );
 
-            void init_channel( u_int ch_index, int node, int offset, int module_offset, int logical_port );
+                void init_channel( u_int ch_index, int node, int offset,
+                    int module_offset, int logical_port );
 
-            void print() const;
+                void print() const;
             };
 
-        IO_channels DI_channels;    ///< Каналы дискретного входа.
-        IO_channels DO_channels;    ///< Каналы дискретного выхода.
-        IO_channels AI_channels;    ///< Каналы аналогового входа.
-        IO_channels AO_channels;    ///< Каналы аналогового выхода.
+        IO_channels DI_channels;  ///< Каналы дискретного входа.
+        IO_channels DO_channels;  ///< Каналы дискретного выхода.
+        IO_channels AI_channels;  ///< Каналы аналогового входа.
+        IO_channels AO_channels;  ///< Каналы аналогового выхода.
 
         VENDOR vendor;
 
     public:
-
         VENDOR get_io_vendor() const;
 
         // Lua.
@@ -340,183 +343,194 @@ class io_manager
         /// @return - указатель на данные канала.
         int_2* get_AO_write_data( u_int node_n, u_int offset );
 
-		//---------------------------------------------------------------------
-		/// @brief Узел модулей ввода/вывода.
-		//
-		///
-		struct io_node
-			{
-            io_node( int type, int number,
-                const char* str_ip_addres, const char* name,
-                int DO_cnt, int DI_cnt, int AO_cnt, int AO_size,
-                int AI_cnt, int AI_size );
+        //---------------------------------------------------------------------
+        /// @brief Узел модулей ввода/вывода.
+        //
+        ///
+        struct io_node
+            {
+                io_node( int type, int number, const char* str_ip_addres,
+                    const char* name, int DO_cnt, int DI_cnt, int AO_cnt,
+                    int AO_size, int AI_cnt, int AI_size );
 
-			~io_node();
+                ~io_node();
 
-			void print();
+                void print();
 
-            enum W_CONST
-                {
-                //Max 63 устройства PXC Axioline F.
-                C_ANALOG_BUF_SIZE = 63 * 32,///< Размер буфера аналоговых модулей.
+                enum W_CONST
+                    {
+                    //Max 63 устройства PXC Axioline F.
+                    C_ANALOG_BUF_SIZE = 63 *
+                        32,  ///< Размер буфера аналоговых модулей.
 
-                C_MAX_DELAY = 60'000,       ///< Макс. время задержки переподключения, мсек.
-                C_CNT_TIMEOUT_US = 100'000, ///< Время ожидания подключения от модуля, мксек.
+                    C_MAX_DELAY =
+                        60'000,  ///< Макс. время задержки переподключения, мсек.
+                    C_CNT_TIMEOUT_US =
+                        100'000,  ///< Время ожидания подключения от модуля, мксек.
 
-                C_RCV_TIMEOUT_SEC = 0,      ///< Время ожидания ответа от модуля, сек.
-                C_RCV_TIMEOUT_US = 250'000, ///< Время ожидания ответа от модуля, мксек.
+                    C_RCV_TIMEOUT_SEC =
+                        0,  ///< Время ожидания ответа от модуля, сек.
+                    C_RCV_TIMEOUT_US =
+                        250'000,  ///< Время ожидания ответа от модуля, мксек.
 
-                ///< Изначальная задержка переподключения к узлу при ошибке связи, мсек.
-                C_INITIAL_RECONNECT_DELAY = 500,
-                };
+                    ///< Изначальная задержка переподключения к узлу при ошибке связи, мсек.
+                    C_INITIAL_RECONNECT_DELAY = 500,
+                    };
 
-			enum TYPES ///< Типы модулей.
-			    {
-				EMPTY = -1,   ///< Не задан.
+                enum TYPES  ///< Типы модулей.
+                    {
+                    EMPTY = -1,  ///< Не задан.
 
-				WAGO_750_86x		  = 0,  ///< Wago 750-863.
-				WAGO_750_820x		  = 2,  ///< Wago 750_820x.
+                    WAGO_750_86x = 0,  ///< Wago 750-863.
+                    WAGO_750_820x = 2,  ///< Wago 750_820x.
 
-				WAGO_750_XXX_ETHERNET = 100,///< Wago Ethernet 750-341 и т.д.
-				PHOENIX_BK_ETH		  = 200,///< Phoenix 2702177
-				};
+                    WAGO_750_XXX_ETHERNET =
+                        100,  ///< Wago Ethernet 750-341 и т.д.
+                    PHOENIX_BK_ETH = 200,  ///< Phoenix 2702177
+                    };
 
-			enum STATES           ///< Состояния работы с узлом.
-				{
-				ST_NO_CONNECT = 0,
-				ST_OK = 1,
-				};
+                enum STATES  ///< Состояния работы с узлом.
+                    {
+                    ST_NO_CONNECT = 0,
+                    ST_OK = 1,
+                    };
 
-            enum class DISPLAY_STATES  ///< Отображение работы с узлом.
-                {
-                DST_ERROR = -1,  ///< Node enabled but no connection.
-                DST_NO_CONNECT = 0,
-                DST_OK = 1,
+                enum class DISPLAY_STATES  ///< Отображение работы с узлом.
+                    {
+                    DST_ERROR = -1,  ///< Node enabled but no connection.
+                    DST_NO_CONNECT = 0,
+                    DST_OK = 1,
 
-                ///< Node has error/warning (Status Register bits 0-5 set).
-                DST_WARNING = 2,
-                };
+                    ///< Node has error/warning (Status Register bits 0-5 set).
+                    DST_WARNING = 2,
+                    };
 
-			/// Bits 0-5 of Status Register (7996) indicate error/PP
-			/// mode conditions. When any of these bits are set, the
-			/// node is in error/PP mode state.
-			static constexpr u_int_2 STATUS_REG_ERROR_MASK = 0x003F;
+                /// Bits 0-5 of Status Register (7996) indicate error/PP
+                /// mode conditions. When any of these bits are set, the
+                /// node is in error/PP mode state.
+                static constexpr u_int_2 STATUS_REG_ERROR_MASK = 0x003F;
 
-            /// Bit 4 of Status Register (7996) indicates PP mode.
-            static constexpr u_int_2 STATUS_REG_PP_MODE_MASK = 0x0010;
+                /// Bit 4 of Status Register (7996) indicates PP mode.
+                static constexpr u_int_2 STATUS_REG_PP_MODE_MASK = 0x0010;
 
-            /// Bits 2 and 8 of Diagnostic Status Register (7997)
-            /// indicate configuration/bus error conditions.
-            static constexpr u_int_2 DIAG_STATUS_REG_CFG_BUS_ERROR_MASK =
-                0x0104;
+                /// Bits 2 and 8 of Diagnostic Status Register (7997)
+                /// indicate configuration/bus error conditions.
+                static constexpr u_int_2 DIAG_STATUS_REG_CFG_BUS_ERROR_MASK =
+                    0x0104;
 
-            ///< Состояние работы с узлом.
-            io_node::STATES state{ io_node::STATES::ST_NO_CONNECT };
+                ///< Состояние работы с узлом.
+                io_node::STATES state{ io_node::STATES::ST_NO_CONNECT };
 
-			TYPES   type;               ///< Тип.
-			u_int   number;             ///< Номер.
-            char    ip_address[ 16 ]{}; ///< IP-адрес.
-            char    name[ 20 ]{};       ///< Имя.
+                TYPES type;  ///< Тип.
+                u_int number;  ///< Номер.
+                char ip_address[ 16 ]{};  ///< IP-адрес.
+                char name[ 20 ]{};  ///< Имя.
 
-            bool is_active{ true };          ///< Признак работающего узла.
-            bool read_io_error_flag{ false };///< Флаг ошибки чтения узла.
+                bool is_active{ true };  ///< Признак работающего узла.
+                bool read_io_error_flag{ false };  ///< Флаг ошибки чтения узла.
 
-            uint32_t last_poll_time{ get_millisec() }; ///< Время последнего опроса.
-            bool is_set_err{};       ///< Установлена ли ошибка связи.
-            int sock{};              ///< Сокет соединения.
+                uint32_t last_poll_time{
+                    get_millisec()
+                };  ///< Время последнего опроса.
+                bool is_set_err{};  ///< Установлена ли ошибка связи.
+                int sock{};  ///< Сокет соединения.
 
-			// Digital outputs ( DO ).
-			u_int  DO_cnt;      ///< Amount of DO.
-            u_char* DO{};       ///< Current values.
-            u_char* DO_{};      ///< To write.
+                // Digital outputs ( DO ).
+                u_int DO_cnt;  ///< Amount of DO.
+                u_char* DO{};  ///< Current values.
+                u_char* DO_{};  ///< To write.
 
-            // Analog outputs ( AO ).
-            u_int AO_cnt;       			///< Amount of AO.
-            int_2 AO[ C_ANALOG_BUF_SIZE ] = {};    ///< Current values.
-            int_2 AO_[ C_ANALOG_BUF_SIZE ] = {};   ///< To write.
-            u_int* AO_offsets{};  			///< Offsets in common data.
-            u_int* AO_types{};    			///< Channels type.
-            u_int AO_size;
+                // Analog outputs ( AO ).
+                u_int AO_cnt;  ///< Amount of AO.
+                int_2 AO[ C_ANALOG_BUF_SIZE ] = {};  ///< Current values.
+                int_2 AO_[ C_ANALOG_BUF_SIZE ] = {};  ///< To write.
+                u_int* AO_offsets{};  ///< Offsets in common data.
+                u_int* AO_types{};  ///< Channels type.
+                u_int AO_size;
 
-            // Digital inputs ( DI ).
-            u_int  DI_cnt;      ///< Amount of DI.
-            u_char* DI{};       ///< Current values.
+                // Digital inputs ( DI ).
+                u_int DI_cnt;  ///< Amount of DI.
+                u_char* DI{};  ///< Current values.
 
-            // Analog inputs ( AI ).
-            u_int AI_cnt;       			///< Amount of AI.
-            int_2 AI[ C_ANALOG_BUF_SIZE ] = {};    ///< Current values.
-            u_int* AI_offsets{};  			///< Offsets in common data.
-            u_int* AI_types{};   			///< Channels type.
-            u_int AI_size;
+                // Analog inputs ( AI ).
+                u_int AI_cnt;  ///< Amount of AI.
+                int_2 AI[ C_ANALOG_BUF_SIZE ] = {};  ///< Current values.
+                u_int* AI_offsets{};  ///< Offsets in common data.
+                u_int* AI_types{};  ///< Channels type.
+                u_int AI_size;
 
-            ///< Время последней попытки подключиться, мсек.
-            uint32_t last_init_time{};
+                ///< Время последней попытки подключиться, мсек.
+                uint32_t last_init_time{};
 
-            ///< Время ожидания до попытки подключиться, мсек.
-            uint32_t delay_time{ W_CONST::C_INITIAL_RECONNECT_DELAY };
+                ///< Время ожидания до попытки подключиться, мсек.
+                uint32_t delay_time{ W_CONST::C_INITIAL_RECONNECT_DELAY };
 
-			stat_time recv_stat;  ///< Статистика работы с сокетом.
-			stat_time send_stat;  ///< Статистика работы с сокетом.
+                stat_time recv_stat;  ///< Статистика работы с сокетом.
+                stat_time send_stat;  ///< Статистика работы с сокетом.
 
-            bool flag_error_read_message{ false }; ///< Флаг для вывода сообщений об ошибке чтения.
-            bool flag_error_write_message{ false }; ///< Флаг для вывода сообщений об ошибке записи.
+                bool flag_error_read_message{
+                    false
+                };  ///< Флаг для вывода сообщений об ошибке чтения.
+                bool flag_error_write_message{
+                    false
+                };  ///< Флаг для вывода сообщений об ошибке записи.
 
-            /// Status register (7996) for Phoenix BK ETH nodes.
-            /// Used to detect error/warning conditions (bits 0-5),
-            /// including PP mode, startup failures, net failures,
-            /// etc. Remains 0 for other node types.
-            u_int_2 status_register{};
+                /// Status register (7996) for Phoenix BK ETH nodes.
+                /// Used to detect error/warning conditions (bits 0-5),
+                /// including PP mode, startup failures, net failures,
+                /// etc. Remains 0 for other node types.
+                u_int_2 status_register{};
 
-            /// Previous status register value for detecting changes.
-            u_int_2 prev_status_register{};
+                /// Previous status register value for detecting changes.
+                u_int_2 prev_status_register{};
 
-            /// Diagnostic status register (7997) for Phoenix BK ETH nodes.
-            /// Bits 2 and 8 indicate configuration/bus errors.
-            u_int_2 diagnostic_status_register{};
+                /// Diagnostic status register (7997) for Phoenix BK ETH nodes.
+                /// Bits 2 and 8 indicate configuration/bus errors.
+                u_int_2 diagnostic_status_register{};
 
-            /// Previous diagnostic register value for detecting changes.
-            u_int_2 prev_diagnostic_status_register{};
+                /// Previous diagnostic register value for detecting changes.
+                u_int_2 prev_diagnostic_status_register{};
 
-            /// Flag indicating PP mode alarm is currently active.
-            bool is_err_mode_alarm_set = false;
+                /// Flag indicating PP mode alarm is currently active.
+                bool is_err_mode_alarm_set = false;
 
-            /// Flag indicating configuration/bus error alarm is currently
-            /// active for diagnostic status register errors (bits 2 and 8
-            /// of register 7997).
-            bool is_cfg_bus_error_alarm_set = false;
+                /// Flag indicating configuration/bus error alarm is currently
+                /// active for diagnostic status register errors (bits 2 and 8
+                /// of register 7997).
+                bool is_cfg_bus_error_alarm_set = false;
 
-            /// @brief Checks PP mode state of the node.
-            /// @return true if PP mode is active (bit 4 set), else false.
-            bool is_pp_mode_active() const;
+                /// @brief Checks PP mode state of the node.
+                /// @return true if PP mode is active (bit 4 set), else false.
+                bool is_pp_mode_active() const;
 
-            /// @return One of `io_node::DISPLAY_STATES`:
-            ///         `DST_OK` for a connected and healthy node.
-            ///         `DST_NO_CONNECT` for an inactive node, emulator,
-            ///         or node without connection.
-            ///         `DST_ERROR` when `state != ST_OK`.
-            ///         `DST_WARNING` when warning/error conditions are
-            ///         present in Phoenix status/diagnostic registers.
-            io_node::DISPLAY_STATES get_display_state() const;
+                /// @return One of `io_node::DISPLAY_STATES`:
+                ///         `DST_OK` for a connected and healthy node.
+                ///         `DST_NO_CONNECT` for an inactive node, emulator,
+                ///         or node without connection.
+                ///         `DST_ERROR` when `state != ST_OK`.
+                ///         `DST_WARNING` when warning/error conditions are
+                ///         present in Phoenix status/diagnostic registers.
+                io_node::DISPLAY_STATES get_display_state() const;
 
             private:
-                io_node( const io_node& io_node_copy ); // Not implemented.
+                io_node( const io_node& io_node_copy );  // Not implemented.
             };
-		//---------------------------------------------------------------------
+        //---------------------------------------------------------------------
 
     protected:
         io_manager();
-        u_int     nodes_count;        ///< Количество узлов.
-        io_node **nodes;              ///< Узлы.
+        u_int nodes_count;  ///< Количество узлов.
+        io_node** nodes;  ///< Узлы.
 
         /// Единственный экземпляр класса.
-        static auto_smart_ptr < io_manager > instance;
+        static auto_smart_ptr< io_manager > instance;
 
     public:
         const io_node* get_node( u_int node_n ) const;
 
         io_manager::io_node* get_node( u_int node_n );
 
-		u_int get_nodes_count();
+        u_int get_nodes_count();
 
         /// @brief Установка числа модулей.
         ///
@@ -527,29 +541,30 @@ class io_manager
         ///
         /// Вызывается из Lua.
         io_manager::io_node* add_node( u_int index, int ntype, int address,
-            const char* IP_address, const char *name,
-            int DO_cnt, int DI_cnt,
+            const char* IP_address, const char* name, int DO_cnt, int DI_cnt,
             int AO_cnt, int AO_size, int AI_cnt, int AI_size );
 
         /// @brief Инициализация параметров канала аналогового вывода.
         ///
         /// Вызывается из Lua.
-        void init_node_AO( u_int node_index, u_int AO_index,
-            u_int type, u_int offset );
+        void init_node_AO(
+            u_int node_index, u_int AO_index, u_int type, u_int offset );
 
         /// @brief Инициализация параметров канала аналогового ввода.
         ///
         /// Вызывается из Lua.
-        void init_node_AI( u_int node_index, u_int AI_index,
-            u_int type, u_int offset );
+        void init_node_AI(
+            u_int node_index, u_int AI_index, u_int type, u_int offset );
 
-		/// @brief Завершает соединение с узлом
-		virtual void disconnect(io_node *node) = 0;
+        /// @brief Завершает соединение с узлом
+        virtual void disconnect( io_node* node ) = 0;
 
         inline static io_node io_node_stub{ io_manager::io_node::PHOENIX_BK_ETH,
             1, "127.0.0.1", "Axxx", 0, 0, 0, 0, 0, 0 };
-        inline static const io_node IO_NODE_STUB{ io_manager::io_node::PHOENIX_BK_ETH,
-            1, "127.0.0.1", "Axxx", 0, 0, 0, 0, 0, 0 };
+        inline static const io_node IO_NODE_STUB{
+            io_manager::io_node::PHOENIX_BK_ETH, 1, "127.0.0.1", "Axxx", 0, 0,
+            0, 0, 0, 0
+        };
 #ifdef PTUSA_TEST
         void clear_nodes();
 #endif
@@ -563,4 +578,4 @@ class io_manager
 //-----------------------------------------------------------------------------
 io_manager* G_IO_MANAGER();
 //-----------------------------------------------------------------------------
-#endif // IO_H
+#endif  // IO_H

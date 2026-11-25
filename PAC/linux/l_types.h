@@ -15,10 +15,10 @@
 #ifndef L_TYPES_H
 #define L_TYPES_H
 
-typedef short int            int_2;
-typedef int                  int_4;
+typedef short int int_2;
+typedef int int_4;
 typedef unsigned short int u_int_2;
 
-typedef unsigned int       u_int_4;
+typedef unsigned int u_int_4;
 
 #endif // L_TYPES_H

@@ -20,7 +20,7 @@ char params_manager::is_init = 0;
 
 #include <cstring>
 //-----------------------------------------------------------------------------
-params_manager::params_manager(): par( 0 ), project_id( 0 )
+params_manager::params_manager() : par( 0 ), project_id( 0 )
     {
     last_idx = 0;
 
@@ -34,10 +34,10 @@ params_manager::params_manager(): par( 0 ), project_id( 0 )
     params_mem = new SRAM( "/opt/plcnext/custom/eeprom.bin",
         static_cast<size_t>( CONSTANTS::C_TOTAL_PARAMS_SIZE ) );
 #else
-    CRC_mem = new SRAM( "./nvram.bin",
-        static_cast<size_t>( CONSTANTS::C_SYS_MEM_SIZE ) );
-    params_mem = new SRAM( "./eeprom.bin",
-        static_cast<size_t>( CONSTANTS::C_TOTAL_PARAMS_SIZE ) );
+    CRC_mem = new SRAM(
+        "./nvram.bin", static_cast<size_t>( CONSTANTS::C_SYS_MEM_SIZE ) );
+    params_mem = new SRAM(
+        "./eeprom.bin", static_cast<size_t>( CONSTANTS::C_TOTAL_PARAMS_SIZE ) );
 #endif // PAC_PLCNEXT
     }
 //-----------------------------------------------------------------------------
@@ -61,7 +61,7 @@ u_int_2 params_manager::solve_CRC()
         datlen--;
         bufidx++;
         }
-    char* p = ( char* ) &project_id;
+    char* p = (char*)&project_id;
     CRC = CRC ^ p[ 0 ];
     for ( int idx = 0; idx <= 7; idx++ )
         {
@@ -112,12 +112,13 @@ int params_manager::init( unsigned int project_id )
     }
 //-----------------------------------------------------------------------------
 void params_manager::final_init( int auto_init_params /*= 1*/,
-                                int auto_init_work_params /*= 1*/,
-                                void ( *custom_init_params_function )() /*= 0 */ )
+    int auto_init_work_params /*= 1*/,
+    void ( *custom_init_params_function )() /*= 0 */ )
     {
     sprintf( G_LOG->msg, "Total memory used: %u of %u bytes[ %.2f%c ].",
-            last_idx, static_cast<unsigned int>( CONSTANTS::C_TOTAL_PARAMS_SIZE ),
-            100. * last_idx / static_cast<float>( CONSTANTS::C_TOTAL_PARAMS_SIZE ), '%' );
+        last_idx, static_cast<unsigned int>( CONSTANTS::C_TOTAL_PARAMS_SIZE ),
+        100. * last_idx / static_cast<float>( CONSTANTS::C_TOTAL_PARAMS_SIZE ),
+        '%' );
     G_LOG->write_log( i_log::P_DEBUG );
 
     //Проверка на изменение количества параметров.
@@ -138,8 +139,8 @@ void params_manager::final_init( int auto_init_params /*= 1*/,
     // Проверка контрольной суммы.
     u_int_2 saved_CRC{};
     constexpr std::size_t OFFSET = sizeof( last_idx );
-    std::memcpy( &saved_CRC, CRC_mem->get_data() + OFFSET,
-        sizeof( saved_CRC ) );
+    std::memcpy(
+        &saved_CRC, CRC_mem->get_data() + OFFSET, sizeof( saved_CRC ) );
     auto solved_CRC = solve_CRC();
     if ( saved_CRC != solved_CRC )
         {
@@ -153,14 +154,14 @@ void params_manager::final_init( int auto_init_params /*= 1*/,
         }
     }
 //-----------------------------------------------------------------------------
-void params_manager::reset_to_default( void( *custom_init_params_function )( ),
+void params_manager::reset_to_default( void ( *custom_init_params_function )(),
     int auto_init_params, int auto_init_work_params )
     {
     params_mem->zero_fill();
 
     if ( custom_init_params_function != 0 )
         {
-        ( *custom_init_params_function )( );
+        ( *custom_init_params_function )();
         }
 
     PAC_info::get_instance()->reset_params();
@@ -191,7 +192,7 @@ void params_manager::reset_to_default( void( *custom_init_params_function )( ),
     get_char();
     printf( "\n" );
 #endif // KEY_CONFIRM
-        }
+    }
 //-----------------------------------------------------------------------------
 void params_manager::save()
     {
@@ -201,11 +202,12 @@ void params_manager::save()
     last_change_ms = get_millisec();
     }
 //-----------------------------------------------------------------------------
-std::byte* params_manager::reserve_params_region( int size, int &start_pos )
+std::byte* params_manager::reserve_params_region( int size, int& start_pos )
     {
     if ( last_idx + size > params_mem->get_size() )
         {
-        G_LOG->debug( "params_manager::reserve_params_region() - is not enough "
+        G_LOG->debug(
+            "params_manager::reserve_params_region() - is not enough "
             "memory ( %d + %d > %d ) !",
             last_idx, size, params_mem->get_size() );
 
@@ -280,21 +282,23 @@ int params_manager::evaluate()
         auto since_save = get_delta_millisec( last_save_ms );
         auto since_change = get_delta_millisec( last_change_ms );
         const auto min_interval =
-             G_PAC_INFO()->par[ PAC_info::P_MIN_SAVE_INTERVAL_MS ];
+            G_PAC_INFO()->par[ PAC_info::P_MIN_SAVE_INTERVAL_MS ];
         const auto stable_delay =
-             G_PAC_INFO()->par[ PAC_info::P_STABLE_SAVE_DELAY_MS ];
+            G_PAC_INFO()->par[ PAC_info::P_STABLE_SAVE_DELAY_MS ];
 
         if ( since_save >= min_interval && since_change >= stable_delay )
             {
             // Проверка на наличие свободного места в файловой системе.
             std::error_code ec;
-            if ( const auto AVAILABLE_SPACE = std::filesystem::space(
-                params_mem->get_directory(), ec ).available,
-                SPACE_LIMIT = static_cast<uintmax_t>(
-                    CONSTANTS::C_TOTAL_PARAMS_SIZE );
+            if ( const auto AVAILABLE_SPACE =
+                     std::filesystem::space( params_mem->get_directory(), ec )
+                         .available,
+                SPACE_LIMIT =
+                    static_cast<uintmax_t>( CONSTANTS::C_TOTAL_PARAMS_SIZE );
                 AVAILABLE_SPACE < SPACE_LIMIT )
                 {
-                G_LOG->error( "params_manager::evaluate() - not enough free "
+                G_LOG->error(
+                    "params_manager::evaluate() - not enough free "
                     "space in the file system (%ju < %ju)!",
                     AVAILABLE_SPACE, SPACE_LIMIT );
                 return 1;
@@ -316,12 +320,13 @@ int params_manager::save_params_as_Lua_str( char* str )
     return res;
     }
 //-----------------------------------------------------------------------------
-int params_manager::restore_params_from_server_backup( char *backup_str )
+int params_manager::restore_params_from_server_backup( char* backup_str )
     {
     static bool is_init = false;
     if ( false == is_init )
         {
-        const char *extra_cmd = "function params ( par_info )\n"
+        const char* extra_cmd =
+            "function params ( par_info )\n"
             "\n"
             "local cmd\n"
             "--if par_info == nil then return\n"
@@ -334,14 +339,14 @@ int params_manager::restore_params_from_server_backup( char *backup_str )
             "end\n";
 
         lua_manager::get_instance()->exec_Lua_str( extra_cmd,
-            "params_manager::restore_params_from_server_backup - init block");
+            "params_manager::restore_params_from_server_backup - init block" );
 
         is_init = true;
         }
 
 
-    int res = lua_manager::get_instance()->exec_Lua_str( backup_str,
-        "params_manager::restore_params_from_server_backup ");
+    int res = lua_manager::get_instance()->exec_Lua_str(
+        backup_str, "params_manager::restore_params_from_server_backup " );
 
     if ( 0 == res )
         {
@@ -376,13 +381,8 @@ int params_test::make_test()
     params_manager::get_instance()->init( POJECT_ID );
     params_manager::get_instance()->final_init();
 
-    if (
-        test1[ 0 ] != 5120 ||
-        test1[ 1 ] != 120 ||
-        test1[ 2 ] != 130 ||
-        test[ 0 ] != 512 ||
-        test[ 1 ] != 12 ||
-        test[ 2 ] != 13 )
+    if ( test1[ 0 ] != 5120 || test1[ 1 ] != 120 || test1[ 2 ] != 130 ||
+         test[ 0 ] != 512 || test[ 1 ] != 12 || test[ 2 ] != 13 )
         {
         if ( G_DEBUG )
             {
@@ -391,9 +391,9 @@ int params_test::make_test()
             printf( "test[ 1 ] = %f\n", test[ 1 ] );
             printf( "test[ 2 ] = %f\n", test[ 2 ] );
 
-            printf( "test1[ 0 ] = %lu\n", ( u_long ) test1[ 0 ] );
-            printf( "test1[ 1 ] = %lu\n", ( u_long ) test1[ 1 ] );
-            printf( "test1[ 2 ] = %lu\n", ( u_long ) test1[ 2 ] );
+            printf( "test1[ 0 ] = %lu\n", (u_long)test1[ 0 ] );
+            printf( "test1[ 1 ] = %lu\n", (u_long)test1[ 1 ] );
+            printf( "test1[ 2 ] = %lu\n", (u_long)test1[ 2 ] );
             get_char();
             }
         return 1;

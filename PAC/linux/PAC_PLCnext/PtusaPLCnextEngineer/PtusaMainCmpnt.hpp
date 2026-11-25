@@ -25,69 +25,72 @@ namespace PtusaPLCnextEngineer
     using namespace Arp::Plc::Commons::Meta;
 
     //#component
-    class PtusaMainCmpnt : public ComponentBase, public ProgramComponentBase, private Loggable<PtusaMainCmpnt>
+    class PtusaMainCmpnt : public ComponentBase,
+                           public ProgramComponentBase,
+                           private Loggable<PtusaMainCmpnt>
         {
-    public:
-        // typedefs
+        public:
+            // typedefs
 
-    public:
-        void Start(void)
-            {
-            sprintf( G_LOG->msg, "Start command" );
-            G_LOG->write_log( i_log::P_INFO );
+        public:
+            void Start( void )
+                {
+                sprintf( G_LOG->msg, "Start command" );
+                G_LOG->write_log( i_log::P_INFO );
 
-            running = 1;
-            };
+                running = 1;
+                };
 
-        void Stop(void)
-            {
-            sprintf( G_LOG->msg, "Stop command" );
-            G_LOG->write_log( i_log::P_INFO );
+            void Stop( void )
+                {
+                sprintf( G_LOG->msg, "Stop command" );
+                G_LOG->write_log( i_log::P_INFO );
 
-            running = 0;
-            };
+                running = 0;
+                };
 
-        // construction/destruction
+                // construction/destruction
 #if ARP_ABI_VERSION_MAJOR < 2
-        PtusaMainCmpnt( IApplication& application, const String& name );
-        virtual ~PtusaMainCmpnt() = default;
+            PtusaMainCmpnt( IApplication& application, const String& name );
+            virtual ~PtusaMainCmpnt() = default;
 #else
-        PtusaMainCmpnt( ILibrary& library, const String& name );
+            PtusaMainCmpnt( ILibrary& library, const String& name );
 #endif
 
-    public:
-        // IComponent operations
-        void Initialize() override;
-        void LoadConfig() override;
-        void SetupConfig() override;
-        void ResetConfig() override;
+        public:
+            // IComponent operations
+            void Initialize() override;
+            void LoadConfig() override;
+            void SetupConfig() override;
+            void ResetConfig() override;
 
-    public:
-        // ProgramComponentBase operations
-        void RegisterComponentPorts() override;
+        public:
+            // ProgramComponentBase operations
+            void RegisterComponentPorts() override;
 
-    private:
-
+        private:
 #if ARP_ABI_VERSION_MAJOR < 2
-        PtusaMainCmpnt( const PtusaMainCmpnt& arg ) = delete;
-        PtusaMainCmpnt& operator= ( const PtusaMainCmpnt& arg ) = delete;
+            PtusaMainCmpnt( const PtusaMainCmpnt& arg ) = delete;
+            PtusaMainCmpnt& operator=( const PtusaMainCmpnt& arg ) = delete;
 
-    public: // static factory operations
-        static IComponent::Ptr Create( Arp::System::Acf::IApplication& application, const String& name );
+        public: // static factory operations
+            static IComponent::Ptr Create(
+                Arp::System::Acf::IApplication& application,
+                const String& name );
 #endif
 
 
-    private:
-        // fields
-        PtusaMainCmpntProgramProvider programProvider;
+        private:
+            // fields
+            PtusaMainCmpntProgramProvider programProvider;
 
-    public:
-        int running{ 0 };
-        bool init_flag{ true };
-        bool error_flag{ false };
+        public:
+            int running{ 0 };
+            bool init_flag{ true };
+            bool error_flag{ false };
 
-    public:
-        /* Ports
+        public:
+            /* Ports
          =====
          Component ports are defined in the following way:
          //#port
@@ -101,13 +104,13 @@ namespace PtusaPLCnextEngineer
          */
         };
 
-    ///////////////////////////////////////////////////////////////////////////////
-    // inline methods of class PtusaMainCmpnt
+        ///////////////////////////////////////////////////////////////////////////////
+        // inline methods of class PtusaMainCmpnt
 #if ARP_ABI_VERSION_MAJOR < 2
     inline IComponent::Ptr PtusaMainCmpnt::Create(
-            Arp::System::Acf::IApplication& application, const String& name)
+        Arp::System::Acf::IApplication& application, const String& name )
         {
-        return IComponent::Ptr(new PtusaMainCmpnt(application, name));
+        return IComponent::Ptr( new PtusaMainCmpnt( application, name ) );
         }
 #endif
     } // end of namespace PtusaPLCnextEngineer

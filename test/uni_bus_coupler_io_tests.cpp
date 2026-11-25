@@ -61,8 +61,8 @@ TEST( uni_io_manager, net_init )
     auto res = mngr.net_init( nullptr );
     EXPECT_EQ( res, 1 );
 
-    io_manager::io_node node( io_manager::io_node::TYPES::PHOENIX_BK_ETH,
-        1000, "127.0.0.1", "A100", 1, 1, 1, 1, 1, 1 );
+    io_manager::io_node node( io_manager::io_node::TYPES::PHOENIX_BK_ETH, 1000,
+        "127.0.0.1", "A100", 1, 1, 1, 1, 1, 1 );
 
     subhook_t socket_hook = subhook_new( reinterpret_cast<void*>( socket ),
         reinterpret_cast<void*>( fail_socket ), SUBHOOK_64BIT_OFFSET );
@@ -71,16 +71,18 @@ TEST( uni_io_manager, net_init )
     EXPECT_EQ( 3, mngr.net_init( &node ) );
     subhook_remove( socket_hook );
 
-    subhook_t setsockopt_hook = subhook_new( reinterpret_cast<void*>( setsockopt ),
-        reinterpret_cast<void*>( fail_setsockopt ), SUBHOOK_64BIT_OFFSET );
+    subhook_t setsockopt_hook =
+        subhook_new( reinterpret_cast<void*>( setsockopt ),
+            reinterpret_cast<void*>( fail_setsockopt ), SUBHOOK_64BIT_OFFSET );
     subhook_install( setsockopt_hook );
     // Should fail - fail with setsockopt().
     EXPECT_EQ( 4, mngr.net_init( &node ) );
     subhook_remove( setsockopt_hook );
 
 #ifdef WIN_OS
-    subhook_t ioctlsocket_hook = subhook_new( reinterpret_cast<void*>( ioctlsocket ),
-        reinterpret_cast<void*>( fail_ioctlsocket ), SUBHOOK_64BIT_OFFSET );
+    subhook_t ioctlsocket_hook =
+        subhook_new( reinterpret_cast<void*>( ioctlsocket ),
+            reinterpret_cast<void*>( fail_ioctlsocket ), SUBHOOK_64BIT_OFFSET );
     subhook_install( ioctlsocket_hook );
     // Should fail - fail with fcntl().
     EXPECT_EQ( 5, mngr.net_init( &node ) );
@@ -107,8 +109,9 @@ TEST( uni_io_manager, net_init )
     EXPECT_EQ( 6, mngr.net_init( &node ) );
     subhook_remove( select_0_hook );
 
-    subhook_t getsockopt_1_hook = subhook_new( reinterpret_cast<void*>( getsockopt ),
-        reinterpret_cast<void*>( fail_getsockopt ), SUBHOOK_64BIT_OFFSET );
+    subhook_t getsockopt_1_hook =
+        subhook_new( reinterpret_cast<void*>( getsockopt ),
+            reinterpret_cast<void*>( fail_getsockopt ), SUBHOOK_64BIT_OFFSET );
     subhook_install( getsockopt_1_hook );
     subhook_t select_1_hook = subhook_new( reinterpret_cast<void*>( select ),
         reinterpret_cast<void*>( success_select ), SUBHOOK_64BIT_OFFSET );
@@ -119,7 +122,8 @@ TEST( uni_io_manager, net_init )
     subhook_remove( select_1_hook );
 
     subhook_install( select_1_hook );
-    subhook_t getsockopt_0_hook = subhook_new( reinterpret_cast<void*>( getsockopt ),
+    subhook_t getsockopt_0_hook = subhook_new(
+        reinterpret_cast<void*>( getsockopt ),
         reinterpret_cast<void*>( success_getsockopt ), SUBHOOK_64BIT_OFFSET );
     subhook_install( getsockopt_0_hook );
     // Should OK.
@@ -146,8 +150,8 @@ TEST( uni_io_manager, net_init )
 class test_uni_io_manager : public uni_io_manager
     {
     public:
-        int e_communicate( io_node* node, int bytes_to_send,
-            int bytes_to_receive ) override
+        int e_communicate(
+            io_node* node, int bytes_to_send, int bytes_to_receive ) override
             {
             if ( is_set_function_code )
                 {
@@ -193,20 +197,19 @@ TEST( uni_io_manager, read_inputs )
     EXPECT_EQ( res, 0 );
 
     mngr.init( 4 );
-    mngr.add_node( 0, io_manager::io_node::TYPES::PHOENIX_BK_ETH,
-        1, "127.0.0.1", "A100", 1, 1, 1, 1, 1, 1 );
-    mngr.add_node( 1, io_manager::io_node::TYPES::PHOENIX_BK_ETH,
-        2, "127.0.0.1", "A200", 1, 1, 1, 1, 1, 1 );
+    mngr.add_node( 0, io_manager::io_node::TYPES::PHOENIX_BK_ETH, 1,
+        "127.0.0.1", "A100", 1, 1, 1, 1, 1, 1 );
+    mngr.add_node( 1, io_manager::io_node::TYPES::PHOENIX_BK_ETH, 2,
+        "127.0.0.1", "A200", 1, 1, 1, 1, 1, 1 );
     mngr.get_node( 1 )->is_active = false;
-    mngr.add_node( 2, io_manager::io_node::TYPES::WAGO_750_XXX_ETHERNET,
-        3, "127.0.0.1", "A300", 1, 1, 1, 1, 1, 1 );
-    mngr.add_node( 3, io_manager::io_node::TYPES::WAGO_750_XXX_ETHERNET,
-        4, "127.0.0.1", "A400", 1, 1, 1, 1, 1, 1 );
+    mngr.add_node( 2, io_manager::io_node::TYPES::WAGO_750_XXX_ETHERNET, 3,
+        "127.0.0.1", "A300", 1, 1, 1, 1, 1, 1 );
+    mngr.add_node( 3, io_manager::io_node::TYPES::WAGO_750_XXX_ETHERNET, 4,
+        "127.0.0.1", "A400", 1, 1, 1, 1, 1, 1 );
     mngr.get_node( 3 )->is_active = false;
 
     auto get_time_hook = subhook_new( reinterpret_cast<void*>( &get_time ),
-        reinterpret_cast<void*>( &get_fixed_time ),
-        SUBHOOK_64BIT_OFFSET );
+        reinterpret_cast<void*>( &get_fixed_time ), SUBHOOK_64BIT_OFFSET );
     subhook_install( get_time_hook );
 
     testing::internal::CaptureStdout();
@@ -220,12 +223,10 @@ TEST( uni_io_manager, read_inputs )
         EXP_TIME + ANSI_COLOR_RED +
         R"(ERROR  (3) -> Read DI:bus coupler returned error. "A300":"127.0.0.1" )"
         "(received code=2, expected=2, received size=0, expected=1).\n" +
-        ANSI_COLOR_RESET +
-        EXP_TIME + ANSI_COLOR_RED +
+        ANSI_COLOR_RESET + EXP_TIME + ANSI_COLOR_RED +
         R"(ERROR  (3) -> Read AI:bus coupler returned error. "A100":"127.0.0.1" )"
         "(received code=4, expected=4, received size=31, expected=2).\n" +
-        ANSI_COLOR_RESET
-        ;
+        ANSI_COLOR_RESET;
     auto output = testing::internal::GetCapturedStdout();
     EXPECT_EQ( output, expectedOutput );
 
@@ -245,8 +246,8 @@ TEST( uni_io_manager, write_outputs )
     EXPECT_EQ( res, 0 );
 
     mngr.init( 4 );
-    mngr.add_node( 0, io_manager::io_node::TYPES::PHOENIX_BK_ETH,
-        1, "127.0.0.1", "A100", 6*16, 6*16, 6, 6, 1, 1 );
+    mngr.add_node( 0, io_manager::io_node::TYPES::PHOENIX_BK_ETH, 1,
+        "127.0.0.1", "A100", 6 * 16, 6 * 16, 6, 6, 1, 1 );
     // Just for testing add set of modules.
     mngr.init_node_AO( 0, 0, 1027843, 0 );
     mngr.init_node_AO( 0, 1, 2688093, 1 );
@@ -255,15 +256,15 @@ TEST( uni_io_manager, write_outputs )
     mngr.init_node_AO( 0, 4, 2688666, 4 );
     mngr.init_node_AO( 0, 5, 10, 5 );
 
-    mngr.add_node( 1, io_manager::io_node::TYPES::PHOENIX_BK_ETH,
-        2, "127.0.0.1", "A200", 1, 1, 1, 1, 1, 1 );
+    mngr.add_node( 1, io_manager::io_node::TYPES::PHOENIX_BK_ETH, 2,
+        "127.0.0.1", "A200", 1, 1, 1, 1, 1, 1 );
     mngr.get_node( 1 )->is_active = false;
-    mngr.add_node( 2, io_manager::io_node::TYPES::WAGO_750_XXX_ETHERNET,
-        3, "127.0.0.1", "A300", 1, 1, 2, 4, 1, 1 );
+    mngr.add_node( 2, io_manager::io_node::TYPES::WAGO_750_XXX_ETHERNET, 3,
+        "127.0.0.1", "A300", 1, 1, 2, 4, 1, 1 );
     mngr.init_node_AO( 2, 0, 638, 0 );
     mngr.init_node_AO( 2, 1, 10, 2 );
-    mngr.add_node( 3, io_manager::io_node::TYPES::WAGO_750_XXX_ETHERNET,
-        4, "127.0.0.1", "A400", 1, 1, 1, 1, 1, 1 );
+    mngr.add_node( 3, io_manager::io_node::TYPES::WAGO_750_XXX_ETHERNET, 4,
+        "127.0.0.1", "A400", 1, 1, 1, 1, 1, 1 );
     mngr.get_node( 3 )->is_active = false;
 
     // Должна быть успешная запись.
@@ -282,8 +283,7 @@ TEST( uni_io_manager, write_outputs )
 
     // Должна быть неуспешная запись (ошибки на уровне данных). Сообщения должны быть.
     auto get_time_hook = subhook_new( reinterpret_cast<void*>( &get_time ),
-        reinterpret_cast<void*>( &get_fixed_time ),
-        SUBHOOK_64BIT_OFFSET );
+        reinterpret_cast<void*>( &get_fixed_time ), SUBHOOK_64BIT_OFFSET );
     subhook_install( get_time_hook );
     const std::string EXP_TIME = "2025-03-12 00.00.00 ";
     expectedOutput =
@@ -326,14 +326,13 @@ TEST( uni_io_manager, read_write_data )
     io_manager* prev_mngr = io_manager::replace_instance( &mngr );
 
     mngr.init( 2 );
-    mngr.add_node( 0, io_manager::io_node::TYPES::PHOENIX_BK_ETH,
-        1, "127.0.0.1", "A100", 1, 1, 1, 1, 1, 1 );
-    mngr.add_node( 1, io_manager::io_node::TYPES::WAGO_750_XXX_ETHERNET,
-        2, "127.0.0.1", "A200", 1, 1, 1, 1, 1, 1 );
+    mngr.add_node( 0, io_manager::io_node::TYPES::PHOENIX_BK_ETH, 1,
+        "127.0.0.1", "A100", 1, 1, 1, 1, 1, 1 );
+    mngr.add_node( 1, io_manager::io_node::TYPES::WAGO_750_XXX_ETHERNET, 2,
+        "127.0.0.1", "A200", 1, 1, 1, 1, 1, 1 );
 
     auto get_time_hook = subhook_new( reinterpret_cast<void*>( &get_time ),
-        reinterpret_cast<void*>( &get_fixed_time ),
-        SUBHOOK_64BIT_OFFSET );
+        reinterpret_cast<void*>( &get_fixed_time ), SUBHOOK_64BIT_OFFSET );
     subhook_install( get_time_hook );
 
     mngr.set_result_to_error();
@@ -358,8 +357,8 @@ TEST( uni_io_manager, read_write_data )
 TEST( uni_io_manager, e_communicate )
     {
     uni_io_manager mngr;
-    io_manager::io_node node( io_manager::io_node::TYPES::PHOENIX_BK_ETH,
-        1000, "127.0.0.1", "A100", 1, 1, 1, 1, 1, 1 );
+    io_manager::io_node node( io_manager::io_node::TYPES::PHOENIX_BK_ETH, 1000,
+        "127.0.0.1", "A100", 1, 1, 1, 1, 1, 1 );
 
     G_PAC_INFO()->par[ PAC_info::P_BK_ANSWER_MAX_WAIT_TIME ] = 10'000;
     auto res = mngr.e_communicate( &node, 1, 1 );
@@ -372,11 +371,12 @@ TEST( uni_io_manager, e_communicate )
 class MockUniIoManager : public uni_io_manager
     {
     public:
-        MOCK_METHOD( void, add_err_to_log, ( const char*, const char*,
-            const char*, int, int, int, int ), ( const, override ) );
+        MOCK_METHOD( void, add_err_to_log,
+            (const char*, const char*, const char*, int, int, int, int),
+            ( const, override ) );
         // Переопределяем e_communicate, чтобы не было реального
         // обмена.
-        MOCK_METHOD( int, e_communicate, ( io_node*, int, int ), ( override ) );
+        MOCK_METHOD( int, e_communicate, (io_node*, int, int), ( override ) );
 
         // Expose read_input_registers for testing.
         int public_read_input_registers( io_node* node, unsigned int address,
@@ -398,8 +398,8 @@ class UniBusCouplerIoTest : public ::testing::Test
         void SetUp() override
             {
             mngr.init( 1 );
-            mngr.add_node( 0, io_manager::io_node::TYPES::PHOENIX_BK_ETH,
-                1, "127.0.0.1", "A100", 6 * 16, 6 * 16, 6, 6, 1, 1 );
+            mngr.add_node( 0, io_manager::io_node::TYPES::PHOENIX_BK_ETH, 1,
+                "127.0.0.1", "A100", 6 * 16, 6 * 16, 6, 6, 1, 1 );
             node = mngr.get_node( 0 );
             // Just for testing add set of modules.
             mngr.init_node_AO( 0, 0, 1027843, 0 );
@@ -417,13 +417,10 @@ class UniBusCouplerIoTest : public ::testing::Test
 TEST_F( UniBusCouplerIoTest, write_outputs_PHOENIX_BK_ETH )
     {
     //Проверяем обработку неуспешной записи выходов (сетевая ошибка).
-    ON_CALL( mngr, e_communicate( _, _, _ ) ).WillByDefault(
-        []( const io_manager::io_node*, int, int )
-        {
-        return -1;
-        } );
-    EXPECT_CALL( mngr, add_err_to_log( _, _, _, _, _, _, _ ) )
-        .Times( 0 );
+    ON_CALL( mngr, e_communicate( _, _, _ ) )
+        .WillByDefault(
+            []( const io_manager::io_node*, int, int ) { return -1; } );
+    EXPECT_CALL( mngr, add_err_to_log( _, _, _, _, _, _, _ ) ).Times( 0 );
 
     auto res = mngr.write_outputs();
     // Проверяем, что флаг не изменился (остался false).
@@ -431,16 +428,18 @@ TEST_F( UniBusCouplerIoTest, write_outputs_PHOENIX_BK_ETH )
     EXPECT_EQ( res, 1 );
 
     //Проверяем обработку получения ошибки при записи выходов.
-    ON_CALL( mngr, e_communicate( _, _, _ ) ).WillByDefault(
-        [this]( const io_manager::io_node*, int, int )
-        {
-        mngr.buff[ 7 ] = 0x11; // Любое значение, кроме 0x10.
-        return 0;
-        } );
+    ON_CALL( mngr, e_communicate( _, _, _ ) )
+        .WillByDefault(
+            [ this ]( const io_manager::io_node*, int, int )
+            {
+                mngr.buff[ 7 ] = 0x11; // Любое значение, кроме 0x10.
+                return 0;
+            } );
     uni_io_manager real_mngr;
-    EXPECT_CALL( mngr, add_err_to_log( ::testing::StrEq( "Write AO" ),
-        _, _, 0x11, 0x10, 35, 6 ) )
-        .WillRepeatedly( Invoke( &real_mngr, &uni_io_manager::add_err_to_log ) );
+    EXPECT_CALL( mngr, add_err_to_log( ::testing::StrEq( "Write AO" ), _, _,
+                           0x11, 0x10, 35, 6 ) )
+        .WillRepeatedly(
+            Invoke( &real_mngr, &uni_io_manager::add_err_to_log ) );
     testing::internal::CaptureStdout();
     res = mngr.write_outputs();
     auto output = testing::internal::GetCapturedStdout();
@@ -466,13 +465,13 @@ TEST( io_node, status_register_only_for_phoenix )
 
     // Add Phoenix BK ETH node.
     io_manager::get_instance()->add_node( 0,
-        io_manager::io_node::PHOENIX_BK_ETH, 1, "127.0.0.1",
-        "A100", 0, 0, 0, 0, 0, 0 );
+        io_manager::io_node::PHOENIX_BK_ETH, 1, "127.0.0.1", "A100", 0, 0, 0, 0,
+        0, 0 );
 
     // Add WAGO node.
     io_manager::get_instance()->add_node( 1,
-        io_manager::io_node::WAGO_750_XXX_ETHERNET, 2, "127.0.0.1",
-        "A200", 0, 0, 0, 0, 0, 0 );
+        io_manager::io_node::WAGO_750_XXX_ETHERNET, 2, "127.0.0.1", "A200", 0,
+        0, 0, 0, 0, 0 );
 
     auto phoenix_node = io_manager::get_instance()->get_node( 0 );
     auto wago_node = io_manager::get_instance()->get_node( 1 );
@@ -500,8 +499,8 @@ TEST( io_node, status_register_initialized_to_zero )
     {
     io_manager::get_instance()->init( 1 );
     io_manager::get_instance()->add_node( 0,
-        io_manager::io_node::PHOENIX_BK_ETH, 1, "127.0.0.1",
-        "A100", 0, 0, 0, 0, 0, 0 );
+        io_manager::io_node::PHOENIX_BK_ETH, 1, "127.0.0.1", "A100", 0, 0, 0, 0,
+        0, 0 );
 
     auto node = io_manager::get_instance()->get_node( 0 );
 
@@ -515,8 +514,8 @@ TEST( io_node, error_bits_detection )
     G_PAC_INFO()->emulation_off();
     io_manager::get_instance()->init( 1 );
     io_manager::get_instance()->add_node( 0,
-        io_manager::io_node::PHOENIX_BK_ETH, 1, "127.0.0.1",
-        "A100", 0, 0, 0, 0, 0, 0 );
+        io_manager::io_node::PHOENIX_BK_ETH, 1, "127.0.0.1", "A100", 0, 0, 0, 0,
+        0, 0 );
 
     auto node = io_manager::get_instance()->get_node( 0 );
     node->is_active = true;
@@ -583,21 +582,24 @@ TEST( uni_io_manager, read_phoenix_status_register_success )
                 {
                 // Simulate successful response for reading 1 register
                 // (2 bytes).
-                buff[7] = 0x04;  // Function code.
-                buff[8] = 2;     // Byte count.
-                buff[9] = 0x00;  // High byte of register value.
+                buff[ 7 ] = 0x04;  // Function code.
+                buff[ 8 ] = 2;     // Byte count.
+                buff[ 9 ] = 0x00;  // High byte of register value.
                 // Low byte of register value (0x0012 = bits 1 and 4).
-                buff[10] = 0x12;
+                buff[ 10 ] = 0x12;
                 return 0;  // Success.
                 }
 
-            u_char* get_resultbuff() { return resultbuff; }
+            u_char* get_resultbuff()
+                {
+                return resultbuff;
+                }
         };
 
     TestUniIoManager mngr;
     mngr.init( 1 );
-    mngr.add_node( 0, io_manager::io_node::TYPES::PHOENIX_BK_ETH,
-        1, "127.0.0.1", "A100", 0, 0, 0, 0, 0, 0 );
+    mngr.add_node( 0, io_manager::io_node::TYPES::PHOENIX_BK_ETH, 1,
+        "127.0.0.1", "A100", 0, 0, 0, 0, 0, 0 );
 
     auto node = mngr.get_node( 0 );
     node->read_io_error_flag = false;
@@ -608,8 +610,8 @@ TEST( uni_io_manager, read_phoenix_status_register_success )
     // Simulate calling read_inputs which calls
     // read_phoenix_status_register. For testing, we'll directly
     // test the logic.
-    int result = mngr.read_input_registers( node,
-        uni_io_manager::PHOENIX_STATUS_REGISTER_ADDRESS, 1 );
+    int result = mngr.read_input_registers(
+        node, uni_io_manager::PHOENIX_STATUS_REGISTER_ADDRESS, 1 );
     EXPECT_GT( result, 0 );  // Should succeed.
 
     // The read_phoenix_status_register logic would be:
@@ -618,8 +620,7 @@ TEST( uni_io_manager, read_phoenix_status_register_success )
     if ( result > 0 )
         {
         node->status_register = static_cast<u_int_2>(
-            uni_io_manager::BYTE_SHIFT_MULTIPLIER * rbuff[ 0 ] +
-            rbuff[ 1 ] );
+            uni_io_manager::BYTE_SHIFT_MULTIPLIER * rbuff[ 0 ] + rbuff[ 1 ] );
         }
 
     EXPECT_EQ( node->status_register, 0x0012 );
@@ -645,16 +646,16 @@ TEST( uni_io_manager, read_phoenix_status_register_failure )
 
     TestUniIoManager mngr;
     mngr.init( 1 );
-    mngr.add_node( 0, io_manager::io_node::TYPES::PHOENIX_BK_ETH,
-        1, "127.0.0.1", "A100", 0, 0, 0, 0, 0, 0 );
+    mngr.add_node( 0, io_manager::io_node::TYPES::PHOENIX_BK_ETH, 1,
+        "127.0.0.1", "A100", 0, 0, 0, 0, 0, 0 );
 
     auto node = mngr.get_node( 0 );
     node->read_io_error_flag = false;
     node->status_register = 0x00FF;  // Set to non-zero initially.
 
     // Try to read - should fail.
-    int result = mngr.read_input_registers( node,
-        uni_io_manager::PHOENIX_STATUS_REGISTER_ADDRESS, 1 );
+    int result = mngr.read_input_registers(
+        node, uni_io_manager::PHOENIX_STATUS_REGISTER_ADDRESS, 1 );
     EXPECT_LE( result, 0 );  // Should fail.
 
     // The read_phoenix_status_register logic on failure.
@@ -672,8 +673,8 @@ TEST( uni_io_manager, read_phoenix_status_register_error_flag_set )
     {
     uni_io_manager mngr;
     mngr.init( 1 );
-    mngr.add_node( 0, io_manager::io_node::TYPES::PHOENIX_BK_ETH,
-        1, "127.0.0.1", "A100", 0, 0, 0, 0, 0, 0 );
+    mngr.add_node( 0, io_manager::io_node::TYPES::PHOENIX_BK_ETH, 1,
+        "127.0.0.1", "A100", 0, 0, 0, 0, 0, 0 );
 
     auto node = mngr.get_node( 0 );
     node->read_io_error_flag = true;  // Error flag is set.
@@ -699,22 +700,25 @@ TEST( uni_io_manager, read_phoenix_status_register_byte_order_conversion )
             int e_communicate( io_node* node, int bytes_to_send,
                 int bytes_to_receive ) override
                 {
-                buff[7] = 0x04;
-                buff[8] = 2;
-                buff[9] = test_high_byte;
-                buff[10] = test_low_byte;
+                buff[ 7 ] = 0x04;
+                buff[ 8 ] = 2;
+                buff[ 9 ] = test_high_byte;
+                buff[ 10 ] = test_low_byte;
                 return 0;
                 }
 
-            u_char* get_resultbuff() { return resultbuff; }
+            u_char* get_resultbuff()
+                {
+                return resultbuff;
+                }
         };
 
     G_PAC_INFO()->emulation_off();
 
     TestUniIoManager mngr;
     mngr.init( 1 );
-    mngr.add_node( 0, io_manager::io_node::TYPES::PHOENIX_BK_ETH,
-        1, "127.0.0.1", "A100", 0, 0, 0, 0, 0, 0 );
+    mngr.add_node( 0, io_manager::io_node::TYPES::PHOENIX_BK_ETH, 1,
+        "127.0.0.1", "A100", 0, 0, 0, 0, 0, 0 );
 
     auto node = mngr.get_node( 0 );
     node->read_io_error_flag = false;
@@ -724,26 +728,24 @@ TEST( uni_io_manager, read_phoenix_status_register_byte_order_conversion )
     // Test 1: High byte = 0x12, Low byte = 0x34 -> 0x1234.
     mngr.test_high_byte = 0x12;
     mngr.test_low_byte = 0x34;
-    int result = mngr.read_input_registers( node,
-        uni_io_manager::PHOENIX_STATUS_REGISTER_ADDRESS, 1 );
+    int result = mngr.read_input_registers(
+        node, uni_io_manager::PHOENIX_STATUS_REGISTER_ADDRESS, 1 );
     EXPECT_GT( result, 0 );
     const u_char* rbuff = mngr.get_resultbuff();
     node->status_register = static_cast<u_int_2>(
-        uni_io_manager::BYTE_SHIFT_MULTIPLIER * rbuff[ 0 ] +
-        rbuff[ 1 ] );
+        uni_io_manager::BYTE_SHIFT_MULTIPLIER * rbuff[ 0 ] + rbuff[ 1 ] );
     EXPECT_EQ( node->status_register, 0x1234 );
 
     // Test 2: High byte = 0x00, Low byte = 0x3F (all error
     // bits) -> 0x003F.
     mngr.test_high_byte = 0x00;
     mngr.test_low_byte = 0x3F;
-    result = mngr.read_input_registers( node,
-        uni_io_manager::PHOENIX_STATUS_REGISTER_ADDRESS, 1 );
+    result = mngr.read_input_registers(
+        node, uni_io_manager::PHOENIX_STATUS_REGISTER_ADDRESS, 1 );
     EXPECT_GT( result, 0 );
     rbuff = mngr.get_resultbuff();
     node->status_register = static_cast<u_int_2>(
-        uni_io_manager::BYTE_SHIFT_MULTIPLIER * rbuff[ 0 ] +
-        rbuff[ 1 ] );
+        uni_io_manager::BYTE_SHIFT_MULTIPLIER * rbuff[ 0 ] + rbuff[ 1 ] );
     EXPECT_EQ( node->status_register, 0x003F );
     EXPECT_EQ( node->get_display_state(),
         io_manager::io_node::DISPLAY_STATES::DST_WARNING );
@@ -751,25 +753,23 @@ TEST( uni_io_manager, read_phoenix_status_register_byte_order_conversion )
     // Test 3: High byte = 0xFF, Low byte = 0xFF -> 0xFFFF.
     mngr.test_high_byte = 0xFF;
     mngr.test_low_byte = 0xFF;
-    result = mngr.read_input_registers( node,
-        uni_io_manager::PHOENIX_STATUS_REGISTER_ADDRESS, 1 );
+    result = mngr.read_input_registers(
+        node, uni_io_manager::PHOENIX_STATUS_REGISTER_ADDRESS, 1 );
     EXPECT_GT( result, 0 );
     rbuff = mngr.get_resultbuff();
     node->status_register = static_cast<u_int_2>(
-        uni_io_manager::BYTE_SHIFT_MULTIPLIER * rbuff[ 0 ] +
-        rbuff[ 1 ] );
+        uni_io_manager::BYTE_SHIFT_MULTIPLIER * rbuff[ 0 ] + rbuff[ 1 ] );
     EXPECT_EQ( node->status_register, 0xFFFF );
 
     // Test 4: All zeros -> 0x0000.
     mngr.test_high_byte = 0x00;
     mngr.test_low_byte = 0x00;
-    result = mngr.read_input_registers( node,
-        uni_io_manager::PHOENIX_STATUS_REGISTER_ADDRESS, 1 );
+    result = mngr.read_input_registers(
+        node, uni_io_manager::PHOENIX_STATUS_REGISTER_ADDRESS, 1 );
     EXPECT_GT( result, 0 );
     rbuff = mngr.get_resultbuff();
     node->status_register = static_cast<u_int_2>(
-        uni_io_manager::BYTE_SHIFT_MULTIPLIER * rbuff[ 0 ] +
-        rbuff[ 1 ] );
+        uni_io_manager::BYTE_SHIFT_MULTIPLIER * rbuff[ 0 ] + rbuff[ 1 ] );
     EXPECT_EQ( node->status_register, 0x0000 );
     EXPECT_EQ( node->get_display_state(),
         io_manager::io_node::DISPLAY_STATES::DST_OK );
