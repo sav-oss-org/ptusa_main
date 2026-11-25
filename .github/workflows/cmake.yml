@@ -8,9 +8,15 @@ on:
   workflow_dispatch:
   pull_request:
     branches: [ master ]
+    # Actions never run for draft pull requests, so the ready
+    # transition is the first event that can report the required
+    # contexts for a PR opened as a draft (#1592).
+    types: [ opened, reopened, synchronize, ready_for_review ]
   pull_request_target:
     branches: [ master ]
-    types: [ labeled, opened, reopened, synchronize ]
+    # `ready` mirrors `ready_for_review` for the privileged
+    # copy that posts the stub statuses.
+    types: [ labeled, opened, reopened, synchronize, ready ]
   merge_group:
     types: [ checks_requested ]
   release:
@@ -715,8 +721,8 @@ jobs:
       shell: bash
       run: |
         lcov --capture --directory . --ignore-errors mismatch,inconsistent --output-file coverage.info
-        lcov --remove coverage.info '/usr/*' --remove coverage.info '*/test/*' --remove coverage.info '*/googletest/*' --output-file coverage.info # filter system-files
-        lcov --list coverage.info # debug info
+        lcov --remove coverage.info '/usr/*' --remove coverage.info '*/test/*' --remove coverage.info '*/googletest/*' --ignore-errors mismatch,inconsistent --output-file coverage.info # filter system-files
+        lcov --list coverage.info --ignore-errors mismatch,inconsistent # debug info
 
     - name: Upload coverage to Codecov (Linux only)
       if: runner.os == 'Linux' && !matrix.config.preset

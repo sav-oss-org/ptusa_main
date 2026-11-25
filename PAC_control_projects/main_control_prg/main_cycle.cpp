@@ -1,4 +1,5 @@
 #include <cstdio>
+#include <cinttypes>
 
 #include "dtime.h"
 #include "lua_manager.h"
@@ -105,14 +106,15 @@ int main_cycle()
         if ( TRESH_AVG < avg_time )
             {
             G_LOG->alert( "Main control cycle avg time above threshold : "
-                "%4lu > %4u ms (Lua mem = %d b).",
+                "%4" PRIu32 " > %4u ms (Lua mem = %d b).",
                 avg_time, TRESH_AVG,
                 lua_gc( G_LUA_MANAGER->get_Lua(), LUA_GCCOUNT, 0 ) * 1024 +
                 lua_gc( G_LUA_MANAGER->get_Lua(), LUA_GCCOUNTB, 0 ) );
             }
 
         G_LOG->info( "Main control cycle performance : "
-            "avg = %lu, max = %4lu, tresh = %4u ms (%4u cycles, Lua mem = %d b).",
+            "avg = %" PRIu32 ", max = %4" PRIu32 ", tresh = %4u ms"
+            " (%4u cycles, Lua mem = %d b).",
             avg_time, max_iteration_cycle_time, TRESH_AVG,
             cycles_per_period,
             lua_gc( G_LUA_MANAGER->get_Lua(), LUA_GCCOUNT, 0 ) * 1024 +
