@@ -6006,7 +6006,7 @@ int cipline_tech_object::check_device( device*& outdev, int parno, device::DEVIC
                                 fmt::print("LINE{}: legacy "
                                     "circulation time {} found in "
                                     "pump running signal slot, "
-                                    "signal disabled\n\r",
+                                    "signal disabled\n",
                                     nmr, dev_no);
                                 }
                             return 0;
