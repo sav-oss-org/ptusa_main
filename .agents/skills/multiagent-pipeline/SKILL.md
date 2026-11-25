@@ -83,7 +83,7 @@ Labels").
 Claimed work runs in a dedicated linked worktree, never in the main
 checkout:
 
-```
+```bash
 git worktree add ../ptusa-wt/wt-<issue> -b <prefix>_<slug> \
     sav-oss-org/master
 git -C ../ptusa-wt/wt-<issue> submodule update --init --recursive
@@ -111,8 +111,8 @@ Include all of this in the sub-agent prompt:
   `sav-oss-org/ptusa_main:master` from the configured fork. Issue kind
   is decided in order: native issue type (`issueType`, the intended
   canonical source, not yet populated on older issues), then labels
-  (`bug`, `enhancement`), then the template title prefix (`[BUG]: `,
-  `[FEATURE]: `, `[DEVICE]: `) as mirror and fallback; the title-only
+  (`bug`, `enhancement`), then the template title prefix (`[BUG]:`,
+  `[FEATURE]:`, `[DEVICE]:`) as mirror and fallback; the title-only
   submarkers `[DEVICE]` and `[DISCUSSION]` (the latter means humans
   only) have no type or label equivalent yet. Branch prefixes are a
   closed set, mapped from the issue kind and the commit verb: `fix_`
@@ -180,7 +180,7 @@ Include all of this in the sub-agent prompt:
 
 ## Command reference
 
-```
+```bash
 gh issue list --repo sav-oss-org/ptusa_main --label agent:ok \
   --json number,title --jq '.[] | "#\(.number) \(.title)"'
 gh issue edit N --repo sav-oss-org/ptusa_main --add-label agent:claimed
