@@ -1,0 +1,100 @@
+name: Docs lint
+on:
+  pull_request:
+    branches: [ master ]
+  workflow_dispatch:
+
+# One run per pull request at a time; the event-scoped group
+# matches #1555/#1617 so queued runs of different events never
+# cancel each other.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: false
+
+# Both lint jobs only read the checked-out tree and post check
+# annotations; no token besides the read-only job token is used,
+# so the plain `pull_request` trigger is enough (no secrets and
+# no pull request code are executed).
+permissions:
+  contents: read
+
+jobs:
+  # Advisory documentation checks (#1641): the jobs report findings
+  # as annotations and warnings but never block a pull request.
+  # Only the Markdown files touched by the pull request are linted
+  # so that the historical corpus can settle gradually; a
+  # `workflow_dispatch` run lints the tracked project Markdown
+  # instead. Strict mode, a required context, Vale for English
+  # prose and LanguageTool for Russian texts are follow-ups listed
+  # in the issue.
+  changed-markdown:
+    name: Detect changed Markdown
+    if: ${{ github.repository == 'sav-oss-org/ptusa_main' }}
+    runs-on: ubuntu-latest
+    outputs:
+      any: ${{ steps.pick.outputs.any }}
+      files: ${{ steps.pick.outputs.files }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          # `pull_request_target` is not used, but keeping the same
+          # explicit head checkout as the other detectors makes the
+          # diff semantics identical everywhere.
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - name: Pick the Markdown files to lint
+        id: pick
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          set -eu
+          if [ -n "$BASE_REF" ]; then
+            base=$(git merge-base "origin/$BASE_REF" HEAD)
+            list=$(git diff --name-only "$base" HEAD -- '*.md')
+          else
+            # Manual run: lint the tracked project Markdown,
+            # skipping vendored trees that are not ours to fix.
+            list=$(git ls-files -- '*.md' |
+              grep -v -e '^deps/' -e '^PAC/common/' || true)
+          fi
+          if [ -z "$list" ]; then
+            echo "any=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "any=true" >> "$GITHUB_OUTPUT"
+            # One space-separated line: the project keeps spaces
+            # out of Markdown paths (enforced by git checkout).
+            files=$(echo "$list" | tr '\n' ' ')
+            printf 'files=%s\n' "$files" >> "$GITHUB_OUTPUT"
+          fi
+
+  markdown:
+    name: Lint changed Markdown
+    needs: changed-markdown
+    if: needs.changed-markdown.outputs.any == 'true'
+    runs-on: ubuntu-latest
+    # Advisory rollout: findings are reported as annotations, the
+    # job turns green either way; remove to enforce later (#1641).
+    continue-on-error: true
+    steps:
+      - uses: DavidAnson/markdownlint-cli2-action@3ce8f712b5d8f31acd8e201be6d97e3d2bb23eb7 # v25.1.0
+        with:
+          config: .github/markdownlint-cli2.jsonc
+          files: ${{ needs.changed-markdown.outputs.files }}
+
+  links:
+    name: Check links in changed Markdown
+    needs: changed-markdown
+    if: needs.changed-markdown.outputs.any == 'true'
+    runs-on: ubuntu-latest
+    # Advisory too: external endpoints flake, and old guides may
+    # still carry dead links nobody has touched yet (#1641).
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: lycheeverse/lychee-action@e7477775783ea5526144ba13e8db5eec57747ce8 # v2.9.0
+        with:
+          args: >-
+            --verbose --no-progress --max-concurrency 8
+            --exclude-mail
+            ${{ needs.changed-markdown.outputs.files }}
+          fail: false
