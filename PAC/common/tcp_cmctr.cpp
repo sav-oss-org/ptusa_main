@@ -2,6 +2,7 @@
 #error You must define OS!
 #endif
 #include <cerrno>
+#include <cinttypes>
 
 #include "tcp_cmctr.h"
 #include "tcp_client.h"
@@ -121,6 +122,17 @@ int tcp_communicator::get_master_socket()
 //------------------------------------------------------------------------------
 bool tcp_communicator::checkBuff( int s )
     {
+    // A descriptor at or above FD_SETSIZE does not fit into the fd_set
+    // bitmap, so reject it and report the same result as a failed select().
+    if ( s < 0 || s >= FD_SETSIZE )
+        {
+        G_LOG->warning(
+            "Network device : s%d is out of select() range"
+            " ( FD_SETSIZE = %d ).",
+            s, FD_SETSIZE );
+        return false;
+        }
+
     // Настраиваем  file descriptor set.
     fd_set fds;
     FD_ZERO( &fds );
@@ -157,7 +169,8 @@ int tcp_communicator::recvtimeout( int s, u_char* buf,
 
             u_long avg_time = stat->all_time / stat->cycles_cnt;
             G_LOG->debug( R"(Network performance : recv : s%d->"%s":"%s" )"
-                "avg = %lu, min = %lu, max = %lu, tresh = %u (ms).",
+                "avg = %lu, min = %" PRIu32 ", max = %" PRIu32
+                ", tresh = %u (ms).",
                 s, name, IP, avg_time, stat->min_iteration_cycle_time,
                 stat->max_iteration_cycle_time, t );
 
