@@ -125,6 +125,18 @@ int no_print_stack_traceback( lua_State* L )
     return 0;
     }
 
+int get_lua_error_count( lua_State* L )
+    {
+    lua_pushnumber( L, lua_manager::get_lua_error_count() );
+    return 1;
+    }
+
+int get_last_lua_error( lua_State* L )
+    {
+    lua_pushstring( L, lua_manager::get_last_lua_error() );
+    return 1;
+    }
+
 int use_print_stack_traceback( lua_State* L )
     {
     lua_manager::use_print_stack_traceback();
@@ -149,6 +161,8 @@ struct luaL_reg ls_lib[] =
     { "init", lua_init },
     { "eval", eval },
     { "no_print_stack_traceback", no_print_stack_traceback },
+    { "get_lua_error_count", get_lua_error_count },
+    { "get_last_lua_error", get_last_lua_error },
     { "use_print_stack_traceback", use_print_stack_traceback },
     { "switch_on_verbose", switch_on_verbose },
     { "switch_off_verbose", switch_off_verbose },

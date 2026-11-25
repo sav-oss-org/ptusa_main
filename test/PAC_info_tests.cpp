@@ -2,7 +2,9 @@
 #include "bus_coupler_io.h"
 #include "OPCUAServer.h"
 #include "lua_manager.h"
+#include "param_ex.h"
 #include <cstdio>
+#include <cstring>
 
 // Мок для G_OPCUA_SERVER.
 class MockOPCUAServer : public OPCUA_server
@@ -54,8 +56,48 @@ TEST( PAC_info, OPCUA_server_start_fail )
     auto ret = G_PAC_INFO()->set_cmd( "P_IS_OPC_UA_SERVER_ACTIVE", 0, 1 );
     EXPECT_EQ( ret, 1 );
 
+    // Тест не должен оставлять в общем объекте грязный результат команды
+    // (текст ошибки запуска сервера), иначе он «протечёт» в соседние тесты.
+    EXPECT_EQ( 0, G_PAC_INFO()->set_cmd( "CMD", 0,
+        static_cast<double>( PAC_info::COMMANDS::CLEAR_RESULT_CMD ) ) );
+
     subhook_remove( get_OPC_hook );
     subhook_free( get_OPC_hook );
+    }
+
+TEST( PAC_info, clear_result_cmd )
+    {
+    MockOPCUAServer mockServer;
+
+    auto get_OPC_hook = subhook_new(
+        reinterpret_cast<void*>( &OPCUA_server::get_instance ),
+        reinterpret_cast<void*>( &MockOPCUAServer::get_mock_instance ),
+        SUBHOOK_64BIT_OFFSET );
+    subhook_install( get_OPC_hook );
+
+    // Подготовка: сервер вернёт ошибку, и ответ команды станет грязным.
+    EXPECT_CALL( mockServer, init_all_and_start() )
+        .WillOnce( ::testing::Return( 0xBADF00D ) );
+    EXPECT_CALL( mockServer, shutdown() );
+
+    G_PAC_INFO()->par[ PAC_info::P_IS_OPC_UA_SERVER_ACTIVE ] = 0;
+    EXPECT_EQ( 1, G_PAC_INFO()->set_cmd( "P_IS_OPC_UA_SERVER_ACTIVE", 0, 1 ) );
+
+    subhook_remove( get_OPC_hook );
+    subhook_free( get_OPC_hook );
+
+    const auto MAX_SIZE = 1000;
+    char buff[ MAX_SIZE ] = { 0 };
+    G_PAC_INFO()->save_device( buff );
+    EXPECT_NE( nullptr, std::strstr( buff, "\tCMD_ANSWER=\"OPC UA" ) );
+
+    // Команда очистки результата должна убирать и текст ответа команды.
+    EXPECT_EQ( 0, G_PAC_INFO()->set_cmd( "CMD", 0,
+        static_cast<double>( PAC_info::COMMANDS::CLEAR_RESULT_CMD ) ) );
+
+    buff[ 0 ] = 0;
+    G_PAC_INFO()->save_device( buff );
+    EXPECT_NE( nullptr, std::strstr( buff, "\tCMD_ANSWER=\"\",\n" ) );
     }
 
 TEST( PAC_info, reload_restrictions )
@@ -168,6 +210,25 @@ TEST( PAC_info, save_device )
         io_manager::io_node::TYPES::PHOENIX_BK_ETH, 100, "127.0.0.1", "A100",
         0, 0, 0, 0, 0, 0 );
 
+    params_manager::get_instance()->reset_params_counters();
+
+    // Узел должен быть активен и в состоянии ST_OK, как в штатном
+    // порядке прогонов: соседние тесты могут оставить иное состояние.
+    auto node = io_manager::get_instance()->get_node( 0 );
+    node->is_active = true;
+    node->state = io_manager::io_node::ST_OK;
+    node->status_register = 0;  // No PP mode.
+
+    // Соседние тесты могли оставить watchdog-устройства в ошибке,
+    // уберём их: в штатном порядке здесь их нет.
+    device_manager::get_instance()->clear_io_devices();
+
+    // Индикаторы связи пересчитываются в eval(), сбросим остаток
+    // от соседних тестов и включим эмуляцию на время теста - в
+    // штатном порядке она активна (см. PAC_info.is_emulator).
+    const bool was_emulator = G_PAC_INFO()->is_emulator();
+    G_PAC_INFO()->emulation_on();
+    G_PAC_INFO()->reset_commun_errors();
     G_PAC_INFO()->reset_params();
     G_PAC_INFO()->set_cmd( "CMD", 0,
         static_cast<double>( PAC_info::COMMANDS::CLEAR_RESULT_CMD ) );
@@ -175,6 +236,14 @@ TEST( PAC_info, save_device )
     G_PAC_INFO()->reset_uptime();
     DeltaMilliSecSubHooker::set_millisec( 0 );
     G_PAC_INFO()->eval();  // Update error indicators.
+
+    // Счётчики накапливаются тестами всего процесса и зависят от
+    // порядка выполнения, поэтому эталонные значения этих полей
+    // строятся от текущих значений.
+    const std::string params_change_c = std::to_string(
+        params_manager::get_instance()->get_params_change_counter() );
+    const std::string params_save_c = std::to_string(
+        params_manager::get_instance()->get_params_save_counter() );
 
     const auto MAX_SIZE = 1000;
     const auto REF_STR =
@@ -214,14 +283,14 @@ TEST( PAC_info, save_device )
         "\tNODES_COMM_ERROR=0,\n"
         "\tWATCHDOG_ERROR=0,\n"
         "\tCOMMUN_ERROR=0,\n"
-        "\tPARAMS_CHANGE_COUNTER=1,\n"
-        "\tPARAMS_SAVE_COUNTER=0,\n"
+        "\tPARAMS_CHANGE_COUNTER=" + params_change_c + ",\n"
+        "\tPARAMS_SAVE_COUNTER=" + params_save_c + ",\n"
         "\t}\n";
     char buff[ MAX_SIZE ] = { 0 };
 
     G_PAC_INFO()->reset_uptime();
     G_PAC_INFO()->save_device( buff );
-    EXPECT_STREQ( REF_STR, buff );
+    EXPECT_EQ( REF_STR, buff );
 
     const auto REF_STR_1s =
         "t.SYSTEM = \n"
@@ -260,14 +329,20 @@ TEST( PAC_info, save_device )
             "\tNODES_COMM_ERROR=0,\n"
             "\tWATCHDOG_ERROR=0,\n"
             "\tCOMMUN_ERROR=0,\n"
-            "\tPARAMS_CHANGE_COUNTER=1,\n"
-            "\tPARAMS_SAVE_COUNTER=0,\n"
+            "\tPARAMS_CHANGE_COUNTER=" + params_change_c + ",\n"
+            "\tPARAMS_SAVE_COUNTER=" + params_save_c + ",\n"
             "\t}\n";
     DeltaMilliSecSubHooker::set_millisec( 1010 );
     G_PAC_INFO()->eval();
     G_PAC_INFO()->save_device( buff );
     DeltaMilliSecSubHooker::set_default_time();
-    EXPECT_STREQ( REF_STR_1s, buff );
+    EXPECT_EQ( REF_STR_1s, buff );
+    params_manager::get_instance()->reset_params_counters();
+
+    if ( !was_emulator )
+        {
+        G_PAC_INFO()->emulation_off();
+        }
     }
 
 TEST( PAC_info, get_name_in_Lua )
