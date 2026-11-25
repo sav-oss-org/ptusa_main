@@ -220,3 +220,5 @@ components](https://www.phoenixcontact.com/online/portal/pi?1dmy&urile=wcm%3apat
   тестированию
 + [Руководство по стилю кода](../style.md) - Стандарты и соглашения по коду
 + [Руководство по участию](../CONTRIBUTING.md) - Как внести вклад в проект
++ [Порядок выпуска релизов](../RELEASE_PROCESS_RU.md) -
+  Как CI собирает релизы

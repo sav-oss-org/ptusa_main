@@ -9,19 +9,36 @@ namespace
     }
 
 #ifdef PTUSA_TEST
-tm get_time_next_hour()
+namespace
+    {
+    /// Подменный источник миллисекунд, см. set_millisec_source.
+    uint32_t ( *g_millisec_source )() {};
+    }
+//-----------------------------------------------------------------------------
+void set_millisec_source( uint32_t ( *source )() )
+    {
+    g_millisec_source = source;
+    }
+//-----------------------------------------------------------------------------
+tm get_time_next_hour_from( const time_t& current_time )
     {
     thread_local static struct tm timeInfo_;
 #ifdef LINUX_OS
-    auto t_ = time( nullptr );
-    localtime_r( &t_, &timeInfo_ );
+    localtime_r( &current_time, &timeInfo_ );
 #else
-    static time_t t_ = time( nullptr );
-    localtime_s( &timeInfo_, &t_ );
+    localtime_s( &timeInfo_, &current_time );
 #endif // LINUX_OS
     timeInfo_.tm_hour++;
+    // mktime() normalizes the broken-down time, so an hour past 23 rolls
+    // over to the next day and tm_wday and tm_yday are recomputed.
+    mktime( &timeInfo_ );
 
     return timeInfo_;
+    }
+//-----------------------------------------------------------------------------
+tm get_time_next_hour()
+    {
+    return get_time_next_hour_from( time( nullptr ) );
     }
 
 tm get_fixed_time()
@@ -53,6 +70,12 @@ uint32_t get_sec()
 //-----------------------------------------------------------------------------
 uint32_t get_millisec()
     {
+#ifdef PTUSA_TEST
+    if ( g_millisec_source )
+        {
+        return g_millisec_source();
+        }
+#endif // PTUSA_TEST
     auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(
         get_duration() ).count();
 
