@@ -1,0 +1,243 @@
+# Checks pull request commit messages, authors, title and touched
+# files, and newly pushed tags, against the policy mirrored below.
+# https://commit-check.com/
+name: 'Commit check'
+
+on:
+  pull_request:
+    branches: ["master"]
+    # Edited titles matter because squash merges build the commit
+    # message from them.
+    types: [opened, synchronize, reopened, edited]
+  # GitHub runs this job from the base branch's copy of the
+  # workflow, so a tag gate cannot be influenced by the pull
+  # request that carries the tag.
+  push:
+    tags: ['**']
+
+permissions:
+  # Read-only at the top level; the write access to pull
+  # requests that the PR-comment step needs is scoped to that
+  # one job below, per Sonar S6622.
+  contents: read
+
+env:
+  # The policy is mirrored from .github/cchk.toml on purpose:
+  # CCHK_* values win over the checked-out file, so a pull
+  # request cannot weaken the rules it is checked against by
+  # editing that config. Keep the two copies in sync; touching
+  # cchk.toml stays visible in the pull request diff. Residual:
+  # the top-level warn list and inherit_from are read from the
+  # file only, so demotions through them remain a visible risk
+  # until the tool can pin a config to a trusted revision.
+  CCHK_CONVENTIONAL_COMMITS: 'true'
+  # Keep in sync with allow_commit_types in .github/cchk.toml.
+  CCHK_ALLOW_COMMIT_TYPES: 'fix,feat,test,build,ci,perf,deps,docs,chore'
+  CCHK_SUBJECT_CAPITALIZED: 'true'
+  CCHK_SUBJECT_IMPERATIVE: 'true'
+  CCHK_SUBJECT_MAX_LENGTH: '50'
+  CCHK_ALLOW_WIP_COMMITS: 'false'
+  CCHK_ALLOW_EMPTY_COMMITS: 'false'
+  CCHK_ALLOW_MERGE_COMMITS: 'true'
+  # Empty on purpose: pins the skip-list so a checked-in or
+  # inherited config cannot exempt authors from the checks.
+  CCHK_IGNORE_AUTHORS: ''
+  CCHK_AI_ATTRIBUTION: 'disclose'
+  CCHK_AI_DISCLOSURE_TRAILERS: 'AI-assisted,Co-authored-by'
+  # Empty on purpose: keeps the tool's built-in known-AI list;
+  # verified an empty value does not weaken CC014 detection.
+  CCHK_AI_DISCLOSURE_PATTERN: ''
+  # Pinned to the tool defaults these checks currently run with
+  # (fixup and revert commits are accepted today), so a config
+  # edit cannot flip them either way; verified env beats a
+  # config that sets allow_fixup_commits = true.
+  CCHK_ALLOW_FIXUP_COMMITS: 'true'
+  CCHK_ALLOW_REVERT_COMMITS: 'true'
+  # Opt-in checks are pinned to their off-by-default values for
+  # symmetry: they cannot weaken the gate from the config file,
+  # but pinning keeps the effective policy fully visible here.
+  CCHK_SUBJECT_MIN_LENGTH: '0'
+  CCHK_CONVENTIONAL_BRANCH: 'false'
+  CCHK_FILES_MAX_SIZE: '1MB'
+  CCHK_FILES_PROHIBITED_PATTERNS: >-
+    *.pem,*.key,*.pfx,*.p12,.env,id_rsa*
+  CCHK_FILES_MAX_PATH_LENGTH: '250'
+  CCHK_TAG_REGEX: >-
+    ^\d{4}\.(?:(?:[13578]|1[02])\.(?:[1-9]|[12]\d|3[01])|(?:[469]|11)\.(?:[1-9]|[12]\d|30)|2\.(?:[1-9]|1\d|2[0-9]))(?:\.(?:0|[1-9]\d*))?$
+
+jobs:
+  commit-check:
+    # Dependabot writes `Bump X from A to B` subjects by design
+    # and cannot adopt the prefix policy, so the bot keeps its
+    # own style (#1596).
+    if: >-
+      github.event_name == 'pull_request' &&
+      github.actor != 'dependabot[bot]'
+    permissions:
+      contents: read
+      pull-requests: write
+    runs-on: ubuntu-latest
+    steps:
+      - name: 'Checkout repository'
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: 'Commit check'
+        uses: commit-check/commit-check-action@3d46238970102271c989e85c58f22748a923384c # v2.24.1
+        with:
+          message: true
+          # The branch rule is off in .github/cchk.toml; the
+          # house style is snake_case, not Conventional Branch.
+          branch: false
+          author-name: true
+          author-email: true
+          # [files] rules (prohibited patterns, size, path
+          # length) ride the same engine now; this replaces
+          # the standalone pinned-wheel step (issue #1615).
+          # Needs fetch-depth: 0, the checkout has it.
+          files: true
+          pr-title: true
+          job-summary: true
+          # Skipped automatically on fork pull requests, which
+          # get a read-only token; the check run still works.
+          pr-comments: true
+          # Report-only while the control program is under heavy
+          # testing. Remove once the baseline is green, then
+          # make this check required in branch protection.
+          dry-run: true
+
+      - name: 'AI trailer pair'
+        # commit-check ORs the two trailer names (CC015 needs
+        # Co-authored-by in its list), so the house AND rule is
+        # enforced here: a commit naming an AI tool or claiming
+        # AI assistance must carry both provenance trailers.
+        # Remove continue-on-error together with dry-run above.
+        continue-on-error: true
+        run: |
+          status=0
+          for c in $(git rev-list \
+              '${{ github.event.pull_request.base.sha }}..HEAD'); do
+            msg="$(git log -1 --format=%B "$c")"
+            if printf '%s\n' "$msg" | grep -qiE \
+                '^(AI-assisted:|Signed-off-by:.*(copilot|claude|chatgpt|openai|gemini|cursor|cline|devin|qoder|windsurf|zed ai))|Co-authored-by:.*(copilot|claude|chatgpt|openai|gemini|cursor|cline|devin|qoder|windsurf|zed ai)|generated (with|by)[^"]*(copilot|claude|chatgpt|openai|gemini|cursor|cline|devin|qoder|windsurf|zed ai| ai )'; then
+              if ! printf '%s\n' "$msg" | grep -q '^AI-assisted:' ||
+                 ! printf '%s\n' "$msg" | grep -q '^Co-authored-by:'; then
+                echo "::error::$(git log -1 --format=%h "$c"): AI commits need both AI-assisted and Co-authored-by trailers"
+                status=1
+              fi
+            fi
+          done
+          exit "$status"
+
+  pr-policy:
+    name: Pull request title and issue policy
+    if: github.event_name == 'pull_request'
+    # The closed prefix set and the linked-issue rule mirror
+    # docs/CONTRIBUTING.md (Pull Request Scope and Titles) and
+    # issue #1575. The autocut-release job groups release notes
+    # from the title prefixes, so this job is the enforcement
+    # side of that contract. It never runs in the merge queue:
+    # merge_group events do not fire pull_request triggers.
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+      issues: read
+    env:
+      PR_NUMBER: ${{ github.event.pull_request.number }}
+      PR_TITLE: ${{ github.event.pull_request.title }}
+      PR_BODY: ${{ github.event.pull_request.body }}
+      PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+      # Flip to 'true' to turn title warnings into errors once
+      # the prefix habit settles across open pull requests.
+      TITLES_STRICT: 'false'
+    steps:
+      - name: Check the title prefix
+        run: |
+          pre_re='^(fix|feat|test|build|ci|perf|deps|docs|chore)'
+          pre_re=$pre_re'(\([a-z0-9-]+\))?!?: \S'
+          if ! printf '%s' "$PR_TITLE" | grep -qE "$pre_re"; then
+            msg='PR title must start with a change-type prefix:'
+            msg=$msg' fix:, feat:, test:, build:, ci:,'
+            msg=$msg' perf:, deps:, docs: or chore:'
+            msg=$msg' - see docs/CONTRIBUTING.md.'
+            if [ "$TITLES_STRICT" = 'true' ]; then
+              echo "::error::$msg"
+              exit 1
+            fi
+            echo "::warning::$msg"
+          fi
+
+      # Rollout plan from issue #1575: product code paths
+      # (PAC, common, test) fail, infrastructure pull requests
+      # only warn until the habit settles.
+      - name: Check the linked issue
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -eu
+          repo="$GITHUB_REPOSITORY"
+          if [ "$PR_AUTHOR" = 'dependabot[bot]' ]; then
+            echo 'dependabot pull requests own their issues'
+            exit 0
+          fi
+          labels=$(gh api "repos/$repo/issues/$PR_NUMBER/labels" \
+            --jq '[.[].name] | join(" ")')
+          if printf '%s' " $labels " | grep -q ' no-issue '; then
+            echo 'the no-issue label exempts this pull request'
+            exit 0
+          fi
+          q='query($owner:String!,$name:String!,$number:Int!){'
+          q=$q'repository(owner:$owner,name:$name){'
+          q=$q'pullRequest(number:$number){'
+          q=$q'closingIssuesReferences(first:1){totalCount}}}}'
+          refs=$(gh api graphql -f owner="${repo%%/*}" \
+            -f name="${repo##*/}" -F number="$PR_NUMBER" \
+            -f query="$q" \
+            --jq '.data.repository.pullRequest
+              .closingIssuesReferences.totalCount')
+          if [ "$refs" != '0' ]; then
+            exit 0
+          fi
+          link_re='(close[sd]?|fix(ed|es)?|resolve[sd]?)'
+          link_re=$link_re'[[:space:]]+(#[0-9]+|https://github.com/'
+          link_re=$link_re'[^/ ]+/[^/ ]+/(issues|pull)/[0-9]+)'
+          if printf '%s' "$PR_BODY" | grep -qiE "$link_re"; then
+            exit 0
+          fi
+          if gh api "repos/$repo/pulls/$PR_NUMBER/files?per_page=100" \
+            --paginate --jq '.[].filename' |
+            grep -qE '^(PAC|common|test)/'; then
+            msg='link the closed issue ("Closes #N") or label'
+            msg=$msg' the pull request no-issue (docs/CONTRIBUTING.md)'
+            echo "::error::$msg"
+            exit 1
+          fi
+          msg='link the closed issue ("Closes #N"): infrastructure'
+          msg=$msg' changes may only warn here for now'
+          echo "::warning::$msg"
+
+  tag-check:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - name: 'Tag check'
+        run: |
+          # The whole [tag] policy of .github/cchk.toml is
+          # the mirrored CCHK_TAG_REGEX above, and the old
+          # commit-check --tag step only matched the tag
+          # name against it (proved on release tags, issue
+          # #1615), so compare the pushed ref directly.
+          # The workflow triggers on tag pushes only, so
+          # GITHUB_REF_NAME is always a tag name here.
+          if printf '%s\n' "${GITHUB_REF_NAME}" \
+              | grep -qP "${CCHK_TAG_REGEX}"; then
+            echo "Tag ${GITHUB_REF_NAME} matches the CalVer policy."
+          else
+            echo "::error::Tag ${GITHUB_REF_NAME} violates the" \
+              "release tag pattern; see Versioning in" \
+              "docs/CONTRIBUTING.md"
+            exit 1
+          fi

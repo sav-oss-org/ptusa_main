@@ -19,8 +19,10 @@
 #include <netinet/in.h>
 
 #include <sys/wait.h>
+#include <unistd.h>
 #else
 #include <ws2tcpip.h>
+#include <process.h>
 #endif
 
 
@@ -158,11 +160,32 @@ void node_dev::evaluate_io()
         }
     }
 //-----------------------------------------------------------------------------
+/// Build a private output file name for `run_cmd_exit_code()`.
+///
+/// Ctest runs every gtest case as its own `main_test` process, and
+/// parallel jobs share one working directory, so the fixed file name
+/// used before let a second command-redirecting test truncate or
+/// overwrite the file while a first test read it back. The process id
+/// suffix gives every concurrent process its own file.
+static std::filesystem::path unique_cmd_output_path()
+    {
+    // The process id cannot be alive twice at once, which keeps the
+    // names unique, and the working directory is not world-writable,
+    // unlike the system temporary directory.
+#ifdef LINUX_OS
+    const auto pid{ getpid() };
+#else
+    const auto pid{ _getpid() };
+#endif
+    return std::filesystem::path( "ptusa_cmd_"
+        + std::to_string( static_cast< long >( pid ) ) + "_output.txt" );
+    }
+//-----------------------------------------------------------------------------
 int node_dev::run_cmd_exit_code( const char* cmd, int expected )
     {
     res_msg[ 0 ] = '\0';
 
-    const std::filesystem::path file_path = "ptusa_cmd_output.txt";
+    const std::filesystem::path file_path = unique_cmd_output_path();
     std::string cmd_debug{ cmd };
     cmd_debug += " > \"" + file_path.string() + "\" 2>&1";
 
@@ -200,6 +223,9 @@ int node_dev::run_cmd_exit_code( const char* cmd, int expected )
                 }
             }
         }
+
+    std::error_code remove_ec;
+    std::filesystem::remove( file_path, remove_ec );
 
     return rc;
     }
