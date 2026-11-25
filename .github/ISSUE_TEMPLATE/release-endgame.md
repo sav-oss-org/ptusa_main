@@ -7,7 +7,8 @@ labels: ["endgame-plan"]
 
 # До заморозки изменений
 
-- [ ] Пройти незакрытые задачи цикла в плане [#1507](https://github.com/sav-oss-org/ptusa_main/issues/1507): включить
+- [ ] Пройти незакрытые задачи цикла в плане
+      [#1507](https://github.com/sav-oss-org/ptusa_main/issues/1507): включить
       в очередь объединения (merge) или перенести в следующий цикл;
 - [ ] Объявить заморозку: изменения продуктового кода не объединяются (merge).
 
@@ -23,7 +24,8 @@ labels: ["endgame-plan"]
 
 - [ ] Тег версии по политике CalVer из раздела «Versioning and Tags» документа
       [docs/CONTRIBUTING.md](https://github.com/sav-oss-org/ptusa_main/blob/master/docs/CONTRIBUTING.md#versioning-and-tags);
-- [ ] Создан черновик релиза (draft) с автогруппировкой по префиксам заголовков PR.
+- [ ] Создан черновик релиза (draft) с автогруппировкой по префиксам
+      заголовков PR.
 
 # Публикация
 
