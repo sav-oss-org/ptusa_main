@@ -1676,6 +1676,113 @@ TEST( cipline_tech_object, ResetWP )
     ClearCipDevices();
     }
 
+// Вспомогательный объект для тестов строки 24 рецептов МСА
+// (#1595): инициализирует устройства, объект мойки и загружает
+// рецепт с заданным значением слота DO сигнала «подающий насос
+// включен».
+class legacy_line24_case
+    {
+    public:
+    cipline_tech_object cip1;
+    virtual_motor np;
+
+    explicit legacy_line24_case( float signal_value )
+        : cip1( "CIP1", 1, 1, "CIP1", 1, 1, 200, 200, 200, 200 )
+        , np( "LINE1M103" )
+        {
+        InitCipDevices();
+        lua_manager::get_instance()->set_Lua( lua_open() );
+        cip1.initline();
+        InitStationParams();
+        cip1.NP = reinterpret_cast<i_DO_AO_device*>( &np );
+
+        auto* rm = cip1.lineRecipes;
+        const auto curRec = rm->getCurrentRecipe();
+        rm->ResetRecipeToDefaults( curRec );
+        EXPECT_EQ( 0, rm->setRecipeValue( curRec,
+            TRecipeManager::RV_SIGNAL_PUMP_RUNNING, signal_value ) );
+        cip1.rt_par_float[ P_SELECT_REC ] =
+            static_cast<float>( curRec + 1 );
+        EXPECT_EQ( 0, cip1.evaluate() );
+        EXPECT_EQ( signal_value,
+            cip1.rt_par_float[ P_SIGNAL_PUMP_RUNNING ] );
+        }
+
+    ~legacy_line24_case()
+        {
+        ClearCipDevices();
+        G_LUA_MANAGER->free_Lua();
+        }
+    };
+
+TEST( cipline_tech_object, legacy_line24_circ_time_guard )
+    {
+    // Старые line{N}rec.bin хранят в строке 24 прежний дефолт
+    // «время циркуляции при ополаскивании» (600). Слот теперь
+    // задаёт номер DO сигнала «подающий насос включен», и при
+    // отсутствии DO №600 инициализация устройств не должна
+    // падать: значение сбрасывается в «сигнал не задан» с
+    // однократным предупреждением (#1595).
+    legacy_line24_case f( 600.0f );
+
+    // Сигнала LINE1DO600 в проекте нет — инициализация
+    // проходит, параметр сброшен в «не задано».
+    EXPECT_EQ( 0, f.cip1.init_object_devices() );
+    EXPECT_EQ( nullptr, f.cip1.dev_upr_pump_running );
+    EXPECT_EQ( 0.0f, f.cip1.rt_par_float[ P_SIGNAL_PUMP_RUNNING ] );
+    EXPECT_TRUE( f.cip1.legacy_line24_warning_shown );
+
+    // Повторная инициализация проходит без повторного
+    // срабатывания guard — параметр уже обнулён.
+    EXPECT_EQ( 0, f.cip1.init_object_devices() );
+    EXPECT_EQ( 0.0f, f.cip1.rt_par_float[ P_SIGNAL_PUMP_RUNNING ] );
+    }
+
+TEST( cipline_tech_object, legacy_line24_old_circ_time_guard )
+    {
+    // В ещё более старых проектах в слоте строки 24 стоит 300
+    // секунд, и guard обязан срабатывать для этого значения
+    // так же, как для 600 (#1595).
+    legacy_line24_case f( 300.0f );
+
+    // Сигнала LINE1DO300 в проекте нет — инициализация
+    // проходит, параметр сброшен в «не задано».
+    EXPECT_EQ( 0, f.cip1.init_object_devices() );
+    EXPECT_EQ( nullptr, f.cip1.dev_upr_pump_running );
+    EXPECT_EQ( 0.0f, f.cip1.rt_par_float[ P_SIGNAL_PUMP_RUNNING ] );
+    EXPECT_TRUE( f.cip1.legacy_line24_warning_shown );
+    }
+
+TEST( cipline_tech_object, legacy_line24_signal_600_present )
+    {
+    // Если DO №600 в проекте всё же существует, значение 600
+    // остаётся рабочим номером сигнала, а guard не срабатывает.
+    legacy_line24_case f( 600.0f );
+    auto* dm = device_manager::get_instance();
+    dm->add_io_device( device::DEVICE_TYPE::DT_DO,
+        device::DEVICE_SUB_TYPE::DST_DO_VIRT, "LINE1DO600", "", "" );
+
+    EXPECT_EQ( 0, f.cip1.init_object_devices() );
+    ASSERT_NE( nullptr, f.cip1.dev_upr_pump_running );
+    EXPECT_EQ( dm->get_device( "LINE1DO600" ),
+        f.cip1.dev_upr_pump_running );
+    EXPECT_EQ( 600.0f, f.cip1.rt_par_float[ P_SIGNAL_PUMP_RUNNING ] );
+    EXPECT_FALSE( f.cip1.legacy_line24_warning_shown );
+    }
+
+TEST( cipline_tech_object, legacy_line24_missing_number_fails )
+    {
+    // Легальный, но отсутствующий в проекте номер сигнала
+    // (не 600) даёт прежнее поведение — ошибку инициализации
+    // устройств, параметр остаётся без изменений.
+    legacy_line24_case f( 555.0f );
+
+    EXPECT_EQ( -1, f.cip1.init_object_devices() );
+    EXPECT_EQ( nullptr, f.cip1.dev_upr_pump_running );
+    EXPECT_EQ( 555.0f, f.cip1.rt_par_float[ P_SIGNAL_PUMP_RUNNING ] );
+    EXPECT_FALSE( f.cip1.legacy_line24_warning_shown );
+    }
+
 TEST( cipline_tech_object, recipe_reset_reloads_line_params )
     {
     // Сброс рецепта командой редактора «Сброс»
