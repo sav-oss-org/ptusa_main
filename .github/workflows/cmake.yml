@@ -762,12 +762,29 @@ jobs:
       working-directory: instdir
       run: cmake -E tar cfv ../${{ matrix.config.artifact }} --format=7zip .
 
+    - name: Prepare artifact name
+      id: artifact_name
+      shell: cmake -P {0}
+      run: |
+        # Tie every uploaded archive to the checked-out commit so
+        # testers can tell PR builds apart (#1647). Official
+        # releases keep the plain names; the tag already pins the
+        # sources.
+        set(artifact "${{ matrix.config.artifact }}")
+        string(SUBSTRING "$ENV{GITHUB_SHA}" 0 8 sha8)
+        string(REGEX REPLACE "\.7z$" "" stem "${artifact}")
+        if("$ENV{GITHUB_EVENT_NAME}" STREQUAL "release")
+          set(name "${artifact}")
+        else()
+          set(name "${stem}-${sha8}.7z")
+        endif()
+        file(APPEND "$ENV{GITHUB_OUTPUT}" "name=${name}\n")
 
     - name: Upload
       uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
       with:
         path: ./${{ matrix.config.artifact }}
-        name: ${{ matrix.config.artifact }}
+        name: ${{ steps.artifact_name.outputs.name }}
 
   # The ruleset also requires the codecov/patch commit status and the
   # three matrix build names plus the SonarCloud result. All of them
