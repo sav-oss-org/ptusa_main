@@ -6015,6 +6015,31 @@ int cipline_tech_object::check_device( device*& outdev, int parno, device::DEVIC
                     else
                         {
                         outdev = nullptr;
+                        // Старые файлы line{N}rec.bin могут
+                        // хранить в слоте строки 24 прежний
+                        // дефолт «время циркуляции при
+                        // ополаскивании» (600 или 300 с).
+                        // Если DO с таким номером в проекте
+                        // нет, легкое значение трактуем как
+                        // «сигнал не задан»: параметр
+                        // сбрасывается, чтобы все потребители,
+                        // включая Lua, видели «не задано»
+                        // (#1595).
+                        if (parno == P_SIGNAL_PUMP_RUNNING
+                            && is_legacy_rinse_circ_time( dev_no ))
+                            {
+                            rt_par_float[parno] = 0;
+                            if (!legacy_line24_warning_shown)
+                                {
+                                legacy_line24_warning_shown = true;
+                                fmt::print("LINE{}: legacy "
+                                    "circulation time {} found in "
+                                    "pump running signal slot, "
+                                    "signal disabled\n",
+                                    nmr, dev_no);
+                                }
+                            return 0;
+                            }
                         return -1;
                         }
                     }
