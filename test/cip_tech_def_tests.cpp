@@ -1712,3 +1712,37 @@ TEST( cipline_tech_object, recipe_reset_reloads_line_params )
     G_LUA_MANAGER->free_Lua();
     ClearCipDevices();
     }
+
+TEST( cipline_tech_object, recipe_reset_idle_clears_line_params )
+    {
+    // Ð¡Ð±ÑÐ¾Ñ Ð¾Ð±ÑÐµÐºÑÐ° ÐºÐ½Ð¾Ð¿ÐºÐ¾Ð¹ Ð«Ð¡Ð±ÑÐ¾ÑÐ» Ð²
+    // ÑÐ²Ð¾Ð±Ð¾Ð´Ð½Ð¾Ð¼ ÑÐ¾ÑÑÐ¾ÑÐ½Ð¸Ð¸ Ð¾ÑÐ¸ÑÐ°ÐµÑ Ð¸ Ð¿Ð°ÑÐ°Ð¼ÐµÑÑÑ
+    // Ð»Ð¸Ð½Ð¸Ð¸, Ð·Ð°Ð³ÑÑÐ¶ÐµÐ½Ð½ÑÐµ ÑÐµÑÐµÐ¿ÑÐ¾Ð¼, Ð²ÐºÐ»ÑÑÐ°Ñ
+    // ÑÑÐ¾ÑÐ¾Ð¶ÐµÐ²Ð¾Ð¹ ÑÐ°Ð¹Ð¼ÐµÑ (#1640).
+    InitCipDevices();
+    cipline_tech_object cip1( "CIP1", 1, 1, "CIP1", 1, 1, 200, 200, 200, 200 );
+    lua_manager::get_instance()->set_Lua( lua_open() );
+
+    cip1.initline();
+    InitStationParams();
+
+    auto* rm = cip1.lineRecipes;
+    const int curRec = rm->getCurrentRecipe();
+    ASSERT_EQ( 0, rm->setRecipeValue( curRec,
+        TRecipeManager::RV_WATCHDOG, 1.0f ) );
+
+    // ÐÐ°Ð³ÑÑÐ¶Ð°ÐµÐ¼ ÑÐµÑÐµÐ¿Ñ: ÑÑÐ¾ÑÐ¾Ð¶ÐµÐ²Ð¾Ð¹ ÑÐ°Ð¹Ð¼ÐµÑ
+    // Ð¿Ð¾Ð¿Ð°Ð´Ð°ÐµÑ Ð² Ð¿Ð°ÑÐ°Ð¼ÐµÑÑÑ Ð»Ð¸Ð½Ð¸Ð¸.
+    cip1.rt_par_float[ P_SELECT_REC ] = static_cast<float>( curRec + 1 );
+    EXPECT_EQ( 0, cip1.evaluate() );
+    EXPECT_EQ( 1.0f, cip1.rt_par_float[ P_WATCHDOG ] );
+
+    // Ð«Ð¡Ð±ÑÐ¾ÑÐ» Ð² ÑÐ²Ð¾Ð±Ð¾Ð´Ð½Ð¾Ð¼ ÑÐ¾ÑÑÐ¾ÑÐ½Ð¸Ð¸
+    // Ð¾Ð±Ð½ÑÐ»ÑÐµÑ Ð¿Ð°ÑÐ°Ð¼ÐµÑÑÑ Ð»Ð¸Ð½Ð¸Ð¸.
+    cip1.SetCommand( MCMD_RESET );
+    EXPECT_EQ( 0, cip1.evaluate() );
+    EXPECT_EQ( 0.0f, cip1.rt_par_float[ P_WATCHDOG ] );
+
+    G_LUA_MANAGER->free_Lua();
+    ClearCipDevices();
+    }
