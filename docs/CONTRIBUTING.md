@@ -7,6 +7,14 @@ repository before making a change.
 Please note we have a code of conduct, please follow it in all your
 interactions with the project.
 
+## Identifying a Build
+
+Every build carries the source revision it was compiled from. The
+`--version` option and the start log line print the build ID in
+the `<version>+<git sha>[-dirty]` form, and installed artifacts
+ship a `BUILDINFO.txt` with the commit, the git ref and the CI
+run context (see issue #1647).
+
 ## Pull Request Process
 
 1. Ensure any install or build dependencies are removed before the end

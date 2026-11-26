@@ -5,6 +5,7 @@
 #include <cstdio>
 
 #include "prj_mngr_tests.h"
+#include "build_info.h"
 #include "PAC_info.h"
 #include "lua_manager.h"
 #include "dtime.h"
@@ -18,6 +19,21 @@ const char * const PROGRAM_STARTED =
     "\x1B[0m"
 #endif // !WIN_OS
     ;
+
+// The build ID line the program logs right after the start line.
+static std::string BuildIDLine()
+    {
+    std::string line;
+#ifndef WIN_OS
+    line += "\x1B[32m";
+#endif // !WIN_OS
+    line += "INFO   (6) -> Build ID: "
+        + std::string( build_info::GetBuildID() ) + ".\n";
+#ifndef WIN_OS
+    line += "\x1B[0m";
+#endif // !WIN_OS
+    return line;
+    }
 
 const char* const BUS_COUPLERS_DISABLED =
 #ifndef WIN_OS
@@ -233,7 +249,7 @@ Usage:
     res = G_PROJECT_MANAGER->proc_main_params( 2, argv_v );
     ASSERT_EQ( 1, res );
     output = testing::internal::GetCapturedStdout();
-    EXPECT_EQ( output, PRODUCT_VERSION_FULL_STR "\n" );
+    EXPECT_EQ( output, std::string( build_info::GetBuildID() ) + "\n" );
 
 
     auto get_time_hook = subhook_new( reinterpret_cast<void*>( &get_time ),
@@ -254,8 +270,9 @@ Usage:
     output = testing::internal::GetCapturedStdout();
     ASSERT_EQ( 0, res );
 
-    std::string debug = tmp.str() + PROGRAM_STARTED +
-        "DEBUG ON.\n" +
+    std::string debug = tmp.str() + PROGRAM_STARTED
+        + tmp.str() + BuildIDLine()
+        + "DEBUG ON.\n" +
         tmp.str() +
 #if !defined WIN_OS
         "\x1B[37m" +
@@ -283,7 +300,7 @@ Usage:
     output = testing::internal::GetCapturedStdout();
     ASSERT_EQ( 0, res );
 
-    debug = tmp.str() + PROGRAM_STARTED;
+    debug = tmp.str() + PROGRAM_STARTED + tmp.str() + BuildIDLine();
     debug += tmp.str() + OPC_OFF;
     debug += tmp.str() +
 #ifdef WIN_OS
@@ -319,7 +336,7 @@ Usage:
     output = testing::internal::GetCapturedStdout();
     ASSERT_EQ( 1, res );
 
-    debug = tmp.str() + PROGRAM_STARTED;
+    debug = tmp.str() + PROGRAM_STARTED + tmp.str() + BuildIDLine();
     debug += tmp.str() + OPC_ERR_ST;
     EXPECT_EQ( output, debug );
 
@@ -330,7 +347,7 @@ Usage:
     output = testing::internal::GetCapturedStdout();
     ASSERT_EQ( 0, res );
 
-    debug = tmp.str() + PROGRAM_STARTED;
+    debug = tmp.str() + PROGRAM_STARTED + tmp.str() + BuildIDLine();
     debug += tmp.str() + OPC_RO;
     debug += tmp.str() +
 #ifdef WIN_OS
@@ -347,7 +364,7 @@ Usage:
     output = testing::internal::GetCapturedStdout();
     ASSERT_EQ( 0, res );
 
-    debug = tmp.str() + PROGRAM_STARTED;
+    debug = tmp.str() + PROGRAM_STARTED + tmp.str() + BuildIDLine();
     debug += tmp.str() + OPC_RW;
     debug += tmp.str() +
 #ifdef WIN_OS
@@ -364,7 +381,7 @@ Usage:
     output = testing::internal::GetCapturedStdout();
     ASSERT_EQ( 0, res );
 
-    debug = tmp.str() + PROGRAM_STARTED;
+    debug = tmp.str() + PROGRAM_STARTED + tmp.str() + BuildIDLine();
     debug += tmp.str() + BUS_COUPLERS_ENABLED;
 #if defined WIN_OS
     debug += tmp.str() + "WARNING(4) -> Bus couplers are read only.\n";
@@ -379,7 +396,7 @@ Usage:
     output = testing::internal::GetCapturedStdout();
     ASSERT_EQ( 0, res );
 
-    debug = tmp.str() + PROGRAM_STARTED;
+    debug = tmp.str() + PROGRAM_STARTED + tmp.str() + BuildIDLine();
     debug += tmp.str() + BUS_COUPLERS_ENABLED;
 #if defined WIN_OS
     debug += tmp.str() + "WARNING(4) -> Bus couplers are read only.\n";
@@ -397,7 +414,7 @@ Usage:
     output = testing::internal::GetCapturedStdout();
     ASSERT_EQ( 0, res );
 
-    debug = tmp.str() + PROGRAM_STARTED;
+    debug = tmp.str() + PROGRAM_STARTED + tmp.str() + BuildIDLine();
     debug += tmp.str() + BUS_COUPLERS_ENABLED;
     EXPECT_EQ( output, debug );
 
