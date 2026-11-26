@@ -185,12 +185,16 @@ cipline_tech_object::cipline_tech_object(const char* name, u_int number, u_int t
     currentProgramName = new char[PROGRAM_MAX_LEN * UNICODE_MULTIPLIER];
     strcpy(currentProgramName, "");
     ncar1 = new char[CAR_NAME_MAX_LENGTH * UNICODE_MULTIPLIER];
+    ncar1_buf = ncar1;
     strcpy(ncar1, "");
     ncar2 = new char[CAR_NAME_MAX_LENGTH * UNICODE_MULTIPLIER];
+    ncar2_buf = ncar2;
     strcpy(ncar2, "");
     ncar3 = new char[CAR_NAME_MAX_LENGTH * UNICODE_MULTIPLIER];
+    ncar3_buf = ncar3;
     strcpy(ncar3, "");
     ncar4 = new char[CAR_NAME_MAX_LENGTH * UNICODE_MULTIPLIER];
+    ncar4_buf = ncar4;
     strcpy(ncar4, "");
     switch1 = 0;
     switch2 = 0;
@@ -338,14 +342,15 @@ cipline_tech_object::cipline_tech_object(const char* name, u_int number, u_int t
 cipline_tech_object::~cipline_tech_object()
     {
     int i;
+    if (nullptr != scparams && scparams != parpar)
+        {
+        //A self-clean parameter set is a separate allocation.
+        //An aliased scparams is freed together with parpar below.
+        delete scparams;
+        }
+    scparams = nullptr;
     if (parpar != nullptr)
         {
-        if ( scparams && scparams == parpar )
-            {
-            scparams = nullptr;
-            // Сама память высвобождается при удалении parpar - строки ниже.
-            }
-
         delete(parpar);
         parpar = nullptr;
         }
@@ -406,6 +411,30 @@ cipline_tech_object::~cipline_tech_object()
     loadedRecName= nullptr;
     delete[] currentProgramName;
     currentProgramName = nullptr;
+    if (ncar1 == ncar1_buf)
+        {
+        delete[] ncar1_buf;
+        }
+    ncar1 = nullptr;
+    ncar1_buf = nullptr;
+    if (ncar2 == ncar2_buf)
+        {
+        delete[] ncar2_buf;
+        }
+    ncar2 = nullptr;
+    ncar2_buf = nullptr;
+    if (ncar3 == ncar3_buf)
+        {
+        delete[] ncar3_buf;
+        }
+    ncar3 = nullptr;
+    ncar3_buf = nullptr;
+    if (ncar4 == ncar4_buf)
+        {
+        delete[] ncar4_buf;
+        }
+    ncar4 = nullptr;
+    ncar4_buf = nullptr;
     }
 
 int cipline_tech_object::save_device( char *buff ) const
