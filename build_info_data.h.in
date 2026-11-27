@@ -5,6 +5,9 @@
 // PAC/common/build_info.cpp consumes these macros, so a new commit
 // rebuilds that single translation unit.
 
+#define PTUSA_PROJECT_NAME "@PROJECT_NAME@"
 #define PTUSA_GIT_SHA "@PTUSA_GIT_SHA@"
 #define PTUSA_GIT_REF "@PTUSA_GIT_REF@"
 #define PTUSA_GIT_DIRTY @PTUSA_GIT_DIRTY@
+#define PTUSA_BUILD_DATE "@PTUSA_BUILD_DATE@"
+#define PTUSA_INFO_URL "@PTUSA_INFO_URL@"

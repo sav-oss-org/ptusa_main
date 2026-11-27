@@ -3,6 +3,7 @@
 #include "OPCUAServer.h"
 #include "lua_manager.h"
 #include "param_ex.h"
+#include "build_info.h"
 #include <cstdio>
 #include <cstring>
 #include <cerrno>
@@ -314,8 +315,12 @@ TEST( PAC_info, save_device )
         params_manager::get_instance()->get_params_save_counter() );
 
     const auto MAX_SIZE = 1000;
+    const std::string version_line {
+        std::string( "\tVERSION=\"" ) + build_info::GetBuildID()
+        + "\",\n" };
+
     const auto REF_STR =
-        "t.SYSTEM = \n"
+        std::string( "t.SYSTEM = \n"
         "\t{\n"
         "\tRESET_BY=1,\n"
         "\tUP_DAYS=0,\n"
@@ -335,9 +340,9 @@ TEST( PAC_info, save_device )
         "\tP_RESTRICTIONS_MANUAL_TIME=120000,\n"
         "\tP_AUTO_PAUSE_OPER_ON_DEV_ERR=0,\n"
         "\tCMD=0,\n"
-        "\tCMD_ANSWER=\"\",\n"
-        "\tVERSION=\"" PRODUCT_VERSION_FULL_STR "\",\n"
-        "\tNODEENABLED = \n"
+        "\tCMD_ANSWER=\"\",\n" )
+        + version_line
+        + "\tNODEENABLED = \n"
         "\t{\n"
         "\t1, \n"
         "\t},\n"
@@ -361,7 +366,7 @@ TEST( PAC_info, save_device )
     EXPECT_EQ( REF_STR, buff );
 
     const auto REF_STR_1s =
-        "t.SYSTEM = \n"
+        std::string( "t.SYSTEM = \n"
             "\t{\n"
             "\tRESET_BY=1,\n"
             "\tUP_DAYS=0,\n"
@@ -381,9 +386,9 @@ TEST( PAC_info, save_device )
             "\tP_RESTRICTIONS_MANUAL_TIME=120000,\n"
             "\tP_AUTO_PAUSE_OPER_ON_DEV_ERR=0,\n"
             "\tCMD=0,\n"
-            "\tCMD_ANSWER=\"\",\n"
-            "\tVERSION=\"" PRODUCT_VERSION_FULL_STR "\",\n"
-            "\tNODEENABLED = \n"
+            "\tCMD_ANSWER=\"\",\n" )
+            + version_line
+            + "\tNODEENABLED = \n"
             "\t{\n"
             "\t1, \n"
             "\t},\n"

@@ -85,7 +85,7 @@ int project_manager::proc_main_params( int argc, const char* argv[] )
 
     if ( result.count( "version" ) )
         {
-        fmt::print( "{}\n", build_info::GetBuildID() );
+        fmt::print( "{}", build_info::GetVersionText() );
         return 1;
         }
 

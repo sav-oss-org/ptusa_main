@@ -9,7 +9,9 @@ find_package(Git QUIET)
 
 set(PTUSA_GIT_SHA "unknown")
 set(PTUSA_GIT_REF "unknown")
+set(PTUSA_GIT_TAG "")
 set(PTUSA_GIT_DIRTY 0)
+set(PTUSA_BUILD_DATE "")
 
 set(PTUSA_GIT_DIR "${CMAKE_SOURCE_DIR}/.git")
 if(GIT_FOUND AND EXISTS "${PTUSA_GIT_DIR}")
@@ -48,6 +50,31 @@ if(GIT_FOUND AND EXISTS "${PTUSA_GIT_DIR}")
         endif()
     endif()
 
+    # Date shown in parentheses next to the version (gh CLI style).
+    # The commit date, unlike the configure date, keeps the version
+    # text identical for every rebuild of the same sources.
+    execute_process(
+        COMMAND "${GIT_EXECUTABLE}" log -1 --format=%cd --date=short
+        WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+        OUTPUT_VARIABLE PTUSA_BUILD_DATE
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+        ERROR_QUIET RESULT_VARIABLE date_result)
+    if(NOT date_result EQUAL 0)
+        set(PTUSA_BUILD_DATE "")
+    endif()
+
+    # Tag that points exactly at the checked-out commit; empty for
+    # any other build. Tagless checkouts keep the commit link.
+    execute_process(
+        COMMAND "${GIT_EXECUTABLE}" describe --tags --exact-match HEAD
+        WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+        OUTPUT_VARIABLE PTUSA_GIT_TAG
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+        ERROR_QUIET RESULT_VARIABLE tag_result)
+    if(NOT tag_result EQUAL 0)
+        set(PTUSA_GIT_TAG "")
+    endif()
+
     # Reconfigure when the checked-out commit changes in a plain
     # clone. Git worktrees keep HEAD outside .git and refresh on the
     # next manual reconfigure, which matches the workflow usage.
@@ -59,6 +86,11 @@ endif()
 
 if(PTUSA_GIT_SHA STREQUAL "unknown")
     set(PTUSA_GIT_DIRTY 0)
+endif()
+
+if(PTUSA_BUILD_DATE STREQUAL "")
+    # Source tree without git: fall back to the configure date.
+    string(TIMESTAMP PTUSA_BUILD_DATE "%Y-%m-%d" UTC)
 endif()
 
 # Repository URL as the checkout sees it (origin), normalized to a
@@ -82,6 +114,19 @@ endif()
 if(NOT PTUSA_REPO_URL STREQUAL "" AND
         NOT PTUSA_GIT_SHA STREQUAL "unknown")
     set(PTUSA_COMMIT_URL "${PTUSA_REPO_URL}/commit/${PTUSA_GIT_SHA}")
+endif()
+
+# URL line under --version: the release page when the build is an
+# exact tagged release (as the gh CLI prints), the commit page
+# otherwise, empty when no repository address is configured.
+set(PTUSA_INFO_URL "")
+if(NOT PTUSA_REPO_URL STREQUAL "")
+    if(NOT PTUSA_GIT_TAG STREQUAL "")
+        set(PTUSA_INFO_URL
+            "${PTUSA_REPO_URL}/releases/tag/${PTUSA_GIT_TAG}")
+    elseif(NOT PTUSA_GIT_SHA STREQUAL "unknown")
+        set(PTUSA_INFO_URL "${PTUSA_COMMIT_URL}")
+    endif()
 endif()
 
 set(PTUSA_BUILD_ID "${PROJECT_VERSION}+${PTUSA_GIT_SHA}")

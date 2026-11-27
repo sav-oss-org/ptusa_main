@@ -249,7 +249,7 @@ Usage:
     res = G_PROJECT_MANAGER->proc_main_params( 2, argv_v );
     ASSERT_EQ( 1, res );
     output = testing::internal::GetCapturedStdout();
-    EXPECT_EQ( output, std::string( build_info::GetBuildID() ) + "\n" );
+    EXPECT_EQ( output, build_info::GetVersionText() );
 
 
     auto get_time_hook = subhook_new( reinterpret_cast<void*>( &get_time ),
