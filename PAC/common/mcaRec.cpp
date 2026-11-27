@@ -14,6 +14,148 @@ using namespace std::string_literals;
 
 #include "utf2cp1251.h"
 
+#include <cstdio>
+#include <filesystem>
+#include <string>
+#include <system_error>
+
+namespace
+{
+
+/// Emits the rejection diagnostic for an external recipe name.
+void RejectRecipeFileName( const char* reason )
+{
+    std::fprintf( stderr,
+        "mcaRec: recipe file name rejected: %s.\n", reason );
+}
+
+/// Checks lexically that composedPath stays inside rootPath.
+/// absolute() and relative() consult the current working
+/// directory, so no existing file is required here.
+bool IsInsideRoot( const std::filesystem::path& rootPath,
+    const std::filesystem::path& composedPath )
+{
+    std::error_code ec;
+    const std::filesystem::path rootAbs{ std::filesystem::absolute(
+        rootPath, ec ) };
+    if ( ec )
+        {
+        return false;
+        }
+    const std::filesystem::path composedAbs{
+        std::filesystem::absolute( composedPath, ec ) };
+    const std::filesystem::path inside{ std::filesystem::relative(
+        composedAbs, rootAbs, ec ) };
+    return !ec && !inside.empty()
+        && !( inside.begin() != inside.end()
+            && *inside.begin() == std::filesystem::path{ ".." } );
+}
+
+/// Writes the recipe image into a validated recipe file.
+int SaveRecipeMemoryToFile( const unsigned char* memory,
+    unsigned long memorySize, const char* fileName )
+{
+    std::string fname;
+    if ( !MakeSafeRecipePath( fileName, fname ) ) return 1;
+    FILE* memFile = fopen( fname.c_str(), "r+b" );
+    if ( nullptr == memFile )
+        {
+        memFile = fopen( fname.c_str(), "w+b" );
+        }
+    if ( memFile )
+        {
+        fseek( memFile, 0, SEEK_SET );
+        fwrite( memory, 1, memorySize, memFile );
+        fclose( memFile );
+#ifdef PAC_PLCNEXT
+        std::string syscommand = "chmod 777 "s + fname;
+        system( syscommand.c_str() );
+#endif // PAC_PLCNEXT
+        }
+    return 0;
+}
+
+/// Reads a validated recipe file into the recipe image.
+int LoadRecipeMemoryFromFile( unsigned char* memory,
+    unsigned long memorySize, const char* fileName )
+{
+    std::string path;
+    if ( !MakeSafeRecipePath( fileName, path ) )
+        {
+        return 1;
+        }
+    memset( memory, 0, memorySize );
+    FILE* memFile = fopen( path.c_str(), "r+b" );
+    if ( memFile )
+        {
+        size_t result = fread( memory, 1, memorySize, memFile );
+        fclose( memFile );
+        if ( 0 == result ) return 1;
+        }
+    return 0;
+}
+
+} // namespace
+
+bool MakeSafeRecipePath( const char* fileName, std::string& path )
+{
+    path.clear();
+    if ( nullptr == fileName || '\0' == fileName[ 0 ] )
+        {
+        RejectRecipeFileName( "the name is empty" );
+        return false;
+        }
+    const std::string name{ fileName };
+    if ( std::string::npos != name.find_first_of( "/\\:" ) )
+        {
+        RejectRecipeFileName(
+            "the name contains a path separator or a drive" );
+        return false;
+        }
+    if ( std::string::npos != name.find( ".." ) )
+        {
+        RejectRecipeFileName(
+            "the name contains a parent directory traversal" );
+        return false;
+        }
+    if ( name == "." )
+        {
+        RejectRecipeFileName(
+            "the name refers to the directory itself" );
+        return false;
+        }
+#ifdef PAC_PLCNEXT
+    const char* rootText{ "/opt/main/" };
+#else
+    const char* rootText{ "" };
+#endif // PAC_PLCNEXT
+    // Rebuild the path from the last component only, then
+    // normalize it, so that no directory component of the
+    // external name can reach the file system calls.
+    const std::filesystem::path leaf{
+        std::filesystem::path{ name }.filename().lexically_normal() };
+    if ( leaf.empty() || leaf.string() != name )
+        {
+        RejectRecipeFileName(
+            "the name is not a plain file name" );
+        return false;
+        }
+    const std::filesystem::path rootPath{
+        std::filesystem::path{ rootText }.lexically_normal() };
+    const std::filesystem::path rootBase{ rootPath.empty()
+        ? std::filesystem::path{ "." } : rootPath };
+    const std::filesystem::path composedPath{
+        ( rootBase / leaf ).lexically_normal() };
+    if ( !IsInsideRoot( rootBase, composedPath ) )
+        {
+        RejectRecipeFileName(
+            "the resulting path escapes the recipe root" );
+        return false;
+        }
+    path = composedPath.generic_string();
+    return true;
+}
+
 int TRecipeManager::startRecipeBlock = 0;
 
 int TRecipeManager::recipePerLine = 25;
@@ -593,49 +735,14 @@ int TRecipeManager::SaveToFile( const char* filename )
 #ifdef DEBUG
     printf( "Saving recipes to file %s\n", filename );
 #endif // DEBUG
-    FILE* memFile = nullptr;
-    char fname[ 50 ];
-#ifdef PAC_PLCNEXT
-    sprintf( fname, "/opt/main/%s", filename );
-#else
-    sprintf( fname, "%s", filename );
-#endif // PAC_PLCNEXT
-    memFile = fopen( fname, "r+b" );
-    if ( nullptr == memFile )
-        {
-        memFile = fopen( fname, "w+b" );
-        }
-    if ( memFile )
-        {
-        fseek( memFile, 0, SEEK_SET );
-        fwrite( recipeMemory, 1, recipeMemorySize, memFile );
-        fclose( memFile );
-#ifdef PAC_PLCNEXT
-        std::string syscommand = "chmod 777 "s + fname;
-        system( syscommand.c_str() );
-#endif
-        }
-    return 0;
+    return SaveRecipeMemoryToFile( recipeMemory, recipeMemorySize,
+        filename );
     }
 
 int TRecipeManager::LoadFromFile( const char* filename )
     {
-    FILE* memFile = nullptr;
-    char fname[50];
-#ifdef PAC_PLCNEXT
-    sprintf(fname, "/opt/main/%s", filename);
-#else
-    sprintf( fname, "./%s", filename );
-#endif // PAC_PLCNEXT
-    memset(recipeMemory, 0, recipeMemorySize);
-    memFile = fopen(fname, "r+b");
-    if (memFile)
-        {
-        size_t result = fread(recipeMemory, 1, recipeMemorySize, memFile);
-        fclose(memFile);
-        if (0 == result) return 1;
-        }
-    return 0;
+    return LoadRecipeMemoryFromFile( recipeMemory,
+        recipeMemorySize, filename );
     }
 
 
@@ -990,52 +1097,17 @@ int TMediumRecipeManager::WriteMem( unsigned long startaddr,
     return 0;
     }
 
-int TMediumRecipeManager::SaveToFile( const char* filename )
+int TMediumRecipeManager::SaveToFile( const char* name )
     {
 #ifdef DEBUG
-    printf( "Saving recipes to file %s\n", filename );
+    printf( "Saving recipes to file %s\n", name );
 #endif // DEBUG
-    FILE* memFile = nullptr;
-    char fname[ 50 ];
-#ifdef PAC_PLCNEXT
-    sprintf( fname, "/opt/main/%s", filename );
-#else
-    sprintf( fname, "%s", filename );
-#endif // PAC_PLCNEXT
-    memFile = fopen( fname, "r+b" );
-    if ( nullptr == memFile )
-        {
-        memFile = fopen( fname, "w+b" );
-        }
-    if ( memFile )
-        {
-        fseek( memFile, 0, SEEK_SET );
-        fwrite( recipeMemory, 1, recipeMemorySize, memFile );
-        fclose( memFile );
-#ifdef PAC_PLCNEXT
-        std::string syscommand = "chmod 777 "s + fname;
-        system( syscommand.c_str() );
-#endif
-        }
-    return 0;
+    return SaveRecipeMemoryToFile( recipeMemory, recipeMemorySize,
+        name );
     }
 
-int TMediumRecipeManager::LoadFromFile(const char* filename)
+int TMediumRecipeManager::LoadFromFile( const char* name )
 {
-    FILE* memFile = nullptr;
-    char fname[50];
-    memset(recipeMemory, 0, recipeMemorySize);
-#ifdef PAC_PLCNEXT
-    sprintf(fname, "/opt/main/%s", filename);
-#else
-    sprintf(fname, "%s", filename);
-#endif // PAC_PLCNEXT
-    memFile = fopen(fname, "r+b");
-    if (memFile)
-    {
-        size_t result = fread(recipeMemory, 1, recipeMemorySize, memFile);
-        fclose(memFile);
-        if (0 == result) return 1;
-    }
-    return 0;
+    return LoadRecipeMemoryFromFile( recipeMemory,
+        recipeMemorySize, name );
 }
