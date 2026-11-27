@@ -252,18 +252,26 @@ params_manager::~params_manager()
 //-----------------------------------------------------------------------------
 int params_manager::save_params()
     {
+    std::string error;
+
+    return save_params( error );
+    }
+//-----------------------------------------------------------------------------
+int params_manager::save_params( std::string& error )
+    {
+    error.clear();
+
     const auto CRC = solve_CRC();
     constexpr std::size_t OFFSET = sizeof( last_idx );
     std::memcpy( CRC_mem->get_data() + OFFSET, &CRC, sizeof( CRC ) );
-    auto res = CRC_mem->safe_save();
-    if ( res != 0 )
+
+    for ( i_memory* mem : { CRC_mem, params_mem } )
         {
-        return res;
-        }
-    res = params_mem->safe_save();
-    if ( res != 0 )
-        {
-        return res;
+        if ( const auto res = mem->safe_save(); res != 0 )
+            {
+            error = mem->get_last_error();
+            return res;
+            }
         }
 
     is_changed = false;

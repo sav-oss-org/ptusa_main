@@ -92,6 +92,14 @@ namespace
         errno = EACCES;
         return -1;
         }
+
+    size_t bad_fwrite( [[maybe_unused]] const void* ptr,
+        [[maybe_unused]] size_t size,
+        [[maybe_unused]] size_t count,
+        [[maybe_unused]] FILE* stream )
+        {
+        return 0;
+        }
 #endif
 
     const auto DATA_SIZE = 1024;
@@ -158,6 +166,9 @@ TEST( SRAM, safe_save )
 
     EXPECT_EQ( 1, good_sram.safe_save() );
 
+    // Текст ошибки доступен вызывающему коду через get_last_error().
+    EXPECT_FALSE( good_sram.get_last_error().empty() );
+
     subhook_remove( fopen_hook );
     subhook_free( fopen_hook );
     }
@@ -199,6 +210,27 @@ TEST( SRAM, safe_save_create_error_logged_once )
                         .string();
     EXPECT_NE( std::string::npos, output.find( expected ) );
     }
+
+#ifdef LINUX_OS
+TEST( SRAM, safe_save_write_error )
+    {
+    SRAM sram( "test_sram9.bin", DATA_SIZE );
+
+    auto fwrite_hook = subhook_new( reinterpret_cast<void*>( &fwrite ),
+        reinterpret_cast<void*>( &bad_fwrite ), SUBHOOK_64BIT_OFFSET );
+    subhook_install( fwrite_hook );
+
+    EXPECT_EQ( 2, sram.safe_save() );
+
+    const auto error = sram.get_last_error();
+    EXPECT_NE( std::string::npos, error.find( "write error" ) );
+
+    subhook_remove( fwrite_hook );
+    subhook_free( fwrite_hook );
+
+    std::filesystem::remove( "test_sram9.bin.tmp" );
+    }
+#endif // LINUX_OS
 
 TEST( SRAM, get_directory )
     {

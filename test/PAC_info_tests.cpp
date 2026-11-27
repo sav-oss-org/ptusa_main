@@ -5,6 +5,7 @@
 #include "param_ex.h"
 #include <cstdio>
 #include <cstring>
+#include <cerrno>
 
 // Мок для G_OPCUA_SERVER.
 class MockOPCUAServer : public OPCUA_server
@@ -187,6 +188,73 @@ TEST( PAC_info, set_cmd )
 
     G_LUA_MANAGER->free_Lua();
     tcp_communicator::clear_instance();
+    }
+
+namespace
+    {
+    FILE* bad_fopen( [[maybe_unused]] const char* filename,
+        [[maybe_unused]] const char* mode )
+        {
+        // Текст ошибки строится по errno, поэтому он задаётся явно.
+        errno = EACCES;
+        return nullptr;
+        }
+    }
+
+TEST( PAC_info, force_save_params_failure_logged )
+    {
+    // SRAM::safe_save() writes its create error only once, but the
+    // manual save command must report every failure to the log
+    // (see #1586), so two forced saves in a row produce two errors.
+    auto fopen_hook = subhook_new( reinterpret_cast<void*>( &fopen ),
+        reinterpret_cast<void*>( &bad_fopen ), SUBHOOK_64BIT_OFFSET );
+    subhook_install( fopen_hook );
+
+    testing::internal::CaptureStdout();
+
+    auto ret = G_PAC_INFO()->set_cmd( "CMD", 0,
+        static_cast<double>( PAC_info::COMMANDS::FORCE_SAVE_PARAMS ) );
+    EXPECT_EQ( 1, ret );
+
+    ret = G_PAC_INFO()->set_cmd( "CMD", 0,
+        static_cast<double>( PAC_info::COMMANDS::FORCE_SAVE_PARAMS ) );
+    EXPECT_EQ( 1, ret );
+
+    // `GetCapturedStdout()` reads the capture file through
+    // `fopen`, so the hook must be removed first.
+    subhook_remove( fopen_hook );
+    subhook_free( fopen_hook );
+
+    auto output = testing::internal::GetCapturedStdout();
+
+    const std::string marker =
+        "failed: cannot create temporary file";
+    size_t count = 0;
+    for ( auto pos = output.find( marker );
+        pos != std::string::npos; pos = output.find( marker, pos + 1 ) )
+        {
+        count++;
+        }
+
+    EXPECT_EQ( 2u, count );
+
+    // Код сбоя возвращается в CMD, а поясняющая строка попадает в
+    // CMD_ANSWER, как у остальных команд монитора.
+    const auto MAX_SIZE = 1000;
+    char buff[ MAX_SIZE ] = { 0 };
+    G_PAC_INFO()->save_device( buff );
+    EXPECT_NE( nullptr, std::strstr( buff, "\tCMD=1,\n" ) );
+    EXPECT_NE( nullptr, std::strstr( buff,
+        "Force saving parameters" ) );
+
+    // Успешное сохранение очищает код и текст ответа команды.
+    EXPECT_EQ( 0, G_PAC_INFO()->set_cmd( "CMD", 0,
+        static_cast<double>( PAC_info::COMMANDS::FORCE_SAVE_PARAMS ) ) );
+
+    buff[ 0 ] = 0;
+    G_PAC_INFO()->save_device( buff );
+    EXPECT_NE( nullptr, std::strstr( buff, "\tCMD=0,\n" ) );
+    EXPECT_NE( nullptr, std::strstr( buff, "\tCMD_ANSWER=\"\",\n" ) );
     }
 
 TEST( PAC_info, proc_OPC )

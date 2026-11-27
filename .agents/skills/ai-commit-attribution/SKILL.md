@@ -11,7 +11,7 @@ Follow `AGENTS.md`, `docs/CONTRIBUTING.md` and
 - Put provenance trailers in the final paragraph of the commit message,
   with no blank line between them:
 
-  ```
+  ```text
   Co-authored-by: <agent-name> <agent-noreply-email>
   AI-assisted: <agent-name> (model: <model-name>, <execution-mode>)
   ```
@@ -24,7 +24,7 @@ Follow `AGENTS.md`, `docs/CONTRIBUTING.md` and
   provider otherwise.
 - For the Zed agent running a local model the trailers are:
 
-  ```
+  ```text
   Co-authored-by: Zed AI Agent <253101093+zed-agent@users.noreply.github.com>
   AI-assisted: Zed agent (model: <model-name>, local)
   ```

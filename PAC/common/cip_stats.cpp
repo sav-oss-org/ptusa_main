@@ -85,7 +85,7 @@ void cip_object_stats::resetstats()
 
 cip_object_stats* cip_stats::get_obj_stats( char* objid )
     {
-    std::map<char*, cip_object_stats*>::iterator ret = obj_stats.find( objid );
+    const auto ret = obj_stats.find( objid );
     if ( ret == obj_stats.end() )
         {
         char* keychar = new char[ MAX_ID_LENGTH * UNICODE_MULTIPLIER ];
@@ -103,7 +103,7 @@ cip_object_stats* cip_stats::get_obj_stats( char* objid )
 cip_object_stats* cip_stats::stats_if_exists(
     char* objid, cip_object_stats* cip_if_empty )
     {
-    std::map<char*, cip_object_stats*>::iterator ret = obj_stats.find( objid );
+    const auto ret = obj_stats.find( objid );
     if ( ret == obj_stats.end() )
         {
         return cip_if_empty;
@@ -132,8 +132,7 @@ void cip_stats::serialize( std::ostream& stream )
     {
     int reccount = obj_stats.size();
     stream << reccount << std::endl;
-    for ( std::map<char*, cip_object_stats*>::iterator i = obj_stats.begin();
-        i != obj_stats.end(); i++ )
+    for ( auto i = obj_stats.begin(); i != obj_stats.end(); ++i )
         {
         i->second->serialize( stream );
         }
@@ -150,7 +149,14 @@ void cip_stats::deserialize( std::istream& stream )
         cip_object_stats* cos = new cip_object_stats( "tmp" );
         cos->deserialize( stream );
         strcpy( obj_name, cos->objid );
-        obj_stats.emplace( obj_name, cos );
+        const auto res = obj_stats.emplace( obj_name, cos );
+        if ( !res.second )
+            {
+            //A duplicate record: emplace keeps the existing
+            //entry, so this key and value have no owner.
+            delete[] obj_name;
+            delete cos;
+            }
         }
     }
 
@@ -190,10 +196,12 @@ void cip_stats::saveToFile( const char* filename )
 
 void cip_stats::clear()
     {
-    for ( std::map<char*, cip_object_stats*>::iterator i = obj_stats.begin();
-        i != obj_stats.end(); i++ )
+    for ( auto i = obj_stats.begin(); i != obj_stats.end(); ++i )
         {
+        //The map owns both the value and the key allocated in
+        //get_obj_stats() and deserialize().
         delete i->second;
+        delete[] i->first;
         }
     obj_stats.clear();
     changed = false;
