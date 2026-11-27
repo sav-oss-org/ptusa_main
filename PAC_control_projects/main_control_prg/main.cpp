@@ -10,6 +10,8 @@
 #include <fcntl.h>
 #include <codecvt>
 
+#include "lmdb.h"
+
 #include "fmt/format.h"
 
 #include "dtime.h"
@@ -52,6 +54,15 @@ static void stopHandler(int sig)
 
 int main( int argc, const char *argv[] )
     {
+    MDB_env* env{};
+
+    // Создаем и настраиваем окружение (Environment LMDB).
+    mdb_env_create( &env );
+    // Выделяем 32 КБ виртуального адреса.
+    mdb_env_set_mapsize( env, 32 * 1024 );
+    // Открываем директорию (папка ./mdb_data должна существовать).
+    mdb_env_open( env, "./mdb_data", 0, 0664 );
+
 #if defined WIN_OS
     setlocale( LC_ALL, "ru_RU.UTF-8" );
     setlocale( LC_NUMERIC, "C" );
@@ -146,6 +157,10 @@ int main( int argc, const char *argv[] )
 
     //Деинициализация дополнительных устройств.
     IOT_FINAL();
+
+    // Закрытие ресурсов LMDB.
+    mdb_env_close( env );
+    env = nullptr;
 
     return( EXIT_SUCCESS );
     }
