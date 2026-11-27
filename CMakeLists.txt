@@ -626,30 +626,17 @@ set(TCP_SOCKET_LOCKED_FILTER
     "PAC_info.set_cmd"
     "LuaManagerTest.init_success")
 
-# Тесты, сохраняющие общие eeprom.bin/nvram.bin файла рабочего
-# каталога ctest (#1652)
-set(PARAMS_FILES_LOCKED_FILTER
-    "params_manager.*"
-    "SRAM.constructor"
-    "SRAM.load"
-    "SRAM.safe_save"
-    "SRAM.safe_save_write_error"
-    "SRAM.get_directory"
-    "SRAM.storage_directory_created")
-
 set(CIPLINE_SAVE_DEVICE_FILTER
     "cipline_tech_object.save_device")
 
 list(JOIN TCP_SOCKET_LOCKED_FILTER ":" TCP_SOCKET_LOCKED_FILTER_STR)
 list(JOIN STDOUT_CAPTURE_LOCKED_FILTER ":" STDOUT_CAPTURE_LOCKED_FILTER_STR)
-list(JOIN PARAMS_FILES_LOCKED_FILTER ":" PARAMS_FILES_LOCKED_FILTER_STR)
 list(JOIN CIPLINE_SAVE_DEVICE_FILTER ":" CIPLINE_SAVE_DEVICE_FILTER_STR)
 
 # GTest splits a filter string at the first '-' into a positive and
 # a negative section, so '-' must never appear inside a name.
 foreach(locked_filter TCP_SOCKET_LOCKED_FILTER
         STDOUT_CAPTURE_LOCKED_FILTER
-        PARAMS_FILES_LOCKED_FILTER
         CIPLINE_SAVE_DEVICE_FILTER)
     foreach(locked_name ${${locked_filter}})
         if(locked_name MATCHES "-")
@@ -662,7 +649,7 @@ endforeach()
 # Everything except the locked groups: the '*' positive section
 # matches all tests, the tail after '-' excludes the locked ones.
 set(UNLOCKED_FILTER_STR
-    "*-${TCP_SOCKET_LOCKED_FILTER_STR}:${STDOUT_CAPTURE_LOCKED_FILTER_STR}:${PARAMS_FILES_LOCKED_FILTER_STR}:${CIPLINE_SAVE_DEVICE_FILTER_STR}")
+    "*-${TCP_SOCKET_LOCKED_FILTER_STR}:${STDOUT_CAPTURE_LOCKED_FILTER_STR}:${CIPLINE_SAVE_DEVICE_FILTER_STR}")
 
 # Discover tests that use shared tcp_communicator socket and serialize them.
 gtest_discover_tests(main_test
@@ -681,15 +668,6 @@ gtest_discover_tests(main_test
     DISCOVERY_TIMEOUT 30
     TEST_FILTER ${STDOUT_CAPTURE_LOCKED_FILTER_STR}
     PROPERTIES RUN_SERIAL 1)
-
-# Tests that save the shared eeprom.bin/nvram.bin files of the
-# test working directory must not run in parallel with each other:
-# the atomic rename of nvram.bin.tmp raced between concurrent
-# ctest jobs (#1652).
-gtest_discover_tests(main_test
-    DISCOVERY_TIMEOUT 30
-    TEST_FILTER ${PARAMS_FILES_LOCKED_FILTER_STR}
-    PROPERTIES RESOURCE_LOCK params_files)
 
 # Discover all remaining tests.
 gtest_discover_tests(main_test
