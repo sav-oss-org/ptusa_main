@@ -1,4 +1,5 @@
 #include <string.h>
+#include <string>
 #include "fmt/format.h"
 #include <inttypes.h>
 
@@ -269,7 +270,25 @@ int PAC_info::set_cmd( const char* prop, u_int idx, double val )
             case COMMANDS::FORCE_SAVE_PARAMS:
                 G_LOG->notice( "Force saving parameters (remote monitor "
                     "client command)." );
-                return params_manager::get_instance()->save_params();
+                // SRAM::safe_save() writes its own error only once so as not
+                // to flood the log during cyclic autosaving, so a manual
+                // save failure is logged and reported back through cmd and
+                // cmd_answer on every call.
+                cmd_answer[ 0 ] = 0;
+                std::string save_error;
+                cmd = params_manager::get_instance()->save_params(
+                    save_error );
+                if ( cmd != 0 )
+                    {
+                    const std::string answer = fmt::format(
+                        "Force saving parameters (remote monitor client "
+                        "command) failed: {}.", save_error );
+                    G_LOG->error( "%s", answer.c_str() );
+                    auto r = fmt::format_to_n( cmd_answer,
+                        sizeof( cmd_answer ) - 1, "{}", answer );
+                    *r.out = '\0';
+                    }
+                return cmd;
             }
 
         return 0;
