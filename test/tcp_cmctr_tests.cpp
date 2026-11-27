@@ -34,11 +34,12 @@ namespace
                 address.sin_family = AF_INET;
                 address.sin_addr.s_addr = htonl( INADDR_ANY );
                 if ( bind( descriptor, reinterpret_cast<sockaddr*>( &address ),
-                    sizeof( address ) ) < 0 || listen( descriptor, 1 ) < 0 )
+                         sizeof( address ) ) < 0 ||
+                     listen( descriptor, 1 ) < 0 )
                     return -1;
                 socklen_t size = sizeof( address );
                 if ( getsockname( descriptor,
-                    reinterpret_cast<sockaddr*>( &address ), &size ) < 0 )
+                         reinterpret_cast<sockaddr*>( &address ), &size ) < 0 )
                     return -1;
                 return ntohs( address.sin_port );
                 }
@@ -48,7 +49,8 @@ namespace
                 auto directory = opendir( "/proc/self/fd" );
                 if ( !directory ) return -1;
                 int count = 0;
-                while ( readdir( directory ) ) ++count;
+                while ( readdir( directory ) )
+                    ++count;
                 closedir( directory );
                 return count;
                 }
@@ -69,13 +71,15 @@ namespace
                 tcp_communicator::clear_instance();
                 close_socket( master_reservation );
                 close_socket( modbus_reservation );
-                tcp_communicator::set_port( original_port, original_modbus_port );
+                tcp_communicator::set_port(
+                    original_port, original_modbus_port );
                 PAC_critical_errors_manager::get_instance()->reset_all_error();
                 }
         };
     }
 
-TEST_F( tcp_communicator_linux_restart, restarts_after_active_modbus_connection )
+TEST_F(
+    tcp_communicator_linux_restart, restarts_after_active_modbus_connection )
     {
     close_socket( master_reservation );
     close_socket( modbus_reservation );
@@ -90,13 +94,14 @@ TEST_F( tcp_communicator_linux_restart, restarts_after_active_modbus_connection 
         address.sin_family = AF_INET;
         address.sin_addr.s_addr = htonl( INADDR_LOOPBACK );
         address.sin_port = htons( tcp_communicator::get_modbus_port() );
-        ASSERT_EQ( 0, connect( modbus_reservation,
-            reinterpret_cast<sockaddr*>( &address ), sizeof( address ) ) );
+        ASSERT_EQ( 0,
+            connect( modbus_reservation,
+                reinterpret_cast<sockaddr*>( &address ), sizeof( address ) ) );
         ASSERT_EQ( 0, G_CMMCTR->evaluate() );
         tcp_communicator::clear_instance();
         timeval timeout{ 1, 0 };
         ASSERT_EQ( 0, setsockopt( modbus_reservation, SOL_SOCKET, SO_RCVTIMEO,
-            &timeout, sizeof( timeout ) ) );
+                          &timeout, sizeof( timeout ) ) );
         char byte{};
         ASSERT_EQ( 0, recv( modbus_reservation, &byte, 1, 0 ) );
         close_socket( modbus_reservation );
@@ -105,7 +110,8 @@ TEST_F( tcp_communicator_linux_restart, restarts_after_active_modbus_connection 
     EXPECT_EQ( 0, G_CMMCTR->evaluate() );
     }
 
-TEST_F( tcp_communicator_linux_restart, retries_busy_modbus_without_leaking_sockets )
+TEST_F( tcp_communicator_linux_restart,
+    retries_busy_modbus_without_leaking_sockets )
     {
     close_socket( master_reservation );
     tcp_communicator::init_instance( "Тест", "Test" );
@@ -185,7 +191,8 @@ TEST( tcp_communicator, evaluate )
 
 
 #ifdef LINUX_OS
-    linux_tcp_client modbus_cl( "127.0.0.1", G_CMMCTR->get_modbus_port(), 1, 1 );
+    linux_tcp_client modbus_cl(
+        "127.0.0.1", G_CMMCTR->get_modbus_port(), 1, 1 );
 #else
     win_tcp_client modbus_cl( "127.0.0.1", G_CMMCTR->get_modbus_port(), 1, 1 );
     modbus_cl.InitLib();
@@ -195,7 +202,8 @@ TEST( tcp_communicator, evaluate )
         modbus_cl.get_connected_state() );
     modbus_cl.reconnectTimeout = 0;
     cnt = 0;
-    r = modbus_cl.AsyncConnect();;
+    r = modbus_cl.AsyncConnect();
+    ;
     while ( r != tcp_client::ASYNCCONNECTSTATE::ACS_CONNECTED && cnt < 1000 )
         {
         sleep_ms( 1 );
@@ -232,20 +240,20 @@ TEST( tcp_communicator, checkBuff )
     EXPECT_FALSE( res );
     }
 
-int __stdcall fail_select_r1( int, const fd_set*, const fd_set*,
-    const fd_set*, const struct timeval* )
+int __stdcall fail_select_r1(
+    int, const fd_set*, const fd_set*, const fd_set*, const struct timeval* )
     {
     return -1;
     }
 
-int __stdcall fail_select_r0( int, const fd_set*, const fd_set*,
-    const fd_set*, const struct timeval* )
+int __stdcall fail_select_r0(
+    int, const fd_set*, const fd_set*, const fd_set*, const struct timeval* )
     {
     return 0;
     }
 
-int __stdcall good_select( int, const fd_set*, const fd_set*,
-    const fd_set*, const struct timeval* )
+int __stdcall good_select(
+    int, const fd_set*, const fd_set*, const fd_set*, const struct timeval* )
     {
     return 1;
     }
@@ -288,9 +296,9 @@ TEST( tcp_communicator, recvtimeout )
     const auto TIME_SEC = 1;
     const auto TIME_USEC = 10'000;
 
-    auto res = tcp_communicator::recvtimeout(
-        tcp_communicator::get_master_socket(), buff, SIZE, TIME_SEC,
-        TIME_USEC, "", "", &stat );
+    auto res =
+        tcp_communicator::recvtimeout( tcp_communicator::get_master_socket(),
+            buff, SIZE, TIME_SEC, TIME_USEC, "", "", &stat );
     EXPECT_EQ( res, -2 );
     // Проверяем, что время ожидания истекло - время цикла в миллисекундах
     // должно быть не меньше чем `TIME_SEC * 1000` миллисекунд.
@@ -303,18 +311,16 @@ TEST( tcp_communicator, recvtimeout )
     // Устанавливаем в 0 время ожидания ответа, при превышении которого
     // будет уведомление.
     G_PAC_INFO()->par[ PAC_info::P_WAGO_TCP_NODE_WARN_ANSWER_AVG_TIME ] = 0;
-    res = tcp_communicator::recvtimeout(
-        tcp_communicator::get_master_socket(), buff, SIZE, TIME_SEC,
-        0, "", "", &stat );
+    res = tcp_communicator::recvtimeout( tcp_communicator::get_master_socket(),
+        buff, SIZE, TIME_SEC, 0, "", "", &stat );
     EXPECT_EQ( res, -2 );
 
     // Should fail - fail with select() returns -1.
     subhook_t select_m1_hook = subhook_new( reinterpret_cast<void*>( &select ),
         reinterpret_cast<void*>( &fail_select_r1 ), SUBHOOK_64BIT_OFFSET );
     subhook_install( select_m1_hook );
-    res = tcp_communicator::recvtimeout(
-        tcp_communicator::get_master_socket(), buff, SIZE, TIME_SEC,
-        0, "", "", &stat );
+    res = tcp_communicator::recvtimeout( tcp_communicator::get_master_socket(),
+        buff, SIZE, TIME_SEC, 0, "", "", &stat );
     EXPECT_EQ( res, -1 );
     subhook_remove( select_m1_hook );
     subhook_free( select_m1_hook );
@@ -323,29 +329,27 @@ TEST( tcp_communicator, recvtimeout )
     subhook_t select_0_hook = subhook_new( reinterpret_cast<void*>( &select ),
         reinterpret_cast<void*>( &fail_select_r0 ), SUBHOOK_64BIT_OFFSET );
     subhook_install( select_0_hook );
-    res = tcp_communicator::recvtimeout(
-        tcp_communicator::get_master_socket(), buff, SIZE, TIME_SEC,
-        0, "", "", &stat );
+    res = tcp_communicator::recvtimeout( tcp_communicator::get_master_socket(),
+        buff, SIZE, TIME_SEC, 0, "", "", &stat );
     EXPECT_EQ( res, -2 );
     subhook_remove( select_0_hook );
     subhook_free( select_0_hook );
 
     // Should fail - fail with recv() returns -1.
-    subhook_t select_good_hook = subhook_new( reinterpret_cast<void*>( &select ),
-        reinterpret_cast<void*>( &good_select ), SUBHOOK_64BIT_OFFSET );
+    subhook_t select_good_hook =
+        subhook_new( reinterpret_cast<void*>( &select ),
+            reinterpret_cast<void*>( &good_select ), SUBHOOK_64BIT_OFFSET );
     subhook_install( select_good_hook );
-    res = tcp_communicator::recvtimeout(
-        tcp_communicator::get_master_socket(), buff, SIZE, TIME_SEC,
-        0, "", "", &stat );
+    res = tcp_communicator::recvtimeout( tcp_communicator::get_master_socket(),
+        buff, SIZE, TIME_SEC, 0, "", "", &stat );
     EXPECT_EQ( res, -1 );
 
     // Should fail - fail with recv() returns 0.
     subhook_t recv_0_hook = subhook_new( reinterpret_cast<void*>( &recv ),
         reinterpret_cast<void*>( &fail_recv_0 ), SUBHOOK_64BIT_OFFSET );
     subhook_install( recv_0_hook );
-    res = tcp_communicator::recvtimeout(
-        tcp_communicator::get_master_socket(), buff, SIZE, TIME_SEC,
-        0, "", "", &stat );
+    res = tcp_communicator::recvtimeout( tcp_communicator::get_master_socket(),
+        buff, SIZE, TIME_SEC, 0, "", "", &stat );
     EXPECT_EQ( res, 0 );
     subhook_remove( recv_0_hook );
     subhook_free( recv_0_hook );
@@ -354,9 +358,8 @@ TEST( tcp_communicator, recvtimeout )
     subhook_t recv_good_hook = subhook_new( reinterpret_cast<void*>( &recv ),
         reinterpret_cast<void*>( &good_recv ), SUBHOOK_64BIT_OFFSET );
     subhook_install( recv_good_hook );
-    res = tcp_communicator::recvtimeout(
-        tcp_communicator::get_master_socket(), buff, SIZE, TIME_SEC,
-        0, "", "", &stat );
+    res = tcp_communicator::recvtimeout( tcp_communicator::get_master_socket(),
+        buff, SIZE, TIME_SEC, 0, "", "", &stat );
     EXPECT_EQ( res, 1 );
     subhook_remove( recv_good_hook );
     subhook_free( recv_good_hook );

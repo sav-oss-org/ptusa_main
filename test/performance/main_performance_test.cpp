@@ -31,25 +31,30 @@ static void DoSetup( const benchmark::State& state )
         }
     }
 
-static void write_devices_service( benchmark::State& state, bool use_compression )
+static void write_devices_service(
+    benchmark::State& state, bool use_compression )
     {
-    if ( use_compression ) device_communicator::switch_on_compression();
-    else device_communicator::switch_off_compression();
+    if ( use_compression )
+        device_communicator::switch_on_compression();
+    else
+        device_communicator::switch_off_compression();
 
-    auto size = G_DEVICE_CMMCTR->write_devices_states_service( 1,
-        in_data_devices, out_data );
+    auto size = G_DEVICE_CMMCTR->write_devices_states_service(
+        1, in_data_devices, out_data );
 
     for ( auto _ : state )
-        G_DEVICE_CMMCTR->write_devices_states_service( 1,
-            in_data_devices, out_data );
+        G_DEVICE_CMMCTR->write_devices_states_service(
+            1, in_data_devices, out_data );
 
-    state.counters.insert( { {"Size", size} } );
+    state.counters.insert( { { "Size", size } } );
     }
 
 // Register the function as a benchmark
-BENCHMARK_CAPTURE( write_devices_service, "no compression", false )->
-    Setup( DoSetup )->Unit( benchmark::kMicrosecond );
-BENCHMARK_CAPTURE( write_devices_service, "with compression", true )->
-    Setup( DoSetup )->Unit( benchmark::kMicrosecond );
+BENCHMARK_CAPTURE( write_devices_service, "no compression", false )
+    ->Setup( DoSetup )
+    ->Unit( benchmark::kMicrosecond );
+BENCHMARK_CAPTURE( write_devices_service, "with compression", true )
+    ->Setup( DoSetup )
+    ->Unit( benchmark::kMicrosecond );
 
 BENCHMARK_MAIN();

@@ -1,6 +1,5 @@
-#if !defined WIN_OS && \
-    !( defined LINUX_OS && defined PAC_PC ) && \
-	!( defined LINUX_OS && defined PAC_PLCNEXT )
+#if !defined WIN_OS && !( defined LINUX_OS && defined PAC_PC ) && \
+    !( defined LINUX_OS && defined PAC_PLCNEXT )
 #error You must define OS!
 #endif
 
@@ -63,9 +62,10 @@ void SRAM::ensure_storage_dir()
         std::filesystem::create_directories( directory, ec );
         if ( ec )
             {
-            G_LOG->error( "SRAM() - ERROR: Can't create storage directory"
-                " (%s) : %s.\n", directory.string().c_str(),
-                strerror( ec.value() ) );
+            G_LOG->error(
+                "SRAM() - ERROR: Can't create storage directory"
+                " (%s) : %s.\n",
+                directory.string().c_str(), strerror( ec.value() ) );
             return;
             }
 
@@ -78,8 +78,7 @@ void SRAM::ensure_storage_dir()
 #ifdef WIN_OS
     if ( _access( directory.string().c_str(), 2 ) != 0 )
         {
-        G_LOG->error(
-            "SRAM() - ERROR: Can't write to storage directory (%s).",
+        G_LOG->error( "SRAM() - ERROR: Can't write to storage directory (%s).",
             directory.string().c_str() );
         }
 #else
@@ -91,9 +90,9 @@ void SRAM::ensure_storage_dir()
 
         G_LOG->error(
             "SRAM() - ERROR: Can't write to storage directory (%s) : %s"
-            " (uid=%d, gid=%d).\n", directory.string().c_str(),
-            strerror( err ), static_cast<int>( geteuid() ),
-            static_cast<int>( getegid() ) );
+            " (uid=%d, gid=%d).\n",
+            directory.string().c_str(), strerror( err ),
+            static_cast<int>( geteuid() ), static_cast<int>( getegid() ) );
         }
 #endif // WIN_OS
     }
@@ -113,14 +112,14 @@ int SRAM::load_data()
 
     if ( std::error_code ec; !std::filesystem::exists( file_path, ec ) )
         {
-        G_LOG->notice( "SRAM() - File (%s) not found.",
-            file_path.string().c_str() );
+        G_LOG->notice(
+            "SRAM() - File (%s) not found.", file_path.string().c_str() );
         return 1;
         }
     else
         {
-        G_LOG->notice( "SRAM() - File (%s) found, loading.",
-            file_path.string().c_str() );
+        G_LOG->notice(
+            "SRAM() - File (%s) found, loading.", file_path.string().c_str() );
         auto f = fopen( file_path.string().c_str(), "rb" );
 
         if ( f )
@@ -149,8 +148,7 @@ int SRAM::load_data()
             }
         else
             {
-            G_LOG->error(
-                "SRAM() - ERROR: Can't open device (%s) : %s.\n",
+            G_LOG->error( "SRAM() - ERROR: Can't open device (%s) : %s.\n",
                 file_path.string().c_str(), strerror( errno ) );
             return 2;
             }
@@ -198,7 +196,7 @@ int SRAM::safe_save()
         error_logged = false;
 
         if ( auto res =
-            fwrite( get_data(), sizeof( std::byte ), get_size(), temp );
+                 fwrite( get_data(), sizeof( std::byte ), get_size(), temp );
             res != get_size() )
             {
             // Формируем текст о частичной записи один раз:
@@ -264,7 +262,8 @@ int SRAM::safe_save()
             return 3;
             }
 
-        if ( auto dir = open( tmp_path.parent_path().string().c_str(), O_RDONLY );
+        if ( auto dir =
+                 open( tmp_path.parent_path().string().c_str(), O_RDONLY );
             dir != -1 )
             {
             fsync( dir );
@@ -275,8 +274,10 @@ int SRAM::safe_save()
         if ( G_DEBUG )
             {
             auto end = std::chrono::high_resolution_clock::now();
-            const auto duration = std::chrono::duration_cast<
-                std::chrono::microseconds>( end - start ).count();
+            const auto duration =
+                std::chrono::duration_cast< std::chrono::microseconds>(
+                    end - start )
+                    .count();
             G_LOG->debug( "SRAM::safe_save() - write time: %lld us (%s).",
                 static_cast<long long>( duration ),
                 file_path.string().c_str() );

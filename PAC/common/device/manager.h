@@ -379,26 +379,25 @@ class device_manager : public i_Lua_save_device
     protected:
         char is_first_device[ device::C_DEVICE_TYPE_CNT ] = { 0 };
 
-        dev_stub *stub;  ///< Устройство-заглушка, фиктивное устройство.
+        dev_stub* stub;  ///< Устройство-заглушка, фиктивное устройство.
 
         struct range    ///< Диапазон устройств одного типа.
             {
-            int start_pos = -1;
-            int end_pos = -1;
+                int start_pos = -1;
+                int end_pos = -1;
             };
 
         /// Диапазоны устройств всех типов.
         range dev_types_ranges[ device::C_DEVICE_TYPE_CNT ];
 
-        int get_device_n( device::DEVICE_TYPE dev_type,
-            const char* dev_name );
+        int get_device_n( device::DEVICE_TYPE dev_type, const char* dev_name );
 
         int get_device_n( const char* dev_name );
 
         std::vector< device* > project_devices; ///< Все устройства.
 
         /// @brief Единственный экземпляр класса.
-        static auto_smart_ptr < device_manager > instance;
+        static auto_smart_ptr< device_manager > instance;
 
     public:
         // @brief Добавление устройства.
@@ -417,4 +416,4 @@ class device_manager : public i_Lua_save_device
 ///@brief Получение менеджера устройств.
 ///
 ///@return Менеджер устройств проекта.
-    device_manager* G_DEVICE_MANAGER();
+device_manager* G_DEVICE_MANAGER();

@@ -6,15 +6,25 @@
 namespace PtusaPLCnextEngineer
     {
 #if ARP_ABI_VERSION_MAJOR < 2
-    PtusaMainCmpnt::PtusaMainCmpnt( IApplication& application, const String& name )
-        : ComponentBase( application, ::PtusaPLCnextEngineer::PtusaPLCnextEngineerLibrary::GetInstance(), name, ComponentCategory::Custom )
-        , programProvider( *this )
-        , ProgramComponentBase( ::PtusaPLCnextEngineer::PtusaPLCnextEngineerLibrary::GetInstance().GetNamespace(), programProvider )
+    PtusaMainCmpnt::PtusaMainCmpnt(
+        IApplication& application, const String& name ) :
+        ComponentBase( application,
+            ::PtusaPLCnextEngineer::PtusaPLCnextEngineerLibrary::GetInstance(),
+            name, ComponentCategory::Custom ),
+        programProvider( *this ),
+        ProgramComponentBase(
+            ::PtusaPLCnextEngineer::PtusaPLCnextEngineerLibrary::GetInstance()
+                .GetNamespace(),
+            programProvider )
 #else
-    PtusaMainCmpnt::PtusaMainCmpnt( ILibrary& library, const String& name )
-        : ComponentBase( library, name, ComponentCategory::Custom, GetDefaultStartOrder() )
-        , programProvider( *this )
-        , ProgramComponentBase( ::PtusaPLCnextEngineer::PtusaPLCnextEngineerLibrary::GetInstance().GetNamespace(), programProvider )
+    PtusaMainCmpnt::PtusaMainCmpnt( ILibrary& library, const String& name ) :
+        ComponentBase(
+            library, name, ComponentCategory::Custom, GetDefaultStartOrder() ),
+        programProvider( *this ),
+        ProgramComponentBase(
+            ::PtusaPLCnextEngineer::PtusaPLCnextEngineerLibrary::GetInstance()
+                .GetNamespace(),
+            programProvider )
 #endif
         {
         }

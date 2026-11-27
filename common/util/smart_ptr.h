@@ -21,7 +21,8 @@
 /// @brief Защищенная работа с указателем.
 ///
 /// Реализована проверка на работу с null указателем.
-template < class type > class smart_ptr
+template < class type >
+class smart_ptr
     {
     protected:
         type* pointer;
@@ -38,12 +39,12 @@ template < class type > class smart_ptr
             }
 
         /// @brief Конструктор копирования.
-        smart_ptr( const smart_ptr< type > &ptr ) : pointer( ptr.pointer )
+        smart_ptr( const smart_ptr< type >& ptr ) : pointer( ptr.pointer )
             {
             }
 
         /// @brief Оператор присваивания указателя.
-        smart_ptr< type >& operator = ( type* new_t )
+        smart_ptr< type >& operator=( type* new_t )
             {
             pointer = new_t;
 
@@ -96,13 +97,13 @@ template < class type > class smart_ptr
 
     private:
         /// @brief Закрытый оператор индексирования - запрет использования.
-        type* operator[] ( unsigned int index )
+        type* operator[]( unsigned int index )
             {
             return pointer;
             }
 
         /// @brief Закрытый оператор присваивания - запрет использования.
-        smart_ptr< type >& operator = ( const smart_ptr< type > &new_t )
+        smart_ptr< type >& operator=( const smart_ptr< type >& new_t )
             {
             return *this;
             }
@@ -111,7 +112,8 @@ template < class type > class smart_ptr
 /// @brief Защищенная работа с указателем.
 ///
 /// Автоматическое освобождение памяти при уничтожении, переприсваивании объекта.
-template < class type > class auto_smart_ptr : public smart_ptr< type >
+template < class type >
+class auto_smart_ptr : public smart_ptr< type >
     {
     public:
         /// @brief Конструктор по умолчанию.
@@ -144,7 +146,7 @@ template < class type > class auto_smart_ptr : public smart_ptr< type >
             }
 
         /// @brief Оператор присваивания указателя.
-        auto_smart_ptr< type >& operator = ( type* new_t )
+        auto_smart_ptr< type >& operator=( type* new_t )
             {
             if ( smart_ptr< type >::pointer )
                 {

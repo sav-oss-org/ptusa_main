@@ -79,17 +79,15 @@ namespace
         return nullptr;
         }
 
-    size_t bad_fread( [[maybe_unused]] void* ptr,
-        [[maybe_unused]] size_t size,
-        [[maybe_unused]] size_t count,
-        [[maybe_unused]] FILE* stream )
+    size_t bad_fread( [[maybe_unused]] void* ptr, [[maybe_unused]] size_t size,
+        [[maybe_unused]] size_t count, [[maybe_unused]] FILE* stream )
         {
         return 0;
         }
 
 #ifdef LINUX_OS
-    int bad_access( [[maybe_unused]] const char* pathname,
-        [[maybe_unused]] int mode )
+    int bad_access(
+        [[maybe_unused]] const char* pathname, [[maybe_unused]] int mode )
         {
         errno = EACCES;
         return -1;
@@ -197,8 +195,8 @@ TEST( SRAM, safe_save_create_error_logged_once )
 
     const std::string marker = "Can't open file";
     size_t count = 0;
-    for ( auto pos = output.find( marker );
-        pos != std::string::npos; pos = output.find( marker, pos + 1 ) )
+    for ( auto pos = output.find( marker ); pos != std::string::npos;
+        pos = output.find( marker, pos + 1 ) )
         {
         count++;
         }
@@ -207,8 +205,9 @@ TEST( SRAM, safe_save_create_error_logged_once )
 
     // Путь в сообщении должен быть абсолютным, иначе невозможно понять,
     // в каком каталоге запрещена запись.
-    auto expected = ( std::filesystem::current_path()
-        / "test_sram4.bin.tmp" ).lexically_normal().string();
+    auto expected = ( std::filesystem::current_path() / "test_sram4.bin.tmp" )
+                        .lexically_normal()
+                        .string();
     EXPECT_NE( std::string::npos, output.find( expected ) );
     }
 
@@ -239,8 +238,8 @@ TEST( SRAM, get_directory )
 
     // Путь хранится в абсолютном виде, поэтому каталог хранения файла данных
     // не зависит от текущего каталога процесса.
-    EXPECT_EQ( std::filesystem::current_path() / "subdir",
-        sram.get_directory() );
+    EXPECT_EQ(
+        std::filesystem::current_path() / "subdir", sram.get_directory() );
 
     std::filesystem::remove( sram.get_directory() );
     }
@@ -261,8 +260,7 @@ TEST( SRAM, storage_directory_created )
     // Перед созданием файлов права на запись в каталог проверяются, поэтому
     // сохранение в созданный каталог должно завершиться успешно.
     EXPECT_EQ( 0, sram.safe_save() );
-    EXPECT_TRUE(
-        std::filesystem::exists( directory / "test_sram6.bin" ) );
+    EXPECT_TRUE( std::filesystem::exists( directory / "test_sram6.bin" ) );
 
     std::filesystem::remove_all( "test_storage_dir" );
     }
@@ -278,20 +276,21 @@ TEST( SRAM, storage_directory_create_error_logged )
 
     testing::internal::CaptureStdout();
 
-    SRAM sram( std::filesystem::path( blocker ) / "nested/test.bin",
-        DATA_SIZE );
+    SRAM sram(
+        std::filesystem::path( blocker ) / "nested/test.bin", DATA_SIZE );
 
     auto output = testing::internal::GetCapturedStdout();
 
     std::filesystem::remove( blocker );
 
-    EXPECT_NE( std::string::npos,
-        output.find( "Can't create storage directory" ) );
+    EXPECT_NE(
+        std::string::npos, output.find( "Can't create storage directory" ) );
 
     // Сообщение должно содержать абсолютный путь каталога, иначе причину
     // отказа невозможно найти в файловой системе контроллера.
     auto expected = ( std::filesystem::current_path() / blocker / "nested" )
-        .lexically_normal().string();
+                        .lexically_normal()
+                        .string();
     EXPECT_NE( std::string::npos, output.find( expected ) );
     }
 
@@ -313,8 +312,8 @@ TEST( SRAM, storage_directory_write_error_logged )
     subhook_remove( access_hook );
     subhook_free( access_hook );
 
-    EXPECT_NE( std::string::npos,
-        output.find( "Can't write to storage directory" ) );
+    EXPECT_NE(
+        std::string::npos, output.find( "Can't write to storage directory" ) );
 
     // Причина отказа и пользователь, под которым запущен процесс, позволяют
     // отличить случай «каталог создан от root» от других отказов.

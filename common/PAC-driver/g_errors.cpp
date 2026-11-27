@@ -1,7 +1,7 @@
 #ifdef DRIVER
 #ifdef USE_STDAFX
-#include "stdafx.h" //Стандартный заголовочный файл для использования precompiled headers.
-#endif //USE_STDAFX
+#include "stdafx.h"  //Стандартный заголовочный файл для использования precompiled headers.
+#endif  //USE_STDAFX
 #else
 #include "g_errors.h"
 #include "device/device.h"
@@ -9,7 +9,7 @@
 #endif
 
 #ifdef PAC
-auto_smart_ptr < errors_manager > errors_manager::instance;
+auto_smart_ptr< errors_manager > errors_manager::instance;
 
 bool simple_error::is_any_error = false;
 bool simple_error::is_any_no_ack_error = false;
@@ -17,68 +17,74 @@ bool simple_error::is_new_error = false;
 
 bool tech_obj_error::is_any_message = false;
 
-auto_smart_ptr < siren_lights_manager > siren_lights_manager::instance;
+auto_smart_ptr< siren_lights_manager > siren_lights_manager::instance;
 //-----------------------------------------------------------------------------
 //-----------------------------------------------------------------------------
-base_error::base_error(): err_par( 1 ), error_state( AS_NORMAL )
+base_error::base_error() : err_par( 1 ), error_state( AS_NORMAL )
     {
     }
 //-----------------------------------------------------------------------------
 //-----------------------------------------------------------------------------
-simple_error::simple_error( i_simple_error* simple_error_owner
-                           ): base_error(),
-                           simple_error_owner( simple_error_owner )
+simple_error::simple_error( i_simple_error* simple_error_owner ) :
+    base_error(), simple_error_owner( simple_error_owner )
     {
     simple_error_owner->set_error_params( &err_par );
     }
 //-----------------------------------------------------------------------------
-int simple_error::save_as_Lua_str( char *str )
+int simple_error::save_as_Lua_str( char* str )
     {
     int res = 0;
     str[ 0 ] = 0;
 
     if ( AS_ALARM == error_state || AS_ACCEPT == error_state ||
-        AS_RETURN == error_state ) // Есть ошибка.
+         AS_RETURN == error_state )  // Есть ошибка.
         {
         unsigned char alarm_params = err_par[ P_PARAM_N ];
 
         res += fmt::format_to_n( str + res, MAX_COPY_SIZE, "{{\n" ).size;
 
         res += fmt::format_to_n( str + res, MAX_COPY_SIZE,
-            "description=\"{} - {}\",\n",
-            simple_error_owner->get_name(), simple_error_owner->get_error_description() ).size;
-        res += fmt::format_to_n( str + res, MAX_COPY_SIZE,
-            "priority={},\n", static_cast<int>( ALARM_CLASS_PRIORITY::P_ALARM ) ).size;
-        res += fmt::format_to_n( str + res, MAX_COPY_SIZE,
-            "state={},\n", error_state ).size;
-        res += fmt::format_to_n( str + res, MAX_COPY_SIZE,
-            "type={},\n", static_cast<int>( ALARM_TYPE::AT_SPECIAL ) ).size;
-        res += fmt::format_to_n( str + res, MAX_COPY_SIZE,
-            "group=\"{}\",\n", "тревога" ).size;
+            "description=\"{} - {}\",\n", simple_error_owner->get_name(),
+            simple_error_owner->get_error_description() )
+                   .size;
+        res += fmt::format_to_n( str + res, MAX_COPY_SIZE, "priority={},\n",
+            static_cast<int>( ALARM_CLASS_PRIORITY::P_ALARM ) )
+                   .size;
+        res += fmt::format_to_n(
+            str + res, MAX_COPY_SIZE, "state={},\n", error_state )
+                   .size;
+        res += fmt::format_to_n( str + res, MAX_COPY_SIZE, "type={},\n",
+            static_cast<int>( ALARM_TYPE::AT_SPECIAL ) )
+                   .size;
+        res += fmt::format_to_n(
+            str + res, MAX_COPY_SIZE, "group=\"{}\",\n", "тревога" )
+                   .size;
 
-        res += fmt::format_to_n( str + res, MAX_COPY_SIZE,
-            "id_n={},\n", simple_error_owner->get_serial_n() ).size;
+        res += fmt::format_to_n( str + res, MAX_COPY_SIZE, "id_n={},\n",
+            simple_error_owner->get_serial_n() )
+                   .size;
         res += fmt::format_to_n( str + res, MAX_COPY_SIZE,
             "id_object_alarm_number={},\n",
-            -simple_error_owner->get_error_id() ).size;
-        res += fmt::format_to_n( str + res, MAX_COPY_SIZE,
-            "id_type={},\n",
-            simple_error_owner->get_error_type() ).size;
+            -simple_error_owner->get_error_id() )
+                   .size;
+        res += fmt::format_to_n( str + res, MAX_COPY_SIZE, "id_type={},\n",
+            simple_error_owner->get_error_type() )
+                   .size;
 
-        res += fmt::format_to_n( str + res, MAX_COPY_SIZE,
-            "suppress={}\n", alarm_params & P_IS_SUPPRESS ? "true" : "false" ).size;
+        res += fmt::format_to_n( str + res, MAX_COPY_SIZE, "suppress={}\n",
+            alarm_params & P_IS_SUPPRESS ? "true" : "false" )
+                   .size;
         res += fmt::format_to_n( str + res, MAX_COPY_SIZE, "}},\n" ).size;
         }
 
     return res;
     }
 //-----------------------------------------------------------------------------
-void simple_error::evaluate( bool &is_new_state )
+void simple_error::evaluate( bool& is_new_state )
     {
     // Проверка текущего состояния устройства.
-    if ( simple_error_owner->get_state() < 0 )    // Есть ошибка.
+    if ( simple_error_owner->get_state() < 0 )  // Есть ошибка.
         {
-
         if ( auto error_id = simple_error_owner->get_error_id();
             prev_error_id != error_id )
             {
@@ -100,7 +106,7 @@ void simple_error::evaluate( bool &is_new_state )
                 error_state = AS_ALARM;
                 is_new_state = true;
 
-                is_new_error = true; //Появилась новая ошибка.
+                is_new_error = true;  //Появилась новая ошибка.
 
                 is_any_no_ack_error = true;
                 break;
@@ -114,7 +120,7 @@ void simple_error::evaluate( bool &is_new_state )
             is_any_no_ack_error = false;
             }
         }
-    else // Нет ошибки - все остальные состояния.
+    else  // Нет ошибки - все остальные состояния.
         {
         switch ( error_state )
             {
@@ -171,18 +177,17 @@ int simple_error::set_cmd( int cmd, int object_alarm_number )
             break;
             }
 
-         case C_CMD_UNSET_SUPPRESS:
-             {
-             current_state |= P_IS_SUPPRESS;
-             current_state ^= P_IS_SUPPRESS;
+        case C_CMD_UNSET_SUPPRESS:
+            {
+            current_state |= P_IS_SUPPRESS;
+            current_state ^= P_IS_SUPPRESS;
 
-             err_par[ P_PARAM_N ] = current_state;
-             break;
-             }
+            err_par[ P_PARAM_N ] = current_state;
+            break;
+            }
 
         case C_CMD_ACCEPT:
-            if ( AS_ALARM == error_state ||
-                AS_RETURN == error_state )
+            if ( AS_ALARM == error_state || AS_RETURN == error_state )
                 {
                 if ( AS_RETURN == error_state )
                     {
@@ -197,11 +202,13 @@ int simple_error::set_cmd( int cmd, int object_alarm_number )
                 {
                 if ( G_DEBUG )
                     {
-                    printf( "[errors] set_cmd failed: "
+                    printf(
+                        "[errors] set_cmd failed: "
                         "incorrect current error state; "
                         "error_state=%s(%d), trying to set to ACCEPT.\n",
-                        error_state == AS_NORMAL ? "AS_NORMAL" :
-                            error_state == AS_ACCEPT ? "AS_ACCEPT" : "UNKNOWN",
+                        error_state == AS_NORMAL   ? "AS_NORMAL"
+                        : error_state == AS_ACCEPT ? "AS_ACCEPT"
+                                                   : "UNKNOWN",
                         error_state );
                     }
                 res = 1;
@@ -215,19 +222,22 @@ int simple_error::set_cmd( int cmd, int object_alarm_number )
 
     if ( G_DEBUG )
         {
-        printf( "[errors] set_cmd: "
+        printf(
+            "[errors] set_cmd: "
             "error_state = %d, trying to set to %s(%d).\n",
             error_state,
-            cmd == C_CMD_SUPPRESS ? "SUPPRESS" :
-                cmd == C_CMD_UNSET_SUPPRESS ? "UNSET_SUPPRESS" :
-                    cmd == C_CMD_ACCEPT ? "ACCEPT" : "UNKNOWN", cmd );
+            cmd == C_CMD_SUPPRESS         ? "SUPPRESS"
+            : cmd == C_CMD_UNSET_SUPPRESS ? "UNSET_SUPPRESS"
+            : cmd == C_CMD_ACCEPT         ? "ACCEPT"
+                                          : "UNKNOWN",
+            cmd );
         }
 
     return res;
     }
 //-----------------------------------------------------------------------------
 //-----------------------------------------------------------------------------
-int tech_obj_error::save_as_Lua_str( char *str )
+int tech_obj_error::save_as_Lua_str( char* str )
     {
     int res = 0;
     str[ 0 ] = 0;
@@ -247,8 +257,7 @@ int tech_obj_error::save_as_Lua_str( char *str )
         res += sprintf( str + res, "state=%d,\n", AS_ALARM );
         res += sprintf( str + res, "type=%d,\n", AT_SPECIAL );
 
-        res += sprintf( str + res, "id_n=%d,\n",
-            tech_dev->get_number() );
+        res += sprintf( str + res, "id_n=%d,\n", tech_dev->get_number() );
         res += sprintf( str + res, "id_object_alarm_number=%d,\n",
             tech_dev->get_errors()[ i ]->n );
         res += sprintf( str + res, "id_type=%d,\n", get_object_type() );
@@ -261,11 +270,11 @@ int tech_obj_error::save_as_Lua_str( char *str )
     return res;
     }
 //-----------------------------------------------------------------------------
-void tech_obj_error::evaluate( bool &is_new_state )
+void tech_obj_error::evaluate( bool& is_new_state )
     {
     if ( tech_dev->get_errors().size() != prev_size || was_set_cmd )
         {
-        prev_size   = tech_dev->get_errors().size();
+        prev_size = tech_dev->get_errors().size();
         was_set_cmd = false;
 
         is_new_state = true;
@@ -279,10 +288,10 @@ void tech_obj_error::evaluate( bool &is_new_state )
 //-----------------------------------------------------------------------------
 int tech_obj_error::set_cmd( int cmd, int object_alarm_number )
     {
-    auto &errors = tech_dev->get_errors();
+    auto& errors = tech_dev->get_errors();
     for ( u_int i = 0; i < errors.size(); i++ )
         {
-        if( errors[ i ]->n == object_alarm_number )
+        if ( errors[ i ]->n == object_alarm_number )
             {
             delete errors[ i ];
             errors[ i ] = 0;
@@ -291,9 +300,8 @@ int tech_obj_error::set_cmd( int cmd, int object_alarm_number )
             if ( G_DEBUG )
                 {
                 printf( "Object \"%s\" (%s %d) set error cmd %d to error %d!\n",
-                    tech_dev->get_name_in_Lua(),
-                    tech_dev->get_name(), tech_dev->get_number(),
-                    cmd, object_alarm_number );
+                    tech_dev->get_name_in_Lua(), tech_dev->get_name(),
+                    tech_dev->get_number(), cmd, object_alarm_number );
                 }
             was_set_cmd = true;
             return 0;
@@ -301,11 +309,11 @@ int tech_obj_error::set_cmd( int cmd, int object_alarm_number )
         }
     if ( G_DEBUG )
         {
-        printf( "Error! Object \"%s\" (%s %d) set error cmd - alarm number"
+        printf(
+            "Error! Object \"%s\" (%s %d) set error cmd - alarm number"
             " %d not found!\n",
-            tech_dev->get_name_in_Lua(),
-            tech_dev->get_name(), tech_dev->get_number(),
-            object_alarm_number );
+            tech_dev->get_name_in_Lua(), tech_dev->get_name(),
+            tech_dev->get_number(), object_alarm_number );
         }
 
     return 1;
@@ -359,11 +367,11 @@ const char* tech_obj_error::get_group( tech_object::ERR_MSG_TYPES err_type )
 
 //-----------------------------------------------------------------------------
 //-----------------------------------------------------------------------------
-errors_manager::errors_manager(): errors_id( 0 )
+errors_manager::errors_manager() : errors_id( 0 )
     {
     }
 //-----------------------------------------------------------------------------
-int errors_manager::save_as_Lua_str( char *str, u_int_2 &id )
+int errors_manager::save_as_Lua_str( char* str, u_int_2& id )
     {
     int res = 0;
     str[ 0 ] = 0;
@@ -373,7 +381,7 @@ int errors_manager::save_as_Lua_str( char *str, u_int_2 &id )
         res += s_errors_vector[ i ]->save_as_Lua_str( str + res );
         }
 
-    id = errors_id; //Через параметр возвращаем состояние ошибок.
+    id = errors_id;  //Через параметр возвращаем состояние ошибок.
 
     return res;
     }
@@ -395,7 +403,7 @@ void errors_manager::evaluate()
 
     if ( is_new_error_state )
         {
-        errors_id++;        // Ошибки изменились.
+        errors_id++;  // Ошибки изменились.
         }
     }
 //-----------------------------------------------------------------------------
@@ -415,7 +423,6 @@ void errors_manager::print()
             {
             s_errors_vector[ i ]->print();
             }
-
         }
     }
 //-----------------------------------------------------------------------------
@@ -428,16 +435,15 @@ void errors_manager::reset_errors_params()
     }
 //-----------------------------------------------------------------------------
 void errors_manager::set_cmd( unsigned int cmd, unsigned int object_type,
-                                 unsigned int object_number,
-                                 unsigned int object_alarm_number )
+    unsigned int object_number, unsigned int object_alarm_number )
     {
-    base_error *res = 0;
+    base_error* res = 0;
 
     // Поиск нужного устройства.
     for ( u_int i = 0; i < s_errors_vector.size(); i++ )
         {
         if ( s_errors_vector[ i ]->get_object_type() == object_type &&
-            s_errors_vector[ i ]->get_object_n() == object_number )
+             s_errors_vector[ i ]->get_object_n() == object_number )
             {
             res = s_errors_vector[ i ];
             break;
@@ -450,7 +456,7 @@ void errors_manager::set_cmd( unsigned int cmd, unsigned int object_type,
         int result = res->set_cmd( cmd, object_alarm_number );
         if ( 0 == result )
             {
-            errors_id++; // Состояние ошибок изменилось.
+            errors_id++;  // Состояние ошибок изменилось.
             }
         }
     else
@@ -460,10 +466,13 @@ void errors_manager::set_cmd( unsigned int cmd, unsigned int object_type,
             printf(
                 "[errors] set_cmd failed: object not found; "
                 "cmd=%s(%u), type=%u, obj=%u, alarm=%u\n",
-                cmd == base_error::C_CMD_ACCEPT ? "C_CMD_ACCEPT" :
-                ( cmd == base_error::C_CMD_SUPPRESS ? "C_CMD_SUPPRESS" :
-                    ( cmd == base_error::C_CMD_UNSET_SUPPRESS ?
-                        "C_CMD_UNSET_SUPPRESS" : "UNKNOWN" ) ),
+                cmd == base_error::C_CMD_ACCEPT
+                    ? "C_CMD_ACCEPT"
+                    : ( cmd == base_error::C_CMD_SUPPRESS
+                              ? "C_CMD_SUPPRESS"
+                              : ( cmd == base_error::C_CMD_UNSET_SUPPRESS
+                                        ? "C_CMD_UNSET_SUPPRESS"
+                                        : "UNKNOWN" ) ),
                 cmd, object_type, object_number, object_alarm_number );
             }
         }
@@ -509,20 +518,22 @@ void siren_lights_manager::eval()
 
     if ( get_delta_millisec( st_time ) < 5000 )
         {
-        critical_error_n = PAC_critical_errors_manager::get_instance()->get_id();
-        return; //Задержка при включении контроллера.
+        critical_error_n =
+            PAC_critical_errors_manager::get_instance()->get_id();
+        return;  //Задержка при включении контроллера.
         }
 
     if ( par[ P_MANUAL_MODE ] != 0 )
         {
-        critical_error_n = PAC_critical_errors_manager::get_instance()->get_id();
-        return; //Ручной режим для сирены и лампочек.
+        critical_error_n =
+            PAC_critical_errors_manager::get_instance()->get_id();
+        return;  //Ручной режим для сирены и лампочек.
         }
 
     //Красный свет - аварии и тревоги.
     red->off();
     if ( PAC_critical_errors_manager::get_instance()->is_any_error() ||
-        simple_error::is_any_error )
+         simple_error::is_any_error )
         {
         if ( is_red_built_in_blink )
             {
@@ -558,9 +569,11 @@ void siren_lights_manager::eval()
         }
 
     //Дополнительное включение сирены при появлении аварии (узлы Wago, ...).
-    if ( PAC_critical_errors_manager::get_instance()->get_id() != critical_error_n )
+    if ( PAC_critical_errors_manager::get_instance()->get_id() !=
+         critical_error_n )
         {
-        critical_error_n = PAC_critical_errors_manager::get_instance()->get_id();
+        critical_error_n =
+            PAC_critical_errors_manager::get_instance()->get_id();
         srn->on();
 
         if ( G_DEBUG )
@@ -612,7 +625,7 @@ void siren_lights_manager::eval()
 
     //Отключаем сирену, если нет аварий.
     if ( PAC_critical_errors_manager::get_instance()->is_any_error() == false &&
-        false == simple_error::is_any_no_ack_error )
+         false == simple_error::is_any_no_ack_error )
         {
         srn->off();
         }
@@ -625,8 +638,8 @@ void siren_lights_manager::eval()
         }
     }
 //-----------------------------------------------------------------------------
-int siren_lights_manager::init( device *red, device *yellow, device *green,
-                               device *srn )
+int siren_lights_manager::init(
+    device* red, device* yellow, device* green, device* srn )
     {
     this->green = green;
     this->red = red;
@@ -636,7 +649,7 @@ int siren_lights_manager::init( device *red, device *yellow, device *green,
     return 0;
     }
 //-----------------------------------------------------------------------------
-int siren_lights_manager::save_device( char *buff ) const
+int siren_lights_manager::save_device( char* buff ) const
     {
     int answer_size = sprintf( buff,
         "t.%s = \n"
@@ -648,7 +661,7 @@ int siren_lights_manager::save_device( char *buff ) const
     return answer_size;
     }
 //-----------------------------------------------------------------------------
-int siren_lights_manager::set_cmd( const char *prop, u_int idx, double val )
+int siren_lights_manager::set_cmd( const char* prop, u_int idx, double val )
     {
     if ( 0 == strcmp( prop, "MANUAL_MODE" ) )
         {
@@ -658,9 +671,14 @@ int siren_lights_manager::set_cmd( const char *prop, u_int idx, double val )
     return 0;
     }
 //-----------------------------------------------------------------------------
-siren_lights_manager::siren_lights_manager() : par( run_time_params_u_int_4( 1 ) ),
-    green( 0 ), red( 0 ),  yellow( 0 ), srn( 0 ),
-    is_red_built_in_blink( 0 ), critical_error_n( 0 )
+siren_lights_manager::siren_lights_manager() :
+    par( run_time_params_u_int_4( 1 ) ),
+    green( 0 ),
+    red( 0 ),
+    yellow( 0 ),
+    srn( 0 ),
+    is_red_built_in_blink( 0 ),
+    critical_error_n( 0 )
     {
     par[ P_MANUAL_MODE ] = 0;
 
@@ -673,4 +691,4 @@ siren_lights_manager* G_SIREN_LIGHTS_MANAGER()
     return siren_lights_manager::get_instance();
     }
 //-----------------------------------------------------------------------------
-#endif // PAC
+#endif  // PAC

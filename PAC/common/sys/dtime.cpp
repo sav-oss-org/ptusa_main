@@ -12,7 +12,7 @@ namespace
 namespace
     {
     /// Подменный источник миллисекунд, см. set_millisec_source.
-    uint32_t ( *g_millisec_source )() {};
+    uint32_t ( *g_millisec_source )(){};
     }
 //-----------------------------------------------------------------------------
 void set_millisec_source( uint32_t ( *source )() )
@@ -63,8 +63,8 @@ inline auto get_duration()
 //-----------------------------------------------------------------------------
 uint32_t get_sec()
     {
-    auto s = std::chrono::duration_cast<std::chrono::seconds>(
-        get_duration() ).count();
+    auto s = std::chrono::duration_cast<std::chrono::seconds>( get_duration() )
+                 .count();
     return static_cast<uint32_t>( s );
     }
 //-----------------------------------------------------------------------------
@@ -76,8 +76,9 @@ uint32_t get_millisec()
         return g_millisec_source();
         }
 #endif // PTUSA_TEST
-    auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(
-        get_duration() ).count();
+    auto ms =
+        std::chrono::duration_cast<std::chrono::milliseconds>( get_duration() )
+            .count();
 
     return static_cast<uint32_t>( ms );
     }

@@ -45,43 +45,44 @@ bool G_NO_IO_NODES = false; // В Linux по умолчанию обмен вк�
 bool G_READ_ONLY_IO_NODES = false;
 
 int running = 1;
-static void stopHandler(int sig)
+static void stopHandler( int sig )
     {
     running = 0;
     }
 
-int main( int argc, const char *argv[] )
+int main( int argc, const char* argv[] )
     {
 #if defined WIN_OS
     setlocale( LC_ALL, "ru_RU.UTF-8" );
     setlocale( LC_NUMERIC, "C" );
 
-    const char** argv_utf8 = new const char* [ argc ];
+    const char** argv_utf8 = new const char*[ argc ];
     int w_argc;
     wchar_t** w_argv = CommandLineToArgvW( GetCommandLineW(), &w_argc );
     for ( int i = 0; i < argc; i++ )
         {
         wchar_t* w_path = w_argv[ i ];
         int utf16len = wcslen( w_path );
-        int utf8len = WideCharToMultiByte( CP_UTF8, 0, w_path, utf16len,
-            NULL, 0, NULL, NULL );
+        int utf8len = WideCharToMultiByte(
+            CP_UTF8, 0, w_path, utf16len, NULL, 0, NULL, NULL );
 
         char* path = new char[ utf8len + 1 ];
         memset( path, 0, utf8len + 1 );
 
-        WideCharToMultiByte( CP_UTF8, 0, w_path, utf16len, path, utf8len, 0, 0 );
+        WideCharToMultiByte(
+            CP_UTF8, 0, w_path, utf16len, path, utf8len, 0, 0 );
         argv_utf8[ i ] = path;
         }
 #else
     const char** argv_utf8 = argv;
 #endif
 
-    signal(SIGINT, stopHandler);
-    signal(SIGTERM, stopHandler);
-    signal(SIGABRT, stopHandler);
-    signal(SIGFPE, stopHandler);
-    signal(SIGILL, stopHandler);
-    signal(SIGSEGV, stopHandler);
+    signal( SIGINT, stopHandler );
+    signal( SIGTERM, stopHandler );
+    signal( SIGABRT, stopHandler );
+    signal( SIGFPE, stopHandler );
+    signal( SIGILL, stopHandler );
+    signal( SIGSEGV, stopHandler );
 
     //-Работа с параметрами командной строки.
     int res = G_PROJECT_MANAGER->proc_main_params( argc, argv_utf8 );
@@ -120,8 +121,8 @@ int main( int argc, const char *argv[] )
         UA_StatusCode retval = G_OPCUA_SERVER.init_all_and_start();
         if ( retval != UA_STATUSCODE_GOOD )
             {
-            G_LOG->critical( "OPC UA server start failed. Returned error code %d!",
-                retval );
+            G_LOG->critical(
+                "OPC UA server start failed. Returned error code %d!", retval );
             return EXIT_FAILURE;
             }
         }
@@ -147,5 +148,5 @@ int main( int argc, const char *argv[] )
     //Деинициализация дополнительных устройств.
     IOT_FINAL();
 
-    return( EXIT_SUCCESS );
+    return ( EXIT_SUCCESS );
     }

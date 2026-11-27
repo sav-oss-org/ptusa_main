@@ -14,7 +14,7 @@ void sleep_ms( unsigned int ms )
 tm get_time()
     {
     static time_t t_;
-    struct tm *timeInfo_;
+    struct tm* timeInfo_;
     t_ = time( 0 );
     timeInfo_ = localtime( &t_ );
 

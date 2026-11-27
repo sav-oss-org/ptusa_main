@@ -71,7 +71,7 @@ class i_counter
         virtual u_int get_abs_quantity() const = 0;
 
         /// @brief Сброс абсолютного значения счетчика.
-        virtual void  abs_reset() = 0;
+        virtual void abs_reset() = 0;
 
         enum DAY_CTR
             {

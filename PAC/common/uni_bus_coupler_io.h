@@ -61,8 +61,8 @@ class uni_io_manager : public io_manager
         ///
         /// @return -   0 - ок.
         /// @return - < 0 - ошибка.
-        virtual int e_communicate( io_node* node, int bytes_to_send,
-            int bytes_to_receive );
+        virtual int e_communicate(
+            io_node* node, int bytes_to_send, int bytes_to_receive );
 
         virtual int read_input_registers( io_node* node, unsigned int address,
             unsigned int quantity, unsigned char station = 0 );
@@ -78,9 +78,9 @@ class uni_io_manager : public io_manager
         /// @param rec_fun_code Полученный код функции.
         /// @param exp_size Ожидаемый размер ответа.
         /// @param rec_size Полученный размер ответа.
-        virtual void add_err_to_log( const char* cmd,
-            const char* node_name, const char* node_ip_address,
-            int exp_fun_code, int rec_fun_code, int exp_size, int rec_size ) const;
+        virtual void add_err_to_log( const char* cmd, const char* node_name,
+            const char* node_ip_address, int exp_fun_code, int rec_fun_code,
+            int exp_size, int rec_size ) const;
 
         /// @brief Read status register for Phoenix BK ETH nodes.
         ///

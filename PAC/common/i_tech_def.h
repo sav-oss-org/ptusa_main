@@ -44,8 +44,8 @@ class i_tech_object
             ERR_ALARM,
 
             ERR_TO_FAIL_STATE,
-            ERR_CANT_ON_2_OPER, //Уже включена блокирующая операция.
-            ERR_CANT_ON_2_OBJ, //Уже включена блокирующая операция другого объекта.
+            ERR_CANT_ON_2_OPER,  //Уже включена блокирующая операция.
+            ERR_CANT_ON_2_OBJ,  //Уже включена блокирующая операция другого объекта.
             };
 
     protected:
@@ -56,27 +56,27 @@ class i_tech_object
 #endif
 
     public:
-    /// @brief Включение/выключение режима.
-    ///
-    /// @param mode      - режим.
-    /// @param new_state - новое состояние режима.
-    ///
-    /// @return  0 - режим включен (отключен).
-    /// @return  1 - режим ранее был включен (отключен).
-    /// @return  3 - нет такого режима.
-    virtual int set_mode( u_int mode, int new_state ) = 0;
+        /// @brief Включение/выключение режима.
+        ///
+        /// @param mode      - режим.
+        /// @param new_state - новое состояние режима.
+        ///
+        /// @return  0 - режим включен (отключен).
+        /// @return  1 - режим ранее был включен (отключен).
+        /// @return  3 - нет такого режима.
+        virtual int set_mode( u_int mode, int new_state ) = 0;
 
-    virtual const char* get_name() const = 0;
+        virtual const char* get_name() const = 0;
 
-    virtual float get_step_param( u_int idx ) const = 0;
+        virtual float get_step_param( u_int idx ) const = 0;
 
-    virtual const saved_params_float* get_params() const = 0;
+        virtual const saved_params_float* get_params() const = 0;
 
-    virtual int set_err_msg( const char* err_msg, int mode, int new_mode = 0,
-        ERR_MSG_TYPES type = ERR_CANT_ON ) = 0;
+        virtual int set_err_msg( const char* err_msg, int mode,
+            int new_mode = 0, ERR_MSG_TYPES type = ERR_CANT_ON ) = 0;
 
-    virtual int check_operation_on( u_int operation_n,
-        bool show_error = true ) = 0;
+        virtual int check_operation_on(
+            u_int operation_n, bool show_error = true ) = 0;
     };
 
-#endif // I_TECH_H
+#endif  // I_TECH_H
