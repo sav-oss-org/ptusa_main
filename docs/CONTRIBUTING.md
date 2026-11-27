@@ -7,6 +7,20 @@ repository before making a change.
 Please note we have a code of conduct, please follow it in all your
 interactions with the project.
 
+## Identifying a Build
+
+Every build carries the source revision it was compiled from. The
+`--version` option prints the version in the `gh` CLI style: the
+program name, the full version string
+`<version>+<git sha>[-dirty]`, the commit date and a link to the
+release page of a tagged build or to the commit otherwise. The
+start log line prints the same full version string, and the
+supervisor receives it in the `VERSION` tag of `PAC_info`, so a
+test build is visible in the network structure. Installed
+artifacts ship a `BUILDINFO.txt` with the commit, the git ref and
+the CI run context (see issue
+[#1647](https://github.com/sav-oss-org/ptusa_main/issues/1647)).
+
 ## Pull Request Process
 
 1. Ensure any install or build dependencies are removed before the end

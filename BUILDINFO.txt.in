@@ -1,0 +1,20 @@
+ptusa_main build identification (issue #1647)
+==============================================
+Project version : @PROJECT_VERSION@
+Build ID        : @PTUSA_BUILD_ID@
+Git commit      : @PTUSA_GIT_SHA@
+Git ref         : @PTUSA_GIT_REF@
+Repository      : @PTUSA_REPO_URL@
+Commit link     : @PTUSA_COMMIT_URL@
+Dirty tree      : @PTUSA_GIT_DIRTY@
+Configure time  : @PTUSA_CONFIGURE_TIMESTAMP@
+CMake           : @CMAKE_VERSION@
+Compiler        : @CMAKE_CXX_COMPILER_ID@ @CMAKE_CXX_COMPILER_VERSION@
+Build host      : @CMAKE_SYSTEM_NAME@ @CMAKE_SYSTEM_VERSION@ (@CMAKE_HOST_SYSTEM_PROCESSOR@)
+
+Continuous integration context (empty for local builds):
+  GITHUB_SHA       = @CI_GITHUB_SHA@
+  GITHUB_REF       = @CI_GITHUB_REF@
+  GITHUB_HEAD_REF  = @CI_GITHUB_HEAD_REF@
+  GITHUB_RUN_ID    = @CI_GITHUB_RUN_ID@
+  GITHUB_ACTOR     = @CI_GITHUB_ACTOR@

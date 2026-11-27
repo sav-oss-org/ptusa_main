@@ -10,6 +10,7 @@
 #include "fmt/format.h"
 
 #include "prj_mngr.h"
+#include "build_info.h"
 #include "bus_coupler_io.h"
 #include "device/device.h"
 #include "device/manager.h"
@@ -84,7 +85,7 @@ int project_manager::proc_main_params( int argc, const char* argv[] )
 
     if ( result.count( "version" ) )
         {
-        fmt::print( "{}\n", PRODUCT_VERSION_FULL_STR );
+        fmt::print( "{}", build_info::GetVersionText() );
         return 1;
         }
 
@@ -104,6 +105,7 @@ int project_manager::proc_main_params( int argc, const char* argv[] )
     main_script = s.lexically_normal().generic_string();
 
     G_LOG->info( "Program started (version %s).", PRODUCT_VERSION_FULL_STR );
+    G_LOG->info( "Build ID: %s.", build_info::GetBuildID() );
 
     if ( result[ "debug" ].as<bool>() )
         {

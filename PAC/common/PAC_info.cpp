@@ -4,6 +4,7 @@
 #include <inttypes.h>
 
 #include "PAC_info.h"
+#include "build_info.h"
 #include "PAC_err.h"
 
 #include "lua_manager.h"
@@ -165,7 +166,7 @@ int PAC_info::save_device( char* buff ) const
         "\tCMD_ANSWER=\"{}\",\n", cmd_answer ).size;
 
     size += fmt::format_to_n( buff + size, MAX_COPY_SIZE,
-        "\tVERSION=\"{}\",\n", PRODUCT_VERSION_FULL_STR ).size;
+        "\tVERSION=\"{}\",\n", build_info::GetBuildID() ).size;
 
     size += fmt::format_to_n( buff + size, MAX_COPY_SIZE,
         "\tNODEENABLED = \n\t{{\n\t" ).size;

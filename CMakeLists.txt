@@ -49,6 +49,10 @@ endif(MSVC)
 
 configure_file( version_info.in version_info.h @ONLY)
 
+# Build identification data: generated header and BUILDINFO.txt
+# (#1647). Must run after project().
+include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/BuildInfo.cmake")
+
 set(BUILD_SHARED_LIBS OFF)
 add_subdirectory(deps/fmt EXCLUDE_FROM_ALL)
 set(BUILD_SHARED_LIBS ON)
