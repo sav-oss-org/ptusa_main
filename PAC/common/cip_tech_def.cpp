@@ -1777,6 +1777,16 @@ int cipline_tech_object::EvalRecipes()
 
 
     lineRecipes->EvalRecipe();
+    // Если загруженный рецепт сбросили на базовые
+    // значения или обнулили, параметры линии
+    // перезагружаются без повторного
+    // выбора: обновляется и сторожевой
+    // таймер (#1640).
+    const int resetRecipe = lineRecipes->ConsumeResetFlag();
+    if (resetRecipe > 0 && resetRecipe == loadedRecipe + 1)
+        {
+        rt_par_float[P_SELECT_REC] = static_cast<float>(resetRecipe);
+        }
     rt_par_float[P_LOADED_RECIPE] = loadedRecipe + 1;
     //переход к рецепту
     if (rt_par_float[P_CUR_REC] != lineRecipes->getCurrentRecipe() + 1)
@@ -1900,13 +1910,17 @@ int cipline_tech_object::EvalCommands()
                 }
             else
                 {
-                resetProgramName();
-                resetRecipeName();
-                resetProgramList();
-                resetCarNumber();
+                // Сброс в свободном состоянии
+                // возвращает к базовым значениям и
+                // параметры линии: иначе загруженные
+                // рецептом значения (например сторожевой
+                // таймер) остаются и вызывают ошибку
+                // связи в программах наведения растворов
+                // (#1640). ResetWP() также очищает имена
+                // программы, рецепта и список программ.
+                ResetWP();
                 loadedRecipe = -1;
                 loadedProgram = -1;
-                rt_par_float[P_PROGRAM] = 0;
                 }
             break;
         case MCMD_EVALUATE:
