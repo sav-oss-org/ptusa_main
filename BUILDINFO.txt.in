@@ -4,6 +4,8 @@ Project version : @PROJECT_VERSION@
 Build ID        : @PTUSA_BUILD_ID@
 Git commit      : @PTUSA_GIT_SHA@
 Git ref         : @PTUSA_GIT_REF@
+Repository      : @PTUSA_REPO_URL@
+Commit link     : @PTUSA_COMMIT_URL@
 Dirty tree      : @PTUSA_GIT_DIRTY@
 Configure time  : @PTUSA_CONFIGURE_TIMESTAMP@
 CMake           : @CMAKE_VERSION@

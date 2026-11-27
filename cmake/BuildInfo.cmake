@@ -61,6 +61,29 @@ if(PTUSA_GIT_SHA STREQUAL "unknown")
     set(PTUSA_GIT_DIRTY 0)
 endif()
 
+# Repository URL as the checkout sees it (origin), normalized to a
+# web address; empty when no remote exists.
+set(PTUSA_REPO_URL "")
+set(PTUSA_COMMIT_URL "")
+if(GIT_FOUND)
+    execute_process(
+        COMMAND "${GIT_EXECUTABLE}" remote get-url origin
+        WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+        OUTPUT_VARIABLE repo_url
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+        ERROR_QUIET RESULT_VARIABLE repo_result)
+    if(repo_result EQUAL 0 AND NOT repo_url STREQUAL "")
+        string(REGEX REPLACE "\.git$" "" repo_url "${repo_url}")
+        string(REGEX REPLACE "^git@github\.com:" "https://github.com/"
+            repo_url "${repo_url}")
+        set(PTUSA_REPO_URL "${repo_url}")
+    endif()
+endif()
+if(NOT PTUSA_REPO_URL STREQUAL "" AND
+        NOT PTUSA_GIT_SHA STREQUAL "unknown")
+    set(PTUSA_COMMIT_URL "${PTUSA_REPO_URL}/commit/${PTUSA_GIT_SHA}")
+endif()
+
 set(PTUSA_BUILD_ID "${PROJECT_VERSION}+${PTUSA_GIT_SHA}")
 if(PTUSA_GIT_DIRTY)
     string(APPEND PTUSA_BUILD_ID "-dirty")
