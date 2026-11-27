@@ -123,7 +123,8 @@ TEST( PID, direct_set_value )
 
     p1->save_device( buff );
     EXPECT_STREQ(
-        "TC1={M=0, ST=0, V=0, Z=10.00, P_k=1, P_Ti=15, P_Td=0.01, "
+        "TC1={M=0, ST=0, V=0, Z=10.00, IN_VALUE='TE1', OUT_VALUE='M1', "
+        "P_k=1, P_Ti=15, P_Td=0.01, "
         "P_dt=1000, P_max=100, P_min=0, P_acceleration_time=30, "
         "P_is_manual_mode=0, P_U_manual=65, P_k2=0, P_Ti2=0, P_Td2=0, "
         "P_out_max=100, P_out_min=0, P_is_reverse=0, P_is_zero_start=1},\n",

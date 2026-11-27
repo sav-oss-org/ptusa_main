@@ -1,5 +1,6 @@
 #include "PID.h"
 #include "string.h"
+#include <fmt/core.h>
 //-----------------------------------------------------------------------------
 PID::PID( int n ): PID( ( "PID" + std::to_string( n ) ).c_str() )
     {
@@ -29,6 +30,8 @@ PID::PID( const char* name ) :device( name, device::DEVICE_TYPE::DT_REGULATOR,
     {
     out_value = 0;
     set_value = 0;
+    in_value_name[ 0 ] = 0;
+    out_value_name[ 0 ] = 0;
 
     set_par_name( P_k, 0, "P_k" );
     set_par_name( P_Ti, 0, "P_Ti" );
@@ -442,11 +445,27 @@ void PID::set_string_property( const char* field, const char* value )
         {
         //IN_VALUE
         case 'I':
+            if ( value )
+                {
+                snprintf( in_value_name, sizeof( in_value_name ), "%s", value );
+                }
+            else
+                {
+                in_value_name[ 0 ] = 0;
+                }
             sensor = G_DEVICE_MANAGER()->get_device( value );
             break;
 
         //OUT_VALUE
         case 'O':
+            if ( value )
+                {
+                snprintf( out_value_name, sizeof( out_value_name ), "%s", value );
+                }
+            else
+                {
+                out_value_name[ 0 ] = 0;
+                }
             actuator = G_DEVICE_MANAGER()->get_device( value );
             if ( this == actuator )
                 {
@@ -473,7 +492,25 @@ int PID::get_state() const
 //-----------------------------------------------------------------------------
 int PID::save_device_ex( char* buff ) const
     {
-    int answer_size = sprintf( buff, "Z=%.2f, ", set_value );
+    auto remaining_size = [&]( int size )
+        {
+        return size < MAX_COPY_SIZE ? MAX_COPY_SIZE - size : 0;
+        };
+
+    int answer_size = static_cast<int>( fmt::format_to_n( buff, MAX_COPY_SIZE,
+        "Z={:.2f}, ", set_value ).size );
+    if ( in_value_name[ 0 ] )
+        {
+        answer_size += static_cast<int>( fmt::format_to_n(
+            buff + answer_size, remaining_size( answer_size ), "IN_VALUE='{}', ",
+            in_value_name ).size );
+        }
+    if ( out_value_name[ 0 ] )
+        {
+        answer_size += static_cast<int>( fmt::format_to_n(
+            buff + answer_size, remaining_size( answer_size ), "OUT_VALUE='{}', ",
+            out_value_name ).size );
+        }
     return answer_size;
     }
 //-----------------------------------------------------------------------------
