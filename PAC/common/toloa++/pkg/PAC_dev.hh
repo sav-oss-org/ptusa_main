@@ -492,6 +492,7 @@ class device : public i_DO_AO_device
 
             //DT_EY
             DST_CONV_AO2 = 1,    ///< Конвертер IO-Link -> AO (2 канала).
+            DST_CONV_AI1,        ///< Конвертер AI -> IO-Link (1 канал).
 
             //DT_NODE
             DST_NODE = 1,        ///< Узел сетевых настроек.
