@@ -45,11 +45,11 @@ The gold-standard example of a Russian document is
 3. Russian term first, GitHub/platform term in parentheses in
    backticks, on first use in a section:
 
-   - `запрос на внесение изменений (`pull request`)`
-   - `объедините его с веткой `master` (операция merge)`
-   - `фиксация в master-ветви (`push`)`
-   - `черновик релиза (`draft`)`, `публикация (`Publish`)`
-   - `примечания к релизу (`release notes`)`
+   - ``запрос на внесение изменений (`pull request`)``
+   - ``объедините его с веткой `master` (операция merge)``
+   - ``фиксация в master-ветви (`push`)``
+   - ``черновик релиза (`draft`)``, ``публикация (`Publish`)``
+   - ``примечания к релизу (`release notes`)``
    - `вложения релиза (`assets`)`
    - `конвейер (`workflow`)`, `прогон` (a single run)
    - `артефакты сборки (`build artifacts`)`
@@ -95,9 +95,9 @@ Name every linked document in the language of its content:
 
 - Quotes are `«ёлочка»`; sentences are complete and end with a
   period.
-- Verb forms must agree with the real subject: `Следующая
-  фиксация (`push`) в `master` снова создаст черновик этой
-  версии` - singular subject, singular verb.
+- Verb forms must agree with the real subject:
+  ``Следующая фиксация (`push`) в `master` снова создаст
+  черновик этой версии`` - singular subject, singular verb.
 - Close participial and adverbial phrases with commas.
 - Section headings are short noun phrases: `Источник версии`,
   `Выпуск релиза`, `Что гарантирует CI`, `Использование`.
@@ -113,7 +113,7 @@ Name every linked document in the language of its content:
 - Top level is the category (`Исправления`, `Новое`, `CI`),
   inner levels are the items.
 - Each item names the object and links the PR:
-  `- починен `TCP` лог ([#1520](url))`.
+  ``- починен `TCP` лог ([#1520](url))``.
 
 ## Technical constraints
 
