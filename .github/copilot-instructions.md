@@ -6,7 +6,8 @@
 
 ### Essential First Step: Git Submodule Initialization
 
-**CRITICAL:** The build will fail without this step. Always run immediately after cloning:
+**CRITICAL:** The build will fail without this step. Always run
+immediately after cloning:
 
 ```bash
 git submodule update --init --recursive
@@ -30,7 +31,7 @@ Lua scripting.
 
 ## Repository Structure
 
-```
+```text
 ptusa_main/
 ├── .github/                 # GitHub workflows and configurations
 ├── PAC/                     # Main PAC (Programmable Automation Controller) code
@@ -67,7 +68,7 @@ ptusa_main/
 git submodule update --init --recursive
 ```
 
-2. **Create build directory and configure:**
+1. **Create build directory and configure:**
 
 ```bash
 mkdir -p build
@@ -75,7 +76,7 @@ cd build
 cmake .. -DCMAKE_BUILD_TYPE=Release
 ```
 
-3. **Build all targets** (~3 minutes):
+1. **Build all targets** (~3 minutes):
 
 ```bash
 cmake --build . -j$(nproc)
@@ -359,7 +360,7 @@ changes
   carry provenance trailers in the final paragraph of the commit message,
   with no blank line between them:
 
-  ```
+  ```text
   Co-authored-by: <agent-name> <agent-noreply-email>
   AI-assisted: <agent-name> (model: <model-name>, <execution-mode>)
   ```
@@ -372,7 +373,7 @@ changes
   provider otherwise.
 - For the Zed agent running a local model the trailers are:
 
-  ```
+  ```text
   Co-authored-by: Zed AI Agent <253101093+zed-agent@users.noreply.github.com>
   AI-assisted: Zed agent (model: <model-name>, local)
   ```

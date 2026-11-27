@@ -632,16 +632,29 @@ set(TCP_SOCKET_LOCKED_FILTER
 	"LuaManagerTest.init_success:"
     "PAC_critical_errors_manager.set_global_error:")
 
+set(PARAMS_FILES_LOCKED_FILTER
+    "params_manager.*:"
+    "SRAM.constructor:"
+    "SRAM.load:"
+    "SRAM.safe_save:"
+    "SRAM.safe_save_write_error:"
+    "SRAM.get_directory:"
+    "SRAM.storage_directory_created:")
+
 # Тесты, которые используют CaptureStdout() - выполняются последовательно
 string(REPLACE ";" "" STDOUT_CAPTURE_LOCKED_FILTER_STR
     "${STDOUT_CAPTURE_LOCKED_FILTER}")
+
+# Join the params-file filter into a single GTest filter string.
+string(REPLACE ";" "" PARAMS_FILES_LOCKED_FILTER_STR
+    "${PARAMS_FILES_LOCKED_FILTER}")
 
 # Join list into a single GTest filter string (elements already end with ':').
 string(REPLACE ";" "" TCP_SOCKET_LOCKED_FILTER_STR
 	"${TCP_SOCKET_LOCKED_FILTER}")
 
 set(UNLOCKED_FILTER_STR
-	"-${TCP_SOCKET_LOCKED_FILTER_STR}${STDOUT_CAPTURE_LOCKED_FILTER_STR}cipline_tech_object.save_device")
+	"-${TCP_SOCKET_LOCKED_FILTER_STR}${STDOUT_CAPTURE_LOCKED_FILTER_STR}${PARAMS_FILES_LOCKED_FILTER_STR}cipline_tech_object.save_device")
 
 # Discover tests that use shared tcp_communicator socket and serialize them.
 gtest_discover_tests(main_test
@@ -660,6 +673,15 @@ gtest_discover_tests(main_test
     DISCOVERY_TIMEOUT 30
     TEST_FILTER ${STDOUT_CAPTURE_LOCKED_FILTER_STR}
     PROPERTIES RUN_SERIAL 1)
+
+# Tests that save the shared eeprom.bin/nvram.bin files of the
+# test working directory must not run in parallel with each other:
+# the atomic rename of nvram.bin.tmp raced between concurrent
+# ctest jobs (#1652).
+gtest_discover_tests(main_test
+    DISCOVERY_TIMEOUT 30
+    TEST_FILTER ${PARAMS_FILES_LOCKED_FILTER_STR}
+    PROPERTIES RESOURCE_LOCK params_files)
 
 # Discover all remaining tests.
 gtest_discover_tests(main_test
