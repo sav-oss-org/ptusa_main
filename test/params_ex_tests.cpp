@@ -7,7 +7,65 @@
 #include <unistd.h>
 #endif
 
+#include <random>
+
+#ifdef WIN_OS
+#include <process.h>
+#endif
+
 using namespace ::testing;
+
+namespace
+    {
+    // Изоляция рабочего каталога теста. Каталог вида
+    // <ctest_каталог>/ptusa_<имя_теста>_<pid>_<соль> создаётся до
+    // тела теста, после теста текущий каталог восстанавливается,
+    // а изолированный каталог удаляется вместе с файлами
+    // параметров (#1652).
+    // Случайная соль и режим 0700 исключают предсоздание каталога
+    // другим процессом (CWE-377, cpp:S5443).
+    class TempCwd
+    {
+    public:
+        explicit TempCwd( const std::string& test_name )
+            : m_previous { std::filesystem::current_path() }
+        {
+            std::random_device rnd {};
+            m_directory = m_previous /
+                ( "ptusa_" + test_name + "_" +
+                    std::to_string( process_id() ) + "_" +
+                    std::to_string( rnd() ) + std::to_string( rnd() ) );
+            std::filesystem::remove_all( m_directory );
+            std::filesystem::create_directories( m_directory );
+            std::filesystem::permissions( m_directory,
+                std::filesystem::perms::owner_all );
+            std::filesystem::current_path( m_directory );
+        }
+
+        ~TempCwd()
+        {
+            std::error_code ignore {};
+            std::filesystem::current_path( m_previous, ignore );
+            std::filesystem::remove_all( m_directory, ignore );
+        }
+
+        TempCwd( const TempCwd& ) = delete;
+        TempCwd& operator=( const TempCwd& ) = delete;
+
+    private:
+        static long process_id()
+        {
+#ifdef WIN_OS
+            return _getpid();
+#else
+            return static_cast<long>( ::getpid() );
+#endif // WIN_OS
+        }
+
+        std::filesystem::path m_previous;
+        std::filesystem::path m_directory;
+    };
+    }
 
 TEST( params_manager, was_successful_init )
     {
@@ -25,6 +83,8 @@ TEST( params_manager, was_successful_init )
 
 TEST( params_manager, evaluate )
     {
+    TempCwd cwd { "params_manager.evaluate" };
+
     auto pm = params_manager::get_instance();
     pm->init( 0x12345678 );
     pm->par->save( 1, 0xDEADBEEF );
@@ -36,6 +96,8 @@ TEST( params_manager, evaluate )
 
 TEST( params_manager, evaluate_saves_after_intervals )
     {
+    TempCwd cwd { "params_manager.evaluate_saves_after_intervals" };
+
     auto pm = params_manager::get_instance();
     pm->init( 0x12345678 );
 
@@ -52,10 +114,6 @@ TEST( params_manager, evaluate_saves_after_intervals )
 
     info->par[ PAC_info::P_STABLE_SAVE_DELAY_MS ] = stable_delay;
     info->par[ PAC_info::P_MIN_SAVE_INTERVAL_MS ] = min_interval;
-
-    // Сохранённые файлы убираются, чтобы не влиять на последующие тесты.
-    std::filesystem::remove( std::filesystem::current_path() / "nvram.bin" );
-    std::filesystem::remove( std::filesystem::current_path() / "eeprom.bin" );
     }
 
 TEST( params_manager, reserve_params_region )
@@ -109,6 +167,8 @@ namespace
 
 TEST( SRAM, constructor )
     {
+    TempCwd cwd { "SRAM.constructor" };
+
     SRAM sram( "test_sram1.bin", DATA_SIZE );
 
     // Нет файла с параметрами, поэтому загрузка должна завершиться с ошибкой.
@@ -117,6 +177,8 @@ TEST( SRAM, constructor )
 
 TEST( SRAM, load )
     {
+    TempCwd cwd { "SRAM.load" };
+
     auto test_file = "test_sram2.bin";
 
     SRAM good_sram( test_file, DATA_SIZE );
@@ -160,6 +222,8 @@ TEST( SRAM, load )
 
 TEST( SRAM, safe_save )
     {
+    TempCwd cwd { "SRAM.safe_save" };
+
     SRAM good_sram( "test_sram3.bin", DATA_SIZE );
 
     auto fopen_hook = subhook_new( reinterpret_cast<void*>( &fopen ),
@@ -215,6 +279,8 @@ TEST( SRAM, safe_save_create_error_logged_once )
 #ifdef LINUX_OS
 TEST( SRAM, safe_save_write_error )
     {
+    TempCwd cwd { "SRAM.safe_save_write_error" };
+
     SRAM sram( "test_sram9.bin", DATA_SIZE );
 
     auto fwrite_hook = subhook_new( reinterpret_cast<void*>( &fwrite ),
@@ -235,6 +301,8 @@ TEST( SRAM, safe_save_write_error )
 
 TEST( SRAM, get_directory )
     {
+    TempCwd cwd { "SRAM.get_directory" };
+
     SRAM sram( "subdir/test_sram5.bin", DATA_SIZE );
 
     // Путь хранится в абсолютном виде, поэтому каталог хранения файла данных
@@ -247,6 +315,8 @@ TEST( SRAM, get_directory )
 
 TEST( SRAM, storage_directory_created )
     {
+    TempCwd cwd { "SRAM.storage_directory_created" };
+
     const std::filesystem::path directory{ "test_storage_dir/nested" };
 
     std::filesystem::remove_all( "test_storage_dir" );
