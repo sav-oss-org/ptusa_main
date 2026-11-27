@@ -12,6 +12,7 @@ obj
 build
 cmake-build-*
 CMakeSettings.json
+CMakeUserPresets.json
 nvram.txt
 
 Debug
