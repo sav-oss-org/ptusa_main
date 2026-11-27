@@ -13,7 +13,8 @@ Every build carries the source revision it was compiled from. The
 `--version` option and the start log line print the build ID in
 the `<version>+<git sha>[-dirty]` form, and installed artifacts
 ship a `BUILDINFO.txt` with the commit, the git ref and the CI
-run context (see issue #1647).
+run context (see issue
+[#1647](https://github.com/sav-oss-org/ptusa_main/issues/1647)).
 
 ## Pull Request Process
 
