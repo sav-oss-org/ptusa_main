@@ -5668,55 +5668,77 @@ TEST_F( iolink_dev_test, counter_iolink_smfx20_evaluate_io_and_getters )
     fqt1.set_article( "IFM.SMF420" );
 
     init_channels( fqt1 );
-    fqt1.AI_channels.int_read_values[ 0 ] = new int_2[ 8 ]{ 0 };
-    auto data = reinterpret_cast<std::byte*>( fqt1.AI_channels.int_read_values[ 0 ] );
+    // IFM RecordT is 144 bit: four Float32T plus 16-bit status.
+    fqt1.AI_channels.int_read_values[ 0 ] = new int_2[ 9 ]{ 0 };
+    auto data = reinterpret_cast< std::byte* >(
+        fqt1.AI_channels.int_read_values[ 0 ] );
     set_iol_state_to_OK( fqt1 );
     G_PAC_INFO()->emulation_off();
 
-    auto set_smfx20_payload = [&]( float totalizer, int16_t flow, int16_t temp,
-                                   uint16_t conductivity )
+    auto set_smfx20_payload = [ & ]( float totalizer, float flow,
+        float temp, float conductivity )
         {
-        std::memset( data, 0, 16 );
+        const float values[ 4 ] { totalizer, flow, temp,
+            conductivity };
 
-        std::memcpy( data, &totalizer, sizeof( totalizer ) );
-        std::swap( data[ 3 ], data[ 0 ] );
-        std::swap( data[ 1 ], data[ 2 ] );
+        std::memset( data, 0, 18 );
 
-        std::memcpy( data + 4, &flow, sizeof( flow ) );
-        std::swap( data[ 4 ], data[ 5 ] );
-
-        std::memcpy( data + 6, &temp, sizeof( temp ) );
-        std::swap( data[ 6 ], data[ 7 ] );
-
-        std::memcpy( data + 8, &conductivity, sizeof( conductivity ) );
-        std::swap( data[ 8 ], data[ 9 ] );
+        for ( size_t n {}; n != 4; ++ n )
+            {
+            auto field = data + 4 * n;
+            std::memcpy( field, &values[ n ], sizeof( float ) );
+            // Float32T octets come in the reversed order.
+            std::swap( field[ 0 ], field[ 3 ] );
+            std::swap( field[ 1 ], field[ 2 ] );
+            }
         };
 
     // First read initializes internal base values.
-    set_smfx20_payload( 10.0f, 0, 0, 0 );
+    set_smfx20_payload( 12.5f, 0.f, 0.f, 0.f );
     fqt1.evaluate_io();
     EXPECT_EQ( 0, fqt1.get_quantity() );
 
-    set_smfx20_payload( 20.0f, 111, 333, 250 );
+    set_smfx20_payload( 15.5f, 3.25f, 21.5f, 4.56f );
     fqt1.evaluate_io();
 
-    EXPECT_EQ( counter_iolink::mL_in_L * 10, fqt1.get_quantity() );
-    EXPECT_FLOAT_EQ( 20.0f, fqt1.get_raw_value() );
-    EXPECT_NEAR( 11.1f, fqt1.get_flow(), 0.01f );
-    EXPECT_FLOAT_EQ( 33.3f, fqt1.get_temperature() );
-    EXPECT_FLOAT_EQ( 250.0f, fqt1.get_conductivity() );
+    // Totalizer delta 3 m^3 = 3000 l; the external
+    // interface reports liters.
+    EXPECT_EQ( 3000, fqt1.get_quantity() );
+    EXPECT_NEAR( 3000.f, fqt1.get_value(), 0.001f );
+    EXPECT_EQ( 3000, fqt1.get_abs_quantity() );
+    EXPECT_FLOAT_EQ( 15500.f, fqt1.get_raw_value() );
+    EXPECT_FLOAT_EQ( 3.25f, fqt1.get_flow() );
+    EXPECT_FLOAT_EQ( 21.5f, fqt1.get_temperature() );
+    EXPECT_NEAR( 45.6f, fqt1.get_conductivity(), 0.001f );
+
+    // NoData (3.30e38) and UL/OL (2.65e38) keep the last valid
+    // measurements.
+    set_smfx20_payload( 3.30e38f, -2.65e38f, 2.65e38f, 3.30e38f );
+    fqt1.evaluate_io();
+
+    EXPECT_FLOAT_EQ( 15500.f, fqt1.get_raw_value() );
+    EXPECT_FLOAT_EQ( 3.25f, fqt1.get_flow() );
+    EXPECT_FLOAT_EQ( 21.5f, fqt1.get_temperature() );
+    EXPECT_NEAR( 45.6f, fqt1.get_conductivity(), 0.001f );
 
     fqt1.set_cmd( "C", 0, 321.0 );
     fqt1.set_cmd( "F", 0, 9.9 );
     fqt1.set_cmd( "T", 0, 4.2 );
 
-    EXPECT_FLOAT_EQ( 321.0f, fqt1.get_conductivity() );
+    EXPECT_NEAR( 321.0f, fqt1.get_conductivity(), 0.01f );
     EXPECT_NEAR( 9.9f, fqt1.get_flow(), 0.01f );
-    EXPECT_FLOAT_EQ( 4.2f, fqt1.get_temperature() );
+    EXPECT_NEAR( 4.2f, fqt1.get_temperature(), 0.01f );
+
+    // The external counter value and its absolute
+    // counterpart are set in liters too.
+    fqt1.set_cmd( "V", 0, 4321.0 );
+    EXPECT_NEAR( 4321.f, fqt1.get_value(), 0.01f );
+    fqt1.set_cmd( "ABS_V", 0, 8765.0 );
+    EXPECT_EQ( 8765, fqt1.get_abs_quantity() );
 
     std::array<char, 300> buff{};
     fqt1.save_device( buff.data() );
-    EXPECT_THAT( std::string( buff.data() ), HasSubstr( "C=321" ) );
+    EXPECT_THAT( std::string( buff.data() ), HasSubstr( "C=321.0" ) );
     EXPECT_THAT( std::string( buff.data() ), HasSubstr( "F=9.90" ) );
     EXPECT_THAT( std::string( buff.data() ), HasSubstr( "T=4.2" ) );
 

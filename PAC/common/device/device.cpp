@@ -1596,19 +1596,48 @@ void counter_iolink::evaluate_io()
         {
         if ( n_article == ARTICLE::IFM_SMFx20 )
             {
-            auto buff = reinterpret_cast<std::byte*>( &smfx20_in_info );
-            const int SIZE = sizeof( smfx20_in_info );
-            std::copy( data, data + SIZE, buff );
+            // IFM RecordT (144 bit): four Float32T with reversed
+            // octets followed by a 16-bit status word.
+            auto read_float = [ data ]( u_int offset )
+                {
+                std::byte raw[ 4 ] {};
 
-            //Reverse byte order to get correct float.
-            std::swap( buff[ 3 ], buff[ 0 ] );
-            std::swap( buff[ 1 ], buff[ 2 ] );
-            //Reverse byte order to get correct int16.
-            std::swap( buff[ 4 ], buff[ 5 ] );
-            //Reverse byte order to get correct int16.
-            std::swap( buff[ 6 ], buff[ 7 ] );
-            //Reverse byte order to get correct uint16.
-            std::swap( buff[ 8 ], buff[ 9 ] );
+                for ( u_int n {}; n != 4; ++ n )
+                    {
+                    raw[ n ] = data[ offset + 3 - n ];
+                    }
+
+                float value {};
+                std::memcpy( &value, raw, sizeof( value ) );
+                return value;
+                };
+
+            // Float32T special values from IFM documentation:
+            // NoData (3.30e38) and UL/OL (+/-2.65e38) magnitudes
+            // keep the last valid measurement. NaN is rejected
+            // the same way.
+            const float special_min { 2.0e38f };
+            auto update = [ special_min ]( float& value,
+                float measured )
+                {
+                if ( measured > -special_min
+                    && measured < special_min )
+                    {
+                    value = measured;
+                    }
+                };
+
+            update( smfx20_in_info.totalizer, read_float( 0 ) );
+            update( smfx20_in_info.flow, read_float( 4 ) );
+            update( smfx20_in_info.temperature, read_float( 8 ) );
+            update( smfx20_in_info.conductivity, read_float( 12 ) );
+
+            const uint16_t status_hi {
+                static_cast< uint8_t >( data[ 16 ] ) };
+            const uint16_t status_lo {
+                static_cast< uint8_t >( data[ 17 ] ) };
+            smfx20_in_info.status = static_cast< uint16_t >(
+                ( status_hi << 8 ) | status_lo );
             }
         else
             {
@@ -1646,7 +1675,8 @@ float counter_iolink::get_temperature() const
     {
     if ( n_article == ARTICLE::IFM_SMFx20 )
         {
-        return TE_GRADIENT * smfx20_in_info.temperature;
+        // Float32T temperature of SMFx20 is already in deg C.
+        return smfx20_in_info.temperature;
         }
     return TE_GRADIENT * in_info.temperature;
     }
@@ -1686,7 +1716,8 @@ float counter_iolink::get_raw_value() const
     {
     if ( n_article == ARTICLE::IFM_SMFx20 )
         {
-        return smfx20_in_info.totalizer;
+        // The device totalizes in m^3, the counter uses liters.
+        return mL_in_L * smfx20_in_info.totalizer;
         }
     return in_info.totalizer;
     };
@@ -1713,7 +1744,7 @@ int counter_iolink::save_device_ex( char* buff ) const
     if ( n_article == ARTICLE::IFM_SMFx20 )
         {
         res += fmt::format_to_n( buff + res, MAX_COPY_SIZE,
-            "F={:.2f}, T={:.1f}, C={:.0f}, ",
+            "F={:.2f}, T={:.1f}, C={:.1f}, ",
             get_flow(), get_temperature(), get_conductivity() ).size;
         }
     else
@@ -1731,19 +1762,26 @@ int counter_iolink::set_cmd( const char* prop, u_int idx, double val )
         {
         case 'A': // Свойство `ABS_V`.
         case 'V': // Свойство `V`.
+            if ( n_article == ARTICLE::IFM_SMFx20 )
+                {
+                // The external SMFx20 unit is a liter, so
+                // the value is set as it comes in.
+                return base_counter::set_cmd( prop, idx, val );
+                }
             // Учитываем коэффициент, который переводит в мл.
             return base_counter::set_cmd( prop, idx, val / mL_in_L );
 
         case 'C':
-            smfx20_in_info.conductivity = static_cast<uint16_t>(
-                round( val / CONDUCTIVITY_GRADIENT ) );
+            // External conductivity is mS/cm, the raw is S/m.
+            smfx20_in_info.conductivity = static_cast<float>( val )
+                / CONDUCTIVITY_GRADIENT;
             break;
 
         case 'F':
             if ( n_article == ARTICLE::IFM_SMFx20 )
                 {
-                smfx20_in_info.flow = static_cast<int16_t>(
-                    round( val / get_flow_gradient() ) );
+                // The flow of SMFx20 is a Float32T in m^3/h.
+                smfx20_in_info.flow = static_cast<float>( val );
                 }
             else
                 {
@@ -1755,8 +1793,9 @@ int counter_iolink::set_cmd( const char* prop, u_int idx, double val )
         case 'T':
             if ( n_article == ARTICLE::IFM_SMFx20 )
                 {
-                smfx20_in_info.temperature = static_cast<int16_t>(
-                    round( val / TE_GRADIENT ) );
+                // The temp of SMFx20 is a Float32T in deg C.
+                smfx20_in_info.temperature = static_cast<float>(
+                    val );
                 }
             else
                 {
@@ -1779,11 +1818,23 @@ u_int counter_iolink::get_quantity() const
 //-----------------------------------------------------------------------------
 u_int counter_iolink::get_abs_quantity() const
     {
+    if ( n_article == ARTICLE::IFM_SMFx20 )
+        {
+        // The SMFx20 counter accumulates liters, so the
+        // absolute value is reported in liters as well.
+        return static_cast<u_int>( get_abs_value() );
+        }
     return static_cast<u_int>( mL_in_L * get_abs_value() );
     }
 //-----------------------------------------------------------------------------
 float counter_iolink::get_value() const
     {
+    if ( n_article == ARTICLE::IFM_SMFx20 )
+        {
+        // The SMFx20 counter accumulates liters, so the
+        // value is reported in liters without scaling.
+        return base_counter::get_value();
+        }
     return base_counter::get_value() * mL_in_L;
     }
 //-----------------------------------------------------------------------------
@@ -1836,7 +1887,8 @@ float counter_iolink::get_flow_gradient() const
             return 0.001f;
 
         case ARTICLE::IFM_SMFx20:
-            return 0.1f;
+            // Float32T flow of SMFx20 is measured in m^3/h.
+            return 1.0f;
 
         case ARTICLE::DEFAULT:
         default:

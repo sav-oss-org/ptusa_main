@@ -1453,6 +1453,14 @@ class counter_f : public counter
     };
 //-----------------------------------------------------------------------------
 /// @brief Счетчик IO-Link.
+///
+/// IFM.SMFx20 devices report RecordT: the flow is output in m^3/h,
+/// the temperature in deg C, the conductivity in mS/cm and the
+/// counter raw value in liters, while the raw device units are
+/// m^3, m^3/h, deg C and S/m. SM6100/SM4000 articles keep their
+/// legacy integer handling. The @ref get_value, @ref get_quantity
+/// and @ref get_abs_quantity of IFM.SMFx20 report liters, while the
+/// other articles keep reporting the legacy milliliters.
 class counter_iolink : public base_counter
     {
     public:
@@ -1460,8 +1468,10 @@ class counter_iolink : public base_counter
 
         void evaluate_io() override;
 
+        /// @brief Current temperature in deg C.
         float get_temperature() const;
 
+        /// @brief Specific conductivity in mS/cm (IFM.SMFx20).
         float get_conductivity() const;
 
         int save_device_ex( char* buff ) const override;
@@ -1502,8 +1512,14 @@ class counter_iolink : public base_counter
     private:
         ARTICLE n_article = ARTICLE::DEFAULT;
 
+        /// @brief Gradient of the integer SM6100/SM4000
+        /// temperature, deg C per raw count. Float32T temperatures
+        /// of IFM.SMFx20 are already measured in deg C.
         inline static const float TE_GRADIENT{ 0.1f };
-        inline static const float CONDUCTIVITY_GRADIENT{ 1.0f };
+
+        /// @brief Converts the raw IFM conductivity (S/m) into the
+        /// mS/cm output unit (1 S/m = 10 mS/cm).
+        inline static const float CONDUCTIVITY_GRADIENT{ 10.0f };
 
         float get_flow_gradient() const;
         enum class CONSTANTS
@@ -1530,14 +1546,21 @@ class counter_iolink : public base_counter
             int16_t temperature : 14;   //Current temperature.
             };
 
-        /// @brief Process data for IFM.SMFx20 devices (SMF420, SMF320, ...).
+        /// @brief Process data for IFM.SMFx20 devices (SMF420,
+        /// SMF320, ...).
+        ///
+        /// IFM RecordT (144 bit) carries four IO-Link Float32T
+        /// values with reversed octets followed by a 16-bit status
+        /// word. The fields hold the raw device units listed by the
+        /// IFM IODD: totalizer in m^3, flow in m^3/h, temperature
+        /// in deg C and conductivity in S/m (Siemens per meter).
         struct in_data_smfx20
             {
-            float totalizer;        ///< Totalizer value (volumetric flow).
-            int16_t flow;           ///< Current flow.
-            int16_t temperature;    ///< Current temperature.
-            uint16_t conductivity;  ///< Current conductivity (µS/cm).
-            uint16_t status;        ///< Device status.
+            float totalizer;        ///< Totalized volume (m^3).
+            float flow;             ///< Current flow (m^3/h).
+            float temperature;      ///< Current temperature (deg C).
+            float conductivity;     ///< Specific conductivity (S/m).
+            uint16_t status;        ///< Device status word.
             };
 
         in_data in_info{ 0, 0, 0, 0, 0 };
