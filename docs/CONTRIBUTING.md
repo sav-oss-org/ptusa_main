@@ -1,20 +1,24 @@
 # Contributing
 
-When contributing to this repository, please first discuss the change you wish to make via issue,
-email, or any other method with the owners of this repository before making a change. 
+When contributing to this repository, please first discuss the change you
+to make via issue, email, or any other method with the owners of this
+repository before making a change.
 
-Please note we have a code of conduct, please follow it in all your interactions with the project.
+Please note we have a code of conduct, please follow it in all your
+interactions with the project.
 
 ## Pull Request Process
 
-1. Ensure any install or build dependencies are removed before the end of the layer when doing a 
-   build.
-2. Update the README.md with details of changes to the interface, this includes new environment 
-   variables, exposed ports, useful file locations and container parameters.
-3. Increase the version numbers in any examples files and the README.md to the new version that this
-   Pull Request would represent.
-4. You may merge the Pull Request in once you have the sign-off of two other developers, or if you 
-   do not have permission to do that, you may request the second reviewer to merge it for you.
+1. Ensure any install or build dependencies are removed before the end
+   of the layer when doing a build.
+2. Update the README.md with details of changes to the interface, this
+   includes new environment variables, exposed ports, useful file
+   locations and container parameters.
+3. Increase the version numbers in any examples files and the README.md
+   to the new version that this Pull Request would represent.
+4. You may merge the Pull Request in once you have the sign-off of two
+   other developers, or if you do not have permission to do that, you
+   may request the second reviewer to merge it for you.
 
 ## Pull Request Scope and Titles
 
@@ -26,7 +30,7 @@ Please note we have a code of conduct, please follow it in all your interactions
   example:
   ``Remove `DNS` reverse lookup from `TCP` logging``.
 - Start the title with a change-type prefix from the closed
-  set below, followed by `: `. The release drafter groups
+  set below, followed by `:`. The release drafter groups
   release notes by this prefix, so a missing prefix files the
   change under "Other changes":
   - `fix:` - bug fixes (issue labels `bug`, `bugfix`);
@@ -92,8 +96,8 @@ GitHub applies the file automatically in blame views.
 - The `bug` and `enhancement` labels are GitHub's own mirror of the
   native type: treat them as read-only reflections, not as a second
   source of truth to keep in sync by hand.
-- The issue templates write title prefixes (`[BUG]: `,
-  `[FEATURE]: `, `[DEVICE]: `) as human-readable reflections of the
+- The issue templates write title prefixes (`[BUG]:`,
+  `[FEATURE]:`, `[DEVICE]:`) as human-readable reflections of the
   type. Edit a prefix only to fix a wrong reflection, never to
   reclassify the issue.
 - `[DEVICE]` refines `[FEATURE]` for new device support and lives in
@@ -138,7 +142,7 @@ GitHub applies the file automatically in blame views.
   carry provenance trailers in the final paragraph of the commit message,
   with no blank line between them:
 
-  ```
+  ```text
   Co-authored-by: <agent-name> <agent-noreply-email>
   AI-assisted: <agent-name> (model: <model-name>, <execution-mode>)
   ```
@@ -151,7 +155,7 @@ GitHub applies the file automatically in blame views.
   provider otherwise.
 - For the Zed agent running a local model the trailers are:
 
-  ```
+  ```text
   Co-authored-by: Zed AI Agent <253101093+zed-agent@users.noreply.github.com>
   AI-assisted: Zed agent (model: <model-name>, local)
   ```
@@ -180,21 +184,21 @@ orientation.
 Examples of behavior that contributes to creating a positive environment
 include:
 
-* Using welcoming and inclusive language
-* Being respectful of differing viewpoints and experiences
-* Gracefully accepting constructive criticism
-* Focusing on what is best for the community
-* Showing empathy towards other community members
+- Using welcoming and inclusive language
+- Being respectful of differing viewpoints and experiences
+- Gracefully accepting constructive criticism
+- Focusing on what is best for the community
+- Showing empathy towards other community members
 
 Examples of unacceptable behavior by participants include:
 
-* The use of sexualized language or imagery and unwelcome sexual attention or
+- The use of sexualized language or imagery and unwelcome sexual attention or
 advances
-* Trolling, insulting/derogatory comments, and personal or political attacks
-* Public or private harassment
-* Publishing others' private information, such as a physical or electronic
+- Trolling, insulting/derogatory comments, and personal or political attacks
+- Public or private harassment
+- Publishing others' private information, such as a physical or electronic
   address, without explicit permission
-* Other conduct which could reasonably be considered inappropriate in a
+- Other conduct which could reasonably be considered inappropriate in a
   professional setting
 
 ### Our Responsibilities
@@ -233,7 +237,8 @@ members of the project's leadership.
 
 ### Attribution
 
-This Code of Conduct is adapted from the [Contributor Covenant][homepage], version 1.4,
+This Code of Conduct is adapted from the [Contributor Covenant][homepage],
+version 1.4,
 available at [http://contributor-covenant.org/version/1/4][version]
 
 [homepage]: http://contributor-covenant.org

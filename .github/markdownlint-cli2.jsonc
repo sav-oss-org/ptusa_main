@@ -14,7 +14,7 @@
   },
   // Readme files and generated pages legitimately repeat section
   // titles across documents (Usage, Examples).
-  "duplicate-heading": false,
+  "no-duplicate-heading": false,
   // The generated release notes corpus and title blocks repeat
   // the document title as a section heading.
   "single-title": false,

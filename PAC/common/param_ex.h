@@ -127,6 +127,14 @@ class params_manager
 
         int save_params();
 
+        /// @brief Сохранение параметров с описанием причины сбоя.
+        ///
+        /// @param error [out] - описание ошибки; пусто, если
+        /// сохранение удалось.
+        ///
+        /// @return > 0 - код ошибки, 0 - ОК.
+        int save_params( std::string& error );
+
         int evaluate();
 
         enum PARAMS
