@@ -32,7 +32,8 @@ in parameters. Closures are supported, it is possible to create higher-order
 functions. The object system is prototypical, there is no explicit support for
 inheritance, but it is easily implemented using metatables.
 
-Detailed information can be obtained [here](https://www.lua.org).
+Detailed information is available in the
+[Lua documentation](https://www.lua.org).
 
 ## tolua++
 
@@ -47,30 +48,35 @@ Lua environment. Then tolua parses this file and creates a C/C++ file that
 automatically binds the C/C++ code to Lua. If link the created file with our
 application, the specified C/C++ code can be accessed from Lua.
 
-Detailed information can be obtained
-[here](https://web.tecgraf.puc-rio.br/~celes/tolua/tolua-3.2.html).
+Detailed information is available in the
+[tolua documentation](
+https://web.tecgraf.puc-rio.br/~celes/tolua/tolua-3.2.html).
 
 ## zlib
 
 Zlib is a software library used for data compression and is an abstraction of
 the DEFLATE compression algorithm used in their gzip file compression program.
 
-Detailed information can be obtained [here](https://www.zlib.net).
+Detailed information is available at the
+[zlib website](https://www.zlib.net).
 
 ## subhook
 
 SubHook is a simple hooking library for C and C++ that works on Windows, Linux
 and macOS. It supports x86 only (32-bit and 64-bit).
 
-Detailed information can be obtained [here](https://github.com/Zeex/subhook).
+Detailed information is available in the
+[subhook documentation](
+https://github.com/Zeex/subhook).
 
 ## cxxopts
 
 Cxxopts is a lightweight C++ option parser library, supporting the standard
 GNU style syntax for options.
 
-Detailed information can be obtained
-[here](https://github.com/jarro2783/cxxopts).
+Detailed information is available in the
+[cxxopts documentation](
+https://github.com/jarro2783/cxxopts).
 
 ## googletest
 
@@ -82,8 +88,9 @@ when adding any parts to the official version, in addition to the code of the
 changes themselves, it is necessary to write a set of tests to confirm their
 correctness.
 
-Detailed information can be obtained
-[here](https://github.com/google/googletest).
+Detailed information is available in the
+[Google Test documentation](
+https://github.com/google/googletest).
 
 ## google benchmark
 
@@ -91,5 +98,6 @@ Google benchmark is a microbenchmark support library. The library can be used
 with C++03. However, it requires C++11 to build, including compiler and
 standard library support.
 
-Detailed information can be obtained
-[here](https://github.com/google/benchmark).
+Detailed information is available in the
+[Google Benchmark documentation](
+https://github.com/google/benchmark).
