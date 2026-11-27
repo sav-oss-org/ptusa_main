@@ -58,6 +58,18 @@ interactions with the project.
 - Explain why the change is needed, what changed, expected risk and validation
   in the pull request description.
 
+## Ignoring Formatting Commits in Blame
+
+Whitespace-only reformatting commits are listed in
+`.git-blame-ignore-revs`. Enable the file once per clone so that
+`git blame` skips them:
+
+```bash
+git config blame.ignoreRevsFile .git-blame-ignore-revs
+```
+
+GitHub applies the file automatically in blame views.
+
 ## Branch Names
 
 - Use snake_case. Prefixes form a closed set mapped from the issue
