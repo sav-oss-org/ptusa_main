@@ -584,77 +584,85 @@ endif()
 
 include(GoogleTest)
 
+# Groups of tests that must not run fully parallel under `ctest -j`.
+# The names are plain CMake lists; `list(JOIN)` composes the GTest
+# filter strings below, so no entry needs a trailing colon and a
+# missing separator cannot silently break a filter.
+
+# Тесты, которые захватывают stdout - выполняются последовательно.
 set(STDOUT_CAPTURE_LOCKED_FILTER
-	"io_device.get_AO:"
-	"io_device.get_AO_read_data:"
+    "io_device.get_AO"
+    "io_device.get_AO_read_data"
+    "dev_stub.print"
+    "analog_io_device.set_cmd"
+    "watchdog.set_property"
+    "device_communicator.print"
+    "action.print"
+    "operation_state.print"
+    "operation_state.to_step"
+    "operation.on_extra_step_debug_output"
+    "operation.evaluate_from_run_to_pause"
+    "wash_action.print"
+    "PAC_critical_errors_manager.set_global_error"
+    "uni_io_manager.write_outputs"
+    "SRAM.safe_save_create_error_logged_once"
+    "SRAM.storage_directory_create_error_logged"
+    "SRAM.storage_directory_write_error_logged"
+    "tech_object.set_mode"
+    "project_manager.proc_main_params"
+    "project_manager.lua_load_configuration"
+    "project_manager.apply_opc_mode")
 
-	"dev_stub.print:"
-
-	"analog_io_device.set_cmd:"
-
-	"watchdog.set_property:"
-
-	"device_communicator.print:"
-
-	"action.print:"
-
-	"operation_state.print:"
-	"operation_state.to_step:"
-	"operation.on_extra_step_debug_output:"
-	"operation.evaluate_from_run_to_pause:"
-
-	"wash_action.print:"
-
-	"PAC_critical_errors_manager.set_global_error:"
-
-	"uni_io_manager.write_outputs:"
-
-	"SRAM.safe_save_create_error_logged_once:"
-	"SRAM.storage_directory_create_error_logged:"
-	"SRAM.storage_directory_write_error_logged:"
-
-	"tech_object.set_mode:"
-
-    "project_manager.proc_main_params:"
-    "project_manager.lua_load_configuration:"
-	"project_manager.apply_opc_mode:")
-
+# Тесты, которые используют общий tcp_communicator socket
 set(TCP_SOCKET_LOCKED_FILTER
-    "tcp_communicator_linux_restart.*:"
-    "tcp_communicator.evaluate:"
-	"tcp_communicator.recvtimeout:"
-    "device_communicator.write_devices_states_service:"
-    "pp_mode_alarm.pp_mode_activation_deactivation:"
-	"pp_mode_alarm.cfg_bus_error_activation_deactivation:"
-    "pp_mode_alarm.e_communicate:"
-    "main_cycle.main_cycle:"
-	"PAC_info.set_cmd:"
-	"LuaManagerTest.init_success:"
-    "PAC_critical_errors_manager.set_global_error:")
+    "tcp_communicator_linux_restart.*"
+    "tcp_communicator.evaluate"
+    "tcp_communicator.recvtimeout"
+    "device_communicator.write_devices_states_service"
+    "pp_mode_alarm.pp_mode_activation_deactivation"
+    "pp_mode_alarm.cfg_bus_error_activation_deactivation"
+    "pp_mode_alarm.e_communicate"
+    "main_cycle.main_cycle"
+    "PAC_info.set_cmd"
+    "LuaManagerTest.init_success")
 
+# Тесты, сохраняющие общие eeprom.bin/nvram.bin файла рабочего
+# каталога ctest (#1652)
 set(PARAMS_FILES_LOCKED_FILTER
-    "params_manager.*:"
-    "SRAM.constructor:"
-    "SRAM.load:"
-    "SRAM.safe_save:"
-    "SRAM.safe_save_write_error:"
-    "SRAM.get_directory:"
-    "SRAM.storage_directory_created:")
+    "params_manager.*"
+    "SRAM.constructor"
+    "SRAM.load"
+    "SRAM.safe_save"
+    "SRAM.safe_save_write_error"
+    "SRAM.get_directory"
+    "SRAM.storage_directory_created")
 
-# Тесты, которые используют CaptureStdout() - выполняются последовательно
-string(REPLACE ";" "" STDOUT_CAPTURE_LOCKED_FILTER_STR
-    "${STDOUT_CAPTURE_LOCKED_FILTER}")
+set(CIPLINE_SAVE_DEVICE_FILTER
+    "cipline_tech_object.save_device")
 
-# Join the params-file filter into a single GTest filter string.
-string(REPLACE ";" "" PARAMS_FILES_LOCKED_FILTER_STR
-    "${PARAMS_FILES_LOCKED_FILTER}")
+list(JOIN TCP_SOCKET_LOCKED_FILTER ":" TCP_SOCKET_LOCKED_FILTER_STR)
+list(JOIN STDOUT_CAPTURE_LOCKED_FILTER ":" STDOUT_CAPTURE_LOCKED_FILTER_STR)
+list(JOIN PARAMS_FILES_LOCKED_FILTER ":" PARAMS_FILES_LOCKED_FILTER_STR)
+list(JOIN CIPLINE_SAVE_DEVICE_FILTER ":" CIPLINE_SAVE_DEVICE_FILTER_STR)
 
-# Join list into a single GTest filter string (elements already end with ':').
-string(REPLACE ";" "" TCP_SOCKET_LOCKED_FILTER_STR
-	"${TCP_SOCKET_LOCKED_FILTER}")
+# GTest splits a filter string at the first '-' into a positive and
+# a negative section, so '-' must never appear inside a name.
+foreach(locked_filter TCP_SOCKET_LOCKED_FILTER
+        STDOUT_CAPTURE_LOCKED_FILTER
+        PARAMS_FILES_LOCKED_FILTER
+        CIPLINE_SAVE_DEVICE_FILTER)
+    foreach(locked_name ${${locked_filter}})
+        if(locked_name MATCHES "-")
+            message(FATAL_ERROR
+                "locked test name must not contain '-': ${locked_name}")
+        endif()
+    endforeach()
+endforeach()
 
+# Everything except the locked groups: the '*' positive section
+# matches all tests, the tail after '-' excludes the locked ones.
 set(UNLOCKED_FILTER_STR
-	"-${TCP_SOCKET_LOCKED_FILTER_STR}${STDOUT_CAPTURE_LOCKED_FILTER_STR}${PARAMS_FILES_LOCKED_FILTER_STR}cipline_tech_object.save_device")
+    "*-${TCP_SOCKET_LOCKED_FILTER_STR}:${STDOUT_CAPTURE_LOCKED_FILTER_STR}:${PARAMS_FILES_LOCKED_FILTER_STR}:${CIPLINE_SAVE_DEVICE_FILTER_STR}")
 
 # Discover tests that use shared tcp_communicator socket and serialize them.
 gtest_discover_tests(main_test
@@ -664,7 +672,7 @@ gtest_discover_tests(main_test
 
 gtest_discover_tests(main_test
     DISCOVERY_TIMEOUT 30
-    TEST_FILTER "cipline_tech_object.save_device"
+    TEST_FILTER ${CIPLINE_SAVE_DEVICE_FILTER_STR}
     PROPERTIES RUN_SERIAL 1)
 
 # Тесты, которые захватывают stdout - выполняются последовательно
