@@ -4253,12 +4253,44 @@ void virtual_device::direct_on()
 
 int virtual_device::get_state() const
     {
+    if ( is_di_virt() && get_par( P_DT, 0 ) > 0 )
+        {
+        return filtered_state;
+        }
+
     return state;
+    }
+
+void virtual_device::evaluate_io()
+    {
+    // Фильтр P_DT включен только у виртуального дискретного входа и
+    // повторяет логику DI1::evaluate_io().
+    if ( !is_di_virt() )
+        {
+        return;
+        }
+
+    if ( auto dt = static_cast<u_int_4>( get_par( P_DT, 0 ) ); dt > 0 )
+        {
+        if ( filtered_state != state )
+            {
+            if ( get_delta_millisec( state_change_time ) > dt )
+                {
+                filtered_state = state;
+                state_change_time = get_millisec();
+                }
+            }
+        else
+            {
+            state_change_time = get_millisec();
+            }
+        }
+    else filtered_state = state;
     }
 
 bool virtual_device::is_active()
     {
-    bool ret = ((state == 0) ? false : true);
+    bool ret = ( ( get_state() == 0 ) ? false : true );
     return (level_logic_invert ? !ret : ret);
     }
 
@@ -4274,8 +4306,16 @@ void virtual_device::set_rt_par(unsigned int idx, float value)
 
 virtual_device::virtual_device( const char *dev_name,
     device::DEVICE_TYPE dev_type,
-    device::DEVICE_SUB_TYPE dev_sub_type ) : device (dev_name, dev_type, dev_sub_type, 0)
+    device::DEVICE_SUB_TYPE dev_sub_type ) : device (dev_name, dev_type,
+    dev_sub_type, ( device::DT_DI == dev_type
+        && device::DST_DI_VIRT == dev_sub_type )
+            ? ADDITIONAL_PARAMS_COUNT : 0 )
     {
+    if ( device::DT_DI == dev_type
+        && device::DST_DI_VIRT == dev_sub_type )
+        {
+        set_par_name( P_DT, 0, "P_DT" );
+        }
     }
 //-----------------------------------------------------------------------------
 //-----------------------------------------------------------------------------
