@@ -7,7 +7,7 @@ carry provenance trailers in the final paragraph of the commit message (no
 blank line between them). This applies regardless of who runs `git commit`
 — the agent or the human committing agent-produced changes:
 
-```
+```text
 Co-authored-by: <agent-name> <agent-noreply-email>
 AI-assisted: <agent-name> (model: <model-name>, <execution-mode>)
 ```
@@ -24,7 +24,7 @@ AI-assisted: <agent-name> (model: <model-name>, <execution-mode>)
 - For commits produced by the Zed agent running a local model, the
   trailers are:
 
-  ```
+  ```text
   Co-authored-by: Zed AI Agent <253101093+zed-agent@users.noreply.github.com>
   AI-assisted: Zed agent (model: <model-name>, local)
   ```
