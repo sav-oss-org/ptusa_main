@@ -588,6 +588,7 @@ include(GoogleTest)
 # The names are plain CMake lists; `list(JOIN)` composes the GTest
 # filter strings below, so no entry needs a trailing colon and a
 # missing separator cannot silently break a filter.
+
 # Тесты, которые захватывают stdout - выполняются последовательно.
 set(STDOUT_CAPTURE_LOCKED_FILTER
     "io_device.get_AO"
