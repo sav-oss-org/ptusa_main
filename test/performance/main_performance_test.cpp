@@ -52,4 +52,48 @@ BENCHMARK_CAPTURE( write_devices_service, "no compression", false )->
 BENCHMARK_CAPTURE( write_devices_service, "with compression", true )->
     Setup( DoSetup )->Unit( benchmark::kMicrosecond );
 
+
+namespace
+    {
+
+/// @brief Sink that records nothing: the benchmark times the shared
+/// write_log() funnel (sanitize_msg() included) without the platform
+/// stdio and syslog latency, so runs stay comparable across the CI
+/// matrix. The console rendering itself stays out of the gate.
+class bench_log : public i_log
+    {
+    public:
+        void write_log_impl( PRIORITIES priority ) override
+            {
+            benchmark::DoNotOptimize( priority );
+            }
+    };
+
+    } // namespace
+
+static void write_log_record( benchmark::State& state, bool injected )
+    {
+    bench_log log;
+
+    const int len = static_cast< int >( state.range( 0 ) );
+    for ( int i = 0; i < len; ++i )
+        {
+        log.msg[ i ] = ( injected && i % 10 == 0 ) ? '\\n'
+                                                   : char( 65 + i % 26 );
+        }
+    log.msg[ len ] = 0;
+
+    for ( auto _ : state )
+        log.write_log( i_log::P_INFO );
+
+    state.SetBytesProcessed(
+        static_cast< long long >( state.iterations() ) * len );
+    }
+
+// Register the function as a benchmark
+BENCHMARK_CAPTURE( write_log_record, "clean", false )
+    ->Arg( 40 )->Arg( 200 )->Arg( 1000 )->Unit( benchmark::kNanosecond );
+BENCHMARK_CAPTURE( write_log_record, "LF every 10th char", true )
+    ->Arg( 40 )->Arg( 200 )->Arg( 1000 )->Unit( benchmark::kNanosecond );
+
 BENCHMARK_MAIN();

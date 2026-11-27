@@ -1,6 +1,8 @@
 #include "log.h"
 #include <stdarg.h>
 
+#include <iostream>
+
 #if defined  WIN_OS
 #include "w_log.h"
 #elif defined LINUX_OS
@@ -33,6 +35,79 @@ log_mngr::~log_mngr()
     {
     delete lg;
     lg = nullptr;
+    }
+//-----------------------------------------------------------------------------
+void i_log::write_log( PRIORITIES priority )
+    {
+    sanitize_msg();
+    write_log_impl( priority );
+    }
+//-----------------------------------------------------------------------------
+void i_log::sanitize_msg()
+    {
+    const char* in = msg;
+    char* out = msg_journal;
+    const size_t max_len = C_BUFF_SIZE - 1;
+
+    while ( *in != 0 )
+        {
+        const char symbol = *in;
+        const size_t width =
+            ( symbol == '\n' || symbol == '\r' ) ? 2 : 1;
+
+        if ( static_cast< size_t >( out - msg_journal ) + width > max_len )
+            {
+            break; // Экранированный текст не влез, хвост отброшен.
+            }
+
+        if ( width == 2 )
+            {
+            *out++ = '\\';
+            *out++ = ( symbol == '\n' ) ? 'n' : 'r';
+            }
+        else
+            {
+            *out++ = symbol;
+            }
+
+        ++in;
+        }
+
+    *out = 0;
+    }
+//-----------------------------------------------------------------------------
+void i_log::print_console_msg() const
+    {
+    static const char continuation[] = "\n        ";
+
+    const char* run = msg;
+
+    for ( const char* ch = msg; ; ++ch )
+        {
+        if ( *ch != 0 && *ch != '\n' && *ch != '\r' )
+            {
+            continue;
+            }
+
+        std::cout.write( run, static_cast< std::streamsize >( ch - run ) );
+
+        if ( *ch == 0 )
+            {
+            break;
+            }
+        else if ( *ch == '\n' )
+            {
+            std::cout << continuation;
+            }
+        else
+            {
+            // Одиночный CR перерисовывает строку терминала,
+            // поэтому он выводится только как литерал.
+            std::cout << "\\r";
+            }
+
+        run = ch + 1;
+        }
     }
 //-----------------------------------------------------------------------------
 void i_log::write_log( PRIORITIES priority, const char* debug_message )
